@@ -21,9 +21,10 @@ js/
   store.js        Store：state + localStorage 持久化（DEFAULTS 扩展须做老数据兼容）
   token.js        TokenStats：usage 记账/估算/聚合查询
   api.js          API：三家格式（OpenAI 兼容/Anthropic/Google）流式+非流式、usage 捕获、30s 熔断
+  api-v2.js       Worker 客户端（服务器代理模式，BACKEND_URL 未配置时为空壳）
   models.js       MODELS 目录（270+）+ MODEL_RANK 排行榜数据
-  modelsync.js    模型目录辅助
-  providers.js    PROVIDERS 厂商配置（base/headers/适配参数）+ getModel/getKeyForModel/isSelectableModel + APP_VERSION
+  modelsync.js    模型目录辅助（实时同步 + 目录合并）
+  providers.js    PROVIDERS 厂商配置（23 家）+ APP_VERSION
   plugins.js      Plugins：插件定义与配置（tavily-search/github-connector/tencent-cloud/opensource-ecosystem）
   skills.js       Skills：内置技能(润色/摘要/代码解释) + 模板库 + 自定义技能，与 toolsEnabled 双向同步
   chat.js         Chat：会话 CRUD、发送管线（单模型/多模型/辩论/协同）、中止、重生成
@@ -32,10 +33,18 @@ js/
   voice.js        Voice：ASR/TTS 多引擎（browser/MiMo/OpenAI/Groq）、speakMimo/speakClone
   markdown.js     MD：markdown 渲染 + 代码块复制 + KaTeX
   i18n.js         I18n：7 语言词条（新增词条至少补 zh-CN/zh-TW/en）
-  changelog.js    CHANGELOG：更新日志数据（数组顶部追加）
-  auth.js         Auth：本地账号/游客
+  changelog.js    CHANGELOG：更新日志数据（数组末尾追加，render 时 reverse）
+  auth.js         Auth：本地账号 + Supabase 云端认证（邮箱验证注册，管理员 1234/1234）
+  supabase.js     Supabase 云端同步客户端（RLS 分级权限）
   icons.js        icon() SVG 图标库（新增图标加这里）
   app.js          启动入口：Store.load → 登录 → showApp → splash
+  error-handler.js 全局错误捕获 + 离线检测 + Toast 提示
+  lazy-load.js    图片懒加载 + 消息虚拟列表（>50 条启用）
+  device.js       设备检测（UA + 视口 → html data-device 标记）
+  files.js        文件上传/解析（图片/PDF/Word/TXT/Markdown/CSV/代码）
+  presets.js      30 个精品预设角色 + 用户自定义角色
+  util.js         工具函数（esc/genId/debounce 等）
+tests/            冒烟测试（token-smoke.js / sync-fault-smoke.js / sb-smoke.js）
 ```
 
 ## 关键契约（跨模块调用，改签名前全文搜索调用方）
@@ -50,17 +59,21 @@ js/
 ## 数据流
 用户输入 → chat.js 组装 messages（注入系统提示/语言提示/角色/联网）→ api.js 按厂商格式 fetch SSE → 回调流式更新 ui.js → 完成时记账 TokenStats、存 Store。全部状态在 `Store.state`（key: `ai_chat_state_v5`），`Store.save()` 400ms 防抖落盘。
 
-## 云端后端（v5.8 起，Supabase）
+## 云端后端（v5.8 接入，Supabase）
 - 项目：`mxvxlgjzeboktufumxbp`（ap-south-1，Free Tier：DB 500MB / Storage 1GB / 60 并发）
-- 前端只用 **publishable key**；secret key 永不入库/入前端（用户通过对话临时提供给 AI 做后台配置，用完提醒吊销）
-- 表与权限（RLS 强制，非仅前端约定）：
-  - 管理员专属（`is_admin()` 才可读写的表）：conversations、messages、token_usage、cloud_backups
-  - 全用户本人表：profiles(display_name,is_admin)、user_settings(jsonb)、encrypted_api_keys(AES-GCM，密码派生 PBKDF2 密钥)、custom_roles
-  - 触发器 handle_new_user：注册自动建 profile；is_admin 用户不可自助修改（RLS WITH CHECK 防提权）
-- 管理员账号：email `admin@thirdparty.ai`（默认密码 1234，用户可自行改）；登录页账号 `1234`/`admin` 映射到该邮箱
-- 邮箱验证：对新注册用户保持开启（Supabase 默认）；管理员由 SQL 直接建成已验证
-- js/supabase.js 是唯一云访问层（SB 模块：Auth/Profile/Sync）；未来迁移自托管（黑鲨4 Pro）只改这一个文件
-- 分级同步策略：游客=零云同步；普通用户=轻量（设置/加密Key/昵称/角色）；管理员=轻量+全量（会话/消息/用量/云备份）
+- 前端只用 **publishable key**；secret key 永不入库/入前端
+- 表与权限（RLS 强制）：
+  - 管理员专属（`is_admin()` 才可读写）：conversations、messages、token_usage、cloud_backups
+  - 全用户本人表：profiles(display_name,is_admin)、user_settings(jsonb)、encrypted_api_keys(AES-GCM)、custom_roles
+- 管理员账号：email `admin@thirdparty.ai`（默认密码 1234）；登录页账号 `1234`/`admin` 映射到该邮箱
+- js/supabase.js 是唯一云访问层（SB 模块：Auth/Profile/Sync）
+- 分级同步：游客=零云同步；普通用户=轻量（设置/加密Key/昵称/角色）；管理员=轻量+全量（会话/消息/用量/云备份）
+
+## Cloudflare Worker（v2 分支，待部署）
+- 代码在 `AI` 仓库的 `v2` 分支，**不在 aiBeta**
+- 路由：`/api/v1/chat`, `/multi`, `/search`, `/image`, `/vector`, `/health`, `/keys`
+- 状态：代码已写，Worker 子域名未注册，前端 `api.js` 的 `CONFIG.BACKEND_URL` 仍为 `null`
+- 部署后前端只需改 `CONFIG.BACKEND_URL` 即可切换代理模式
 
 ## 设计约定
 - 增量开发：新功能优先加新文件/新 subpage/新 CSS 追加，不重构旧代码。
