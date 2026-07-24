@@ -74,18 +74,12 @@ const Chat = (() => {
   }
 
   function del(id) {
-    const chat = Store.state.chats.find(c => c.id === id);
-    if (chat) {
-      if (!Store.state.trash) Store.state.trash = { chats: [], apiKeys: [], items: [], clearedAt: 0 };
-      chat.deletedAt = Date.now();
-      Store.state.trash.chats.unshift(chat);
-    }
     Store.state.chats = Store.state.chats.filter(c => c.id !== id);
     if (Store.state.currentChatId === id) Store.state.currentChatId = null;
     Store.save();
     UI.renderSidebar();
     UI.renderChat();
-    Toast.success('已移至回收站');
+    Toast.success('已删除');
   }
 
   function selectModel(id) {

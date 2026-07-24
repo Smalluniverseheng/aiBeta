@@ -336,15 +336,6 @@
     transform: translateX(-104%);
     box-shadow: var(--shadow-lg);
   }
-  /* 手表端：sidebar 占 80%，右侧露出 1/5 对话内容 */
-  html[data-device="watch"] .sidebar {
-    width: 80%;
-    max-width: 280px;
-    transform: translateX(-100%);
-  }
-  html[data-device="watch"] .sidebar.open {
-    transform: translateX(0);
-  }
   [dir="rtl"] .sidebar { left: auto; right: 0; transform: translateX(104%); }
   .sidebar.open { transform: none; }
   .sidebar.collapsed { margin-left: 0; }

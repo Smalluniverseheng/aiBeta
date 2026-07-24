@@ -40,6 +40,15 @@ html[data-device="watch"] .login-footer { margin-top: 10px; padding-top: 8px; fo
 
 /* ==================== 应用骨架 ==================== */
 /* 侧边栏：默认完全隐藏，抽屉打开时全屏 */
+html[data-device="watch"] .sidebar {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  transform: translateX(-104%);
+  border: none;
+  z-index: 300;
+}
+html[data-device="watch"] .sidebar.open { transform: none; }
 html[data-device="watch"] .sidebar-toggle,
 html[data-device="watch"] .sidebar-overlay { display: none !important; }
 
@@ -200,6 +209,13 @@ html[data-device="watch"] .sidebar-footer { display: none !important; }
 html[data-device="watch"] .sidebar-search { display: none !important; }
 
 /* sidebar 整体 flex 列布局 */
+html[data-device="watch"] .sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  gap: 0;
+}
+
 /* 用户卡紧凑化 */
 html[data-device="watch"] .sidebar-user {
   flex-shrink: 0;
@@ -304,59 +320,3 @@ html[data-device="watch"] .sidebar-new-btn-inline:active {
   transform: scale(.96);
 }
 html[data-device="watch"] .sidebar-new-btn-inline .icon { width: 18px; height: 18px; }
-
-/* ==================== 手表端 Kimi 抽屉 v3.5.1 ==================== */
-
-/* 隐藏常驻删除按钮（手表端改成长按菜单） */
-html[data-device="watch"] .chat-item-del { display: none !important; }
-
-/* 长按高亮 */
-html[data-device="watch"] .chat-item.long-press {
-  background: var(--bg-active);
-  transition: none;
-}
-
-/* 手表端底部 Action Sheet 菜单 */
-.watch-action-sheet {
-  position: fixed;
-  bottom: 0; left: 0;
-  width: var(--sidebar-w, 320px);
-  max-width: 100%;
-  background: var(--bg-elev);
-  border-radius: 0 16px 0 0;
-  border-top: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  padding: 8px 0 24px;
-  z-index: 200;
-  transform: translateY(100%);
-  transition: transform .28s var(--ease);
-  box-shadow: 0 -8px 32px rgba(0,0,0,.25);
-}
-.watch-action-sheet.show {
-  transform: translateY(0);
-}
-.watch-action-sheet-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  font-size: 15px;
-  color: var(--text);
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-}
-.watch-action-sheet-item .icon { width: 20px; height: 20px; }
-.watch-action-sheet-item.danger { color: var(--danger); }
-.watch-action-sheet-item:active { background: var(--bg-hover); }
-.watch-action-sheet-cancel {
-  margin: 8px 16px 0;
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--bg-soft);
-  text-align: center;
-  font-size: 15px;
-  color: var(--text-2);
-  border: 1px solid var(--border);
-}

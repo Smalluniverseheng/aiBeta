@@ -341,203 +341,35 @@ const MODELS = [
  * dims 六维（0-100）：综合能力 / 推理 / 代码 / 长文本 / 多模态 / 速度，用于雷达图。
  * ================================================================ */
 const MODEL_RANK = {
-  /* 综合榜：LMArena Overall（2026-07-24 更新，50名） */
+  updated: '2026-07',
+  axes: ['综合能力', '推理', '代码', '长文本', '多模态', '速度'],
   overall: [
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1500, dims:[100,100,99,100,85,95]},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1498, dims:[99,98,100,99,85,95]},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1496, dims:[98,99,97,98,85,94]},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1494, dims:[98,97,98,95,85,94]},
-    {id:'muse-spark-1.1', name:'Meta muse-spark-1.1', provider:'Meta', score:1492, dims:[97,96,91,85,85,94]},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1490, dims:[96,98,98,97,85,94]},
-    {id:'muse-spark', name:'Meta muse-spark', provider:'Meta', score:1488, dims:[95,90,71,89,85,93]},
-    {id:'gemini-3.1-pro-preview', name:'gemini-3.1-pro-preview', provider:'Google', score:1486, dims:[94,86,90,96,85,93]},
-    {id:'gemini-3-pro', name:'gemini-3-pro', provider:'Google', score:1484, dims:[94,81,82,98,85,93]},
-    {id:'kimi-k3', name:'kimi-k3', provider:'月之暗面', score:1482, dims:[93,94,85,93,85,92]},
-    {id:'gpt-5.6-sol-xhigh', name:'gpt-5.6-sol-xhigh', provider:'OpenAI', score:1480, dims:[92,91,95,94,85,92]},
-    {id:'gemini-3.6-flash', name:'gemini-3.6-flash', provider:'Google', score:1478, dims:[91,88,90,94,85,92]},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1476, dims:[90,95,96,90,85,91]},
-    {id:'gpt-5.5-high', name:'gpt-5.5-high', provider:'OpenAI', score:1474, dims:[90,84,94,79,85,91]},
-    {id:'gpt-5.4-high', name:'gpt-5.4-high', provider:'OpenAI', score:1472, dims:[89,86,94,70,85,91]},
-    {id:'gpt-5.5', name:'gpt-5.5', provider:'OpenAI', score:1470, dims:[88,66,86,78,85,90]},
-    {id:'gemini-3.5-flash-high', name:'gemini-3.5-flash-high', provider:'Google', score:1468, dims:[87,65,86,90,85,90]},
-    {id:'gpt-5.2-chat-latest-20260210', name:'gpt-5.2-chat-latest-20260210', provider:'OpenAI', score:1466, dims:[86,80,75,62,85,90]},
-    {id:'qwen3.7-max-preview', name:'qwen3.7-max-preview', provider:'通义千问', score:1464, dims:[86,90,88,75,85,90]},
-    {id:'grok-4.20-beta1', name:'grok-4.20-beta1', provider:'xAI', score:1462, dims:[85,68,60,87,85,89]},
-    {id:'gemini-3.5-flash-medium', name:'gemini-3.5-flash-medium', provider:'Google', score:1460, dims:[84,71,70,91,85,89]},
-    {id:'claude-opus-4-8', name:'Anthropic claude-opus-4-8', provider:'Anthropic', score:1458, dims:[83,93,93,86,85,89]},
-    {id:'gpt-5.5-instant', name:'gpt-5.5-instant', provider:'OpenAI', score:1456, dims:[82,77,60,84,85,88]},
-    {id:'grok-4.20-beta-0309-reasoning', name:'grok-4.20-beta-0309-reasoning', provider:'xAI', score:1454, dims:[82,74,60,76,85,88]},
-    {id:'gemini-3-flash', name:'gemini-3-flash', provider:'Google', score:1452, dims:[81,69,77,86,85,88]},
-    {id:'claude-opus-4-5-20251101-thinking-32k', name:'Anthropic claude-opus-4-5-20251101-thinking-32k', provider:'Anthropic', score:1450, dims:[80,94,84,92,85,88]},
-    {id:'claude-sonnet-4-6', name:'Anthropic claude-sonnet-4-6', provider:'Anthropic', score:1448, dims:[79,92,87,82,85,87]},
-    {id:'grok-4.20-multi-agent-beta-0309', name:'grok-4.20-multi-agent-beta-0309', provider:'xAI', score:1446, dims:[78,70,61,81,85,87]},
-    {id:'glm-5.1', name:'glm-5.1', provider:'智谱AI', score:1444, dims:[78,83,80,82,85,87]},
-    {id:'glm-5.2', name:'glm-5.2', provider:'智谱AI', score:1442, dims:[77,70,73,74,85,86]},
-    {id:'claude-opus-4-5-20251101', name:'Anthropic claude-opus-4-5-20251101', provider:'Anthropic', score:1440, dims:[76,87,82,88,85,86]},
-    {id:'ernie-5.1', name:'ernie-5.1', provider:'百度', score:1438, dims:[75,78,72,60,85,86]},
-    {id:'grok-4.5', name:'grok-4.5', provider:'xAI', score:1436, dims:[74,85,78,68,85,85]},
-    {id:'mimo-v2.5-pro', name:'mimo-v2.5-pro', provider:'小米 MiMo', score:1434, dims:[74,82,89,63,85,85]},
-    {id:'gpt-5.4', name:'gpt-5.4', provider:'OpenAI', score:1432, dims:[73,78,76,64,85,85]},
-    {id:'grok-4.1-thinking', name:'grok-4.1-thinking', provider:'xAI', score:1430, dims:[72,60,60,60,85,84]},
-    {id:'qwen3.5-max-preview', name:'qwen3.5-max-preview', provider:'通义千问', score:1428, dims:[71,74,79,80,85,84]},
-    {id:'claude-sonnet-5-high', name:'Anthropic claude-sonnet-5-high', provider:'Anthropic', score:1426, dims:[70,89,92,60,85,84]},
-    {id:'kimi-k2.6', name:'kimi-k2.6', provider:'月之暗面', score:1424, dims:[70,79,83,60,85,84]},
-    {id:'qwen3.6-max-preview', name:'qwen3.6-max-preview', provider:'通义千问', score:1422, dims:[69,67,78,65,85,83]},
-    {id:'qwen3.7-plus', name:'qwen3.7-plus', provider:'通义千问', score:1420, dims:[68,72,69,67,85,83]},
-    {id:'grok-4.1', name:'grok-4.1', provider:'xAI', score:1418, dims:[67,60,60,62,85,83]},
-    {id:'gemini-3.5-flash-lite', name:'gemini-3.5-flash-lite', provider:'Google', score:1416, dims:[66,66,67,66,85,82]},
-    {id:'gemini-3-flash-thinking-minimal', name:'gemini-3-flash-thinking-minimal', provider:'Google', score:1414, dims:[66,60,60,77,85,82]},
-    {id:'glm-5', name:'glm-5', provider:'智谱AI', score:1412, dims:[65,60,68,74,85,82]},
-    {id:'deepseek-v4-pro', name:'deepseek-v4-pro', provider:'DeepSeek', score:1410, dims:[64,60,65,70,85,82]},
-    {id:'claude-sonnet-4-5-20250929-thinking-32k', name:'Anthropic claude-sonnet-4-5-20250929-thinking-32k', provider:'Anthropic', score:1408, dims:[63,82,81,78,85,81]},
-    {id:'dola-seed-2.0-pro', name:'Bytedance dola-seed-2.0-pro', provider:'字节跳动', score:1406, dims:[62,73,60,60,85,81]},
-    {id:'deepseek-v4-pro-thinking', name:'deepseek-v4-pro-thinking', provider:'DeepSeek', score:1404, dims:[62,60,60,71,85,81]},
-    {id:'claude-sonnet-4-5-20250929', name:'Anthropic claude-sonnet-4-5-20250929', provider:'Anthropic', score:1402, dims:[61,76,70,83,85,80]}
+    {id:'claude-opus-4.6', name:'Claude Opus 4.6', provider:'Anthropic', score:1500, dims:[97,96,95,93,93,80]},
+    {id:'claude-fable-5', name:'Claude Fable 5', provider:'Anthropic', score:1494, dims:[96,98,99,92,90,76]},
+    {id:'claude-opus-4.7', name:'Claude Opus 4.7', provider:'Anthropic', score:1489, dims:[96,95,94,93,92,79]},
+    {id:'gemini-3.5-flash', name:'Gemini 3.5 Flash', provider:'Google', score:1480, dims:[92,90,88,95,94,97]},
+    {id:'gemini-3.1-pro', name:'Gemini 3.1 Pro', provider:'Google', score:1480, dims:[95,94,92,98,97,84]},
+    {id:'qwen3.7-max', name:'Qwen3.7-Max', provider:'通义千问', score:1475, dims:[92,93,90,92,88,83]},
+    {id:'gpt-5.4', name:'GPT-5.4', provider:'OpenAI', score:1470, dims:[94,93,92,93,92,82]},
+    {id:'glm-5.1', name:'GLM-5.1', provider:'智谱AI', score:1468, dims:[90,90,91,89,85,84]},
+    {id:'gpt-5.5', name:'GPT-5.5', provider:'OpenAI', score:1468, dims:[94,93,93,94,93,84]},
+    {id:'glm-5.2', name:'GLM-5.2', provider:'智谱AI', score:1465, dims:[91,91,92,90,85,84]},
+    {id:'claude-opus-4-8', name:'Claude Opus 4.8', provider:'Anthropic', score:1463, dims:[96,96,100,94,90,75]},
+    {id:'mimo-v2.5-pro', name:'MiMo v2.5 Pro', provider:'小米 MiMo', score:1462, dims:[88,92,89,93,79,84]},
+    {id:'gemini-2.5-pro', name:'Gemini 2.5 Pro', provider:'Google', score:1457, dims:[90,90,88,96,93,83]},
+    {id:'claude-sonnet-4.6', name:'Claude Sonnet 4.6', provider:'Anthropic', score:1457, dims:[91,90,95,88,87,89]},
+    {id:'grok-4.20', name:'Grok 4.20', provider:'xAI', score:1455, dims:[90,89,86,90,89,87]}
   ],
-
-  /* 代码榜：LMArena Coding（2026-07-24 更新，10名） */
   coding: [
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1500},
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1498},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1496},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1494},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1492},
-    {id:'claude-opus-4-8', name:'Anthropic claude-opus-4-8', provider:'Anthropic', score:1490},
-    {id:'gpt-5.6-sol-xhigh', name:'gpt-5.6-sol-xhigh', provider:'OpenAI', score:1488},
-    {id:'gpt-5.5-high', name:'gpt-5.5-high', provider:'OpenAI', score:1486},
-    {id:'gpt-5.4-high', name:'gpt-5.4-high', provider:'OpenAI', score:1484},
-    {id:'claude-opus-4-5-20251101-thinking-32k', name:'Anthropic claude-opus-4-5-20251101-thinking-32k', provider:'Anthropic', score:1482}
-  ],
-
-  /* 英文榜：LMArena English（2026-07-24 更新，10名） */
-  english: [
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1500},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1498},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1496},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1494},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1492},
-    {id:'muse-spark-1.1', name:'Meta muse-spark-1.1', provider:'Meta', score:1490},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1488},
-    {id:'gemini-3.1-pro-preview', name:'gemini-3.1-pro-preview', provider:'Google', score:1486},
-    {id:'gpt-5.6-sol-xhigh', name:'gpt-5.6-sol-xhigh', provider:'OpenAI', score:1484},
-    {id:'kimi-k3', name:'kimi-k3', provider:'月之暗面', score:1482}
-  ],
-
-  /* 困难提示榜：LMArena Hard Prompts（2026-07-24 更新，10名） */
-  hard: [
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1500},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1498},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1496},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1494},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1492},
-    {id:'muse-spark-1.1', name:'Meta muse-spark-1.1', provider:'Meta', score:1490},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1488},
-    {id:'kimi-k3', name:'kimi-k3', provider:'月之暗面', score:1486},
-    {id:'claude-opus-4-5-20251101-thinking-32k', name:'Anthropic claude-opus-4-5-20251101-thinking-32k', provider:'Anthropic', score:1484},
-    {id:'claude-sonnet-4-6', name:'Anthropic claude-sonnet-4-6', provider:'Anthropic', score:1482}
-  ],
-
-  /* 中文榜：LMArena Chinese（2026-07-24 更新，10名） */
-  chinese: [
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1500},
-    {id:'gemini-3.6-flash', name:'gemini-3.6-flash', provider:'Google', score:1498},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1496},
-    {id:'gemini-3.5-flash-high', name:'gemini-3.5-flash-high', provider:'Google', score:1494},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1492},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1490},
-    {id:'grok-4.5', name:'grok-4.5', provider:'xAI', score:1488},
-    {id:'gpt-5.5', name:'gpt-5.5', provider:'OpenAI', score:1486},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1484},
-    {id:'gpt-5.4-high', name:'gpt-5.4-high', provider:'OpenAI', score:1482}
-  ],
-
-  /* 多轮对话榜：LMArena Multi-Turn（2026-07-24 更新，10名） */
-  multiturn: [
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1500},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1498},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1496},
-    {id:'gemini-3-pro', name:'gemini-3-pro', provider:'Google', score:1494},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1492},
-    {id:'gemini-3.1-pro-preview', name:'gemini-3.1-pro-preview', provider:'Google', score:1490},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1488},
-    {id:'gemini-3.5-flash-high', name:'gemini-3.5-flash-high', provider:'Google', score:1486},
-    {id:'gpt-5.6-sol-xhigh', name:'gpt-5.6-sol-xhigh', provider:'OpenAI', score:1484},
-    {id:'kimi-k3', name:'kimi-k3', provider:'月之暗面', score:1482}
-  ],
-
-  /* 创意写作榜：LMArena Creative Writing（2026-07-24 更新，10名） */
-  creative: [
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1500},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1498},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1496},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1494},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1492},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1490},
-    {id:'gpt-5.6-sol-xhigh', name:'gpt-5.6-sol-xhigh', provider:'OpenAI', score:1488},
-    {id:'claude-opus-4-5-20251101-thinking-32k', name:'Anthropic claude-opus-4-5-20251101-thinking-32k', provider:'Anthropic', score:1486},
-    {id:'gemini-3.1-pro-preview', name:'gemini-3.1-pro-preview', provider:'Google', score:1484},
-    {id:'gemini-3.6-flash', name:'gemini-3.6-flash', provider:'Google', score:1482}
-  ],
-
-  /* 数学榜：LMArena Math（2026-07-24 更新，10名） */
-  math: [
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1500},
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1498},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1496},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1494},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1492},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1490},
-    {id:'kimi-k3', name:'kimi-k3', provider:'月之暗面', score:1488},
-    {id:'claude-sonnet-4-6', name:'Anthropic claude-sonnet-4-6', provider:'Anthropic', score:1486},
-    {id:'gemini-3.1-pro-preview', name:'gemini-3.1-pro-preview', provider:'Google', score:1484},
-    {id:'qwen3.7-max-preview', name:'qwen3.7-max-preview', provider:'通义千问', score:1482}
-  ],
-
-  /* 指令遵循榜：LMArena Instruction Following（2026-07-24 更新，10名） */
-  instruct: [
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1500},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1498},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1496},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1494},
-    {id:'muse-spark-1.1', name:'Meta muse-spark-1.1', provider:'Meta', score:1492},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1490},
-    {id:'muse-spark', name:'Meta muse-spark', provider:'Meta', score:1488},
-    {id:'gemini-3.1-pro-preview', name:'gemini-3.1-pro-preview', provider:'Google', score:1486},
-    {id:'gemini-3-pro', name:'gemini-3-pro', provider:'Google', score:1484},
-    {id:'kimi-k3', name:'kimi-k3', provider:'月之暗面', score:1482}
-  ],
-
-  /* 日语榜：LMArena Japanese（2026-07-24 更新，10名） */
-  japanese: [
-    {id:'gpt-5.5-high', name:'gpt-5.5-high', provider:'OpenAI', score:1500},
-    {id:'gpt-5.4-high', name:'gpt-5.4-high', provider:'OpenAI', score:1498},
-    {id:'gpt-5.5', name:'gpt-5.5', provider:'OpenAI', score:1496},
-    {id:'gemini-3.5-flash-high', name:'gemini-3.5-flash-high', provider:'Google', score:1494},
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1492},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1490},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1488},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1486},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1484},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1482}
-  ],
-
-  /* 韩语榜：LMArena Korean（2026-07-24 更新，10名） */
-  korean: [
-    {id:'gpt-5.5-high', name:'gpt-5.5-high', provider:'OpenAI', score:1500},
-    {id:'gpt-5.4-high', name:'gpt-5.4-high', provider:'OpenAI', score:1498},
-    {id:'gpt-5.5', name:'gpt-5.5', provider:'OpenAI', score:1496},
-    {id:'gemini-3.5-flash-high', name:'gemini-3.5-flash-high', provider:'Google', score:1494},
-    {id:'claude-fable-5', name:'Anthropic claude-fable-5', provider:'Anthropic', score:1492},
-    {id:'claude-opus-4-6-thinking', name:'Anthropic claude-opus-4-6-thinking', provider:'Anthropic', score:1490},
-    {id:'claude-opus-4-8-thinking', name:'Anthropic claude-opus-4-8-thinking', provider:'Anthropic', score:1488},
-    {id:'claude-opus-4-7-thinking', name:'Anthropic claude-opus-4-7-thinking', provider:'Anthropic', score:1486},
-    {id:'claude-opus-4-7', name:'Anthropic claude-opus-4-7', provider:'Anthropic', score:1484},
-    {id:'claude-opus-4-6', name:'Anthropic claude-opus-4-6', provider:'Anthropic', score:1482}
-  ],
-
-  /* 维度标签（六维雷达图用） */
-  axes: ['综合','推理','代码','长文本','多模态','速度'],
-
-  /* 更新日期 */
-  updated: '2026-07-24',
+    {id:'claude-fable-5', name:'Claude Fable 5', provider:'Anthropic', score:1563},
+    {id:'claude-opus-4-8', name:'Claude Opus 4.8', provider:'Anthropic', score:1548},
+    {id:'gpt-5.5', name:'GPT-5.5', provider:'OpenAI', score:1538},
+    {id:'claude-opus-4.6', name:'Claude Opus 4.6', provider:'Anthropic', score:1531},
+    {id:'claude-sonnet-4.6', name:'Claude Sonnet 4.6', provider:'Anthropic', score:1524},
+    {id:'gemini-3.1-pro', name:'Gemini 3.1 Pro', provider:'Google', score:1518},
+    {id:'deepseek-v4-pro', name:'DeepSeek V4 Pro', provider:'DeepSeek', score:1509},
+    {id:'qwen3.7-max', name:'Qwen3.7-Max', provider:'通义千问', score:1504},
+    {id:'glm-5.2', name:'GLM-5.2', provider:'智谱AI', score:1496},
+    {id:'minimax-m3', name:'MiniMax-M3', provider:'MiniMax', score:1468}
+  ]
 };

@@ -60,6 +60,7 @@ const Pages = (() => {
         '</div>';
     });
     box.innerHTML = html || '<div class="empty-state">' + icon('search', 44) + '<div class="empty-title">没有找到匹配的模型</div></div>';
+    if (!kw && typeof MODEL_RANK !== "undefined") drawRankChart();
     updateSyncHint();
   }
 
@@ -67,46 +68,40 @@ const Pages = (() => {
   const RANK_COLORS = ['#6366F1', '#F59E0B', '#10B981', '#EC4899', '#0EA5E9'];
 
   function renderRankSection() {
-    return '<div class="settings-row clickable" id="rankEntryRow">' +
-      '<span class="row-icon" data-icon="trophy"></span>' +
-      '<span class="row-label"><span class="row-title">模型排行榜</span><span class="row-desc">公开榜单综合 · ' + esc(MODEL_RANK.updated) + ' 期</span></span>' +
-      '<span class="chev" data-icon="chevronRight"></span></div>';
+    const expanded = !!Store.state.rankExpanded;
+    const tab = Store.state.rankTab || 'overall';
+    const chart = Store.state.rankChart || 'bar';
+    // 头部整张可点击：折叠时仅显示标题栏，展开后显示控制条 + 图表 + 榜单
+    const head = '<div class="rank-head rank-toggle" id="rankToggle" title="' + (expanded ? '点击收起' : '点击展开') + '">' +
+      '<span class="rank-title">' + icon('trophy', 17) + ' 模型排行榜</span>' +
+      '<span class="rank-updated">公开榜单综合 · ' + esc(MODEL_RANK.updated) + ' 期' + (expanded ? '' : '（点击展开）') + '</span>' +
+      (expanded
+        ? '<span class="rank-controls">' +
+          '<span class="seg-btns" id="rankTabs">' +
+            '<button class="seg-btn' + (tab === 'overall' ? ' active' : '') + '" data-ranktab="overall">综合榜</button>' +
+            '<button class="seg-btn' + (tab === 'coding' ? ' active' : '') + '" data-ranktab="coding">代码榜</button></span>' +
+          '<span class="seg-btns" id="rankChartToggle">' +
+            '<button class="seg-btn' + (chart === 'bar' ? ' active' : '') + '" data-rankchart="bar" title="柱状图">' + icon('barChart', 14) + '</button>' +
+            '<button class="seg-btn' + (chart === 'radar' ? ' active' : '') + '" data-rankchart="radar" title="雷达图">' + icon('radar', 14) + '</button></span>' +
+        '</span>'
+        : '') +
+      '<span class="rank-caret">' + icon('chevronDown', 15) + '</span></div>';
+    if (!expanded) return '<div class="rank-section collapsed" id="rankSection">' + head + '</div>';
+    return '<div class="rank-section" id="rankSection">' + head +
+      '<div class="rank-chart" id="rankChart"></div>' +
+      '<div class="rank-list" id="rankList"></div></div>';
   }
 
   function drawRankChart() {
     const tab = Store.state.rankTab || 'overall';
+    const chart = Store.state.rankChart || 'bar';
     const list = MODEL_RANK[tab] || [];
     const chartBox = $('#rankChart'), listBox = $('#rankList');
     if (!chartBox || !listBox) return;
     const inCatalog = id => !!getModel(id);
-    const axes = MODEL_RANK.axes || ['综合','推理','代码','长文本','多模态','速度'];
-    const n = axes.length;
 
-    if (tab === 'overall') {
-      const top = list.filter(e => e.dims).slice(0, 5);
-      const C = 150, R = 90, cx = C, cy = 125;
-      const pt = (i, v) => {
-        const a = -Math.PI / 2 + i * 2 * Math.PI / n;
-        return [cx + Math.cos(a) * R * v / 100, cy + Math.sin(a) * R * v / 100];
-      };
-      let svg = '<svg viewBox="0 0 300 250" class="rank-svg radar">';
-      [25, 50, 75, 100].forEach(r => {
-        svg += '<polygon points="' + axes.map((_, i) => pt(i, r).join(',')).join(' ') + '" class="rk-ring"></polygon>';
-      });
-      axes.forEach((ax, i) => {
-        const p = pt(i, 100), lp = pt(i, 115);
-        svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0] + '" y2="' + p[1] + '" class="rk-axis"></line>' +
-          '<text x="' + lp[0] + '" y="' + lp[1] + '" class="rk-axlabel" text-anchor="middle" dominant-baseline="middle">' + ax + '</text>';
-      });
-      top.forEach((e, k) => {
-        svg += '<polygon points="' + e.dims.map((v, i) => pt(i, v).join(',')).join(' ') +
-          '" fill="' + RANK_COLORS[k] + '" fill-opacity="0.10" stroke="' + RANK_COLORS[k] + '" stroke-width="1.8"></polygon>';
-      });
-      svg += '</svg>';
-      chartBox.innerHTML = svg +
-        '<div class="rk-legend">' + top.map((e, k) =>
-          '<span class="rk-legend-item"><i style="background:' + RANK_COLORS[k] + '"></i>' + esc(e.name) + '</span>').join('') + '</div>';
-    } else {
+    if (chart === 'bar' || tab === 'coding') {
+      // —— 横向柱状图（代码榜无六维数据，始终用柱状） ——
       const top = list.slice(0, 10);
       const min = Math.min.apply(null, top.map(e => e.score)) - 12;
       const max = Math.max.apply(null, top.map(e => e.score)) + 4;
@@ -120,40 +115,53 @@ const Pages = (() => {
           '<text x="' + (labelW + barW(e.score) + 7) + '" y="' + (y + 16) + '" class="rk-score">' + e.score + '</text>';
       });
       chartBox.innerHTML = svg + '</svg>';
+    } else {
+      // —— 雷达图（综合榜 Top5 六维对比） ——
+      const top = list.filter(e => e.dims).slice(0, 5);
+      const C = 150, R = 96, cx = C, cy = 128, axes = MODEL_RANK.axes, n = axes.length;
+      const pt = (i, v) => {
+        const a = -Math.PI / 2 + i * 2 * Math.PI / n;
+        return [cx + Math.cos(a) * R * v / 100, cy + Math.sin(a) * R * v / 100];
+      };
+      let svg = '<svg viewBox="0 0 300 260" class="rank-svg radar">';
+      [25, 50, 75, 100].forEach(r => {
+        svg += '<polygon points="' + axes.map((_, i) => pt(i, r).join(',')).join(' ') + '" class="rk-ring"></polygon>';
+      });
+      axes.forEach((ax, i) => {
+        const p = pt(i, 100), lp = pt(i, 118);
+        svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0] + '" y2="' + p[1] + '" class="rk-axis"></line>' +
+          '<text x="' + lp[0] + '" y="' + lp[1] + '" class="rk-axlabel" text-anchor="middle" dominant-baseline="middle">' + ax + '</text>';
+      });
+      top.forEach((e, k) => {
+        svg += '<polygon points="' + e.dims.map((v, i) => pt(i, v).join(',')).join(' ') +
+          '" fill="' + RANK_COLORS[k] + '" fill-opacity="0.10" stroke="' + RANK_COLORS[k] + '" stroke-width="1.8"></polygon>';
+      });
+      svg += '</svg>';
+      chartBox.innerHTML = svg +
+        '<div class="rk-legend">' + top.map((e, k) =>
+          '<span class="rk-legend-item"><i style="background:' + RANK_COLORS[k] + '"></i>' + esc(e.name) + '</span>').join('') + '</div>';
     }
 
+    // —— 榜单行（点击进详情） ——
     listBox.innerHTML = list.map((e, i) => {
       const m = inCatalog(e.id);
-      let radarHtml = '';
-      if (e.dims && e.dims.length === 6) {
-        const sz = 48, cx = sz/2, cy = sz/2, R = sz/2 - 4;
-        const pt = (i, v) => {
-          const a = -Math.PI / 2 + i * 2 * Math.PI / 6;
-          return [cx + Math.cos(a) * R * v / 100, cy + Math.sin(a) * R * v / 100];
-        };
-        let svg = '<svg viewBox="0 0 ' + sz + ' ' + sz + '" class="rk-mini-radar">';
-        [50, 100].forEach(r => {
-          svg += '<polygon points="' + [0,1,2,3,4,5].map(i => pt(i, r).join(',')).join(' ') + '" class="rk-mini-ring"></polygon>';
-        });
-        svg += '<polygon points="' + e.dims.map((v, i) => pt(i, v).join(',')).join(' ') +
-          '" fill="var(--accent)" fill-opacity="0.25" stroke="var(--accent)" stroke-width="1"></polygon>';
-        svg += '</svg>';
-        radarHtml = svg;
-      }
       return '<button class="rank-row" data-rankmodel="' + e.id + '"' + (m ? '' : ' disabled') + ' title="' + (m ? '点击查看详情' : '本站暂未收录') + '">' +
         '<span class="rk-no' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</span>' +
         providerIconHtml(e.provider, 20) +
         '<span class="rk-name">' + esc(e.name) + '</span>' +
         '<span class="rk-provider">' + esc(e.provider) + '</span>' +
-        (radarHtml ? '<span class="rk-radar-wrap">' + radarHtml + '</span>' : '') +
         '<span class="rk-score-badge">' + e.score + '</span></button>';
     }).join('');
   }
 
   function bindRankEvents() {
     $('#modelsList').addEventListener('click', e => {
-      const entry = e.target.closest('#rankEntryRow');
-      if (entry) { openRankPage(); return; }
+      const tabBtn = e.target.closest('[data-ranktab]');
+      if (tabBtn) { Store.state.rankTab = tabBtn.dataset.ranktab; Store.save(); renderModels(); return; }
+      const chBtn = e.target.closest('[data-rankchart]');
+      if (chBtn) { Store.state.rankChart = chBtn.dataset.rankchart; Store.save(); renderModels(); return; }
+      const toggle = e.target.closest('#rankToggle');
+      if (toggle) { Store.state.rankExpanded = !Store.state.rankExpanded; Store.save(); renderModels(); return; }
       const row = e.target.closest('[data-rankmodel]');
       if (row && !row.disabled) { openModelInfo(row.dataset.rankmodel); return; }
       const fold = e.target.closest('[data-depfold]');
@@ -183,73 +191,6 @@ const Pages = (() => {
         }, 120);
       }
     });
-  }
-
-  function openRankPage() {
-    let page = $('#rankPage');
-    if (!page) {
-      page = document.createElement('div');
-      page.id = 'rankPage';
-      page.className = 'page rank-page';
-      page.innerHTML =
-        '<div class="page-header">' +
-          '<button class="page-back" id="rankPageBack"><span data-icon="chevronRight"></span></button>' +
-          '<h2>模型排行榜</h2>' +
-        '</div>' +
-        '<div class="page-body rank-page-body" id="rankPageBody"></div>';
-      document.body.appendChild(page);
-      $('#rankPageBack').addEventListener('click', () => page.classList.remove('show'));
-    }
-    Store.state.rankTab = Store.state.rankTab || 'overall';
-    renderRankPageContent();
-    page.classList.add('show');
-  }
-
-  function renderRankPageContent() {
-    const tab = Store.state.rankTab || 'overall';
-    const body = $('#rankPageBody');
-    if (!body) return;
-    const tabs = [
-      {key:'overall', label:'综合榜'},
-      {key:'coding', label:'代码榜'},
-      {key:'english', label:'英文榜'},
-      {key:'hard', label:'困难提示'},
-      {key:'chinese', label:'中文榜'},
-      {key:'multiturn', label:'多轮对话'},
-      {key:'creative', label:'创意写作'},
-      {key:'math', label:'数学榜'},
-      {key:'instruct', label:'指令遵循'},
-      {key:'japanese', label:'日语榜'},
-      {key:'korean', label:'韩语榜'},
-    ];
-    const nav = tabs.map(t => '<button class="rank-nav-item' + (tab === t.key ? ' active' : '') + '" data-ranktab="' + t.key + '">' + t.label + '</button>').join('');
-    body.innerHTML =
-      '<div class="rank-layout">' +
-        '<div class="rank-sidebar">' + nav + '</div>' +
-        '<div class="rank-main">' +
-          '<div class="rank-chart" id="rankChart"></div>' +
-          '<div class="rank-list" id="rankList"></div></div></div>';
-    drawRankChart();
-    // 绑定导航点击
-    body.querySelectorAll('[data-ranktab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        Store.state.rankTab = btn.dataset.ranktab;
-        Store.save();
-        renderRankPageContent();
-      });
-    });
-    // 绑定模型行点击
-    const listBox = $('#rankList');
-    if (listBox) {
-      listBox.addEventListener('click', e => {
-        const row = e.target.closest('[data-rankmodel]');
-        if (row && !row.disabled) {
-          const id = row.dataset.rankmodel;
-          const m = getModel(id);
-          if (m) openModelInfo(id);
-        }
-      });
-    }
   }
 
   /* ==================== 模型详情弹窗 ==================== */
@@ -1060,6 +1001,13 @@ const Pages = (() => {
     renderRowDescs();
     renderAboutSection();
     updateInstallRow();
+    // 更新垃圾回收站描述
+    const trashDesc = $('#trashRowDesc');
+    if (trashDesc) {
+      const trash = Store.state.trash || [];
+      const autoClean = trash.filter(c => Date.now() - c.deletedAt > 30 * 24 * 60 * 60 * 1000).length;
+      trashDesc.textContent = '已删除 ' + trash.length + ' 条' + (autoClean > 0 ? '（' + autoClean + ' 条即将清理）' : '');
+    }
   }
 
   /* 我的页条目右侧状态描述 */
@@ -1721,103 +1669,6 @@ const Pages = (() => {
     });
   }
 
-  /* ==================== 回收站 ==================== */
-  function renderTrash() {
-    const trash = Store.state.trash || { chats: [], apiKeys: [], items: [], clearedAt: 0 };
-    const chatsList = $('#trashChatsList');
-    if (chatsList) {
-      if (trash.chats && trash.chats.length) {
-        chatsList.innerHTML = trash.chats.map(c =>
-          '<div class="settings-row" style="justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);">' +
-          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;">' + esc(c.title || '未命名对话') + '<span style="font-size:12px;color:var(--text-3);margin-left:8px;">' + fmtDate(c.deletedAt) + '</span></span>' +
-          '<span style="display:flex;gap:8px;flex-shrink:0;">' +
-          '<button class="btn btn-sm" data-trash-restore="chat" data-id="' + c.id + '">恢复</button>' +
-          '<button class="btn btn-sm btn-danger" data-trash-del="chat" data-id="' + c.id + '">删除</button>' +
-          '</span></div>').join('');
-      } else {
-        chatsList.innerHTML = '<div style="padding:16px;color:var(--text-3);font-size:14px;text-align:center;">暂无已删除的对话</div>';
-      }
-    }
-    const keysList = $('#trashKeysList');
-    if (keysList) {
-      if (trash.apiKeys && trash.apiKeys.length) {
-        keysList.innerHTML = trash.apiKeys.map(k =>
-          '<div class="settings-row" style="justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);">' +
-          '<span>' + esc(k.provider || '未知厂商') + '<span style="font-size:12px;color:var(--text-3);margin-left:8px;">' + fmtDate(k.deletedAt) + '</span></span>' +
-          '<span style="display:flex;gap:8px;flex-shrink:0;">' +
-          '<button class="btn btn-sm" data-trash-restore="key" data-id="' + k.id + '">恢复</button>' +
-          '<button class="btn btn-sm btn-danger" data-trash-del="key" data-id="' + k.id + '">删除</button>' +
-          '</span></div>').join('');
-      } else {
-        keysList.innerHTML = '<div style="padding:16px;color:var(--text-3);font-size:14px;text-align:center;">暂无已删除的 Key</div>';
-      }
-    }
-    const emptyBtn = $('#trashEmptyBtn');
-    if (emptyBtn) {
-      const hasAny = (trash.chats && trash.chats.length) || (trash.apiKeys && trash.apiKeys.length);
-      emptyBtn.style.display = hasAny ? 'block' : 'none';
-    }
-  }
-
-  function bindTrashEvents() {
-    const trashRow = document.querySelector('[data-sub="subTrash"]');
-    if (trashRow) trashRow.addEventListener('click', () => renderTrash());
-    const trashBody = $('#subTrashBody');
-    if (trashBody) {
-      trashBody.addEventListener('click', e => {
-        const restoreBtn = e.target.closest('[data-trash-restore]');
-        const delBtn = e.target.closest('[data-trash-del]');
-        const emptyBtn = e.target.closest('#trashEmptyBtn');
-        if (restoreBtn) {
-          const type = restoreBtn.dataset.trashRestore;
-          const id = restoreBtn.dataset.id;
-          const trash = Store.state.trash || { chats: [], apiKeys: [], items: [], clearedAt: 0 };
-          if (type === 'chat') {
-            const idx = trash.chats.findIndex(c => c.id === id);
-            if (idx >= 0) {
-              const chat = trash.chats.splice(idx, 1)[0];
-              delete chat.deletedAt;
-              Store.state.chats.push(chat);
-              Store.save();
-            }
-          } else if (type === 'key') {
-            const idx = trash.apiKeys.findIndex(k => k.id === id);
-            if (idx >= 0) {
-              const key = trash.apiKeys.splice(idx, 1)[0];
-              delete key.deletedAt;
-              Store.state.apiKeys[key.provider] = key.value;
-              Store.save();
-            }
-          }
-          renderTrash();
-          Toast.success('已恢复');
-          if (type === 'chat') UI.renderSidebar();
-          return;
-        }
-        if (delBtn) {
-          const type = delBtn.dataset.trashDel;
-          const id = delBtn.dataset.id;
-          const trash = Store.state.trash || { chats: [], apiKeys: [], items: [], clearedAt: 0 };
-          if (type === 'chat') trash.chats = trash.chats.filter(c => c.id !== id);
-          else if (type === 'key') trash.apiKeys = trash.apiKeys.filter(k => k.id !== id);
-          Store.save();
-          renderTrash();
-          Toast.success('已彻底删除');
-          return;
-        }
-        if (emptyBtn) {
-          confirmDialog('清空回收站', '确定彻底清空回收站？此操作不可恢复。', true).then(ok => {
-            if (!ok) return;
-            Store.state.trash = { chats: [], apiKeys: [], items: [], clearedAt: Date.now() };
-            Store.save();
-            renderTrash();
-            Toast.success('回收站已清空');
-          });
-        }
-      });
-    }
-  }
-
   /* ---- 关于 ---- */
   function renderAboutSection() {
     $$('#aboutVersion, #aboutVersionSub').forEach(el => { el.textContent = 'v' + APP_VERSION; });
@@ -1877,37 +1728,22 @@ const Pages = (() => {
 
   /* ---- 更新日志弹窗（时间线，默认折叠：仅最新版本展开） ---- */
   function renderChangelogModal() {
-    const order = window.changelogModalOrder || 'desc';
-    const entries = order === 'desc' ? [...CHANGELOG].reverse() : [...CHANGELOG];
-    const btnLabel = order === 'desc' ? '↓ 新→旧' : '↑ 旧→新';
-    $('#changelogModalBody').innerHTML =
-      '<div style="display:flex;justify-content:flex-end;padding:0 0 8px;">' +
-      '<button id="changelog-modal-order-btn" style="padding:4px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-soft);font-size:13px;cursor:pointer;color:var(--text);">' + esc(btnLabel) + '</button>' +
-      '</div>' +
-      '<div class="timeline">' + entries.map((c, idx) =>
-        '<div class="tl-item' + (c.major ? ' major' : '') + (idx === 0 ? ' open' : '') + '">' +
-        '<div class="tl-dot"></div>' +
-        '<div class="tl-card">' +
-        '<button class="tl-head tl-toggle" type="button">' +
-        '<span class="tl-ver">v' + esc(c.version) + '</span>' +
-        (c.major ? '<span class="tl-badge">里程碑</span>' : '') +
-        '<span class="tl-summary">' + c.items.length + ' ' + I18n.t('cl.items') + '</span>' +
-        '<span class="tl-date">' + esc(c.date) + '</span>' +
-        '<span class="tl-caret">' + icon('chevronDown', 14) + '</span></button>' +
-        '<ul class="tl-list">' + c.items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>' +
-        '</div></div>').join('') + '</div>';
-    const btn = $('#changelog-modal-order-btn');
-    if (btn) {
-      btn.onclick = () => {
-        window.changelogModalOrder = order === 'desc' ? 'asc' : 'desc';
-        renderChangelogModal();
-      };
-    }
+    $('#changelogModalBody').innerHTML = '<div class="timeline">' + CHANGELOG.map((c, idx) =>
+      '<div class="tl-item' + (c.major ? ' major' : '') + (idx === 0 ? ' open' : '') + '">' +
+      '<div class="tl-dot"></div>' +
+      '<div class="tl-card">' +
+      '<button class="tl-head tl-toggle" type="button">' +
+      '<span class="tl-ver">v' + esc(c.version) + '</span>' +
+      (c.major ? '<span class="tl-badge">里程碑</span>' : '') +
+      '<span class="tl-summary">' + c.items.length + ' ' + I18n.t('cl.items') + '</span>' +
+      '<span class="tl-date">' + esc(c.date) + '</span>' +
+      '<span class="tl-caret">' + icon('chevronDown', 14) + '</span></button>' +
+      '<ul class="tl-list">' + c.items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>' +
+      '</div></div>').join('') + '</div>';
   }
 
   function bindChangelogEvents() {
     $('#changelogRow').addEventListener('click', () => {
-      window.changelogModalOrder = 'desc';
       renderChangelogModal();
       $('#changelogModal').classList.add('show');
     });
@@ -2185,6 +2021,9 @@ const Pages = (() => {
   /* ---- 编辑资料页事件（一次性绑定；页内元素在 renderProfileEdit 后各自绑定） ---- */
   function bindProfileEditEvents() {
     $('#profileCard').addEventListener('click', () => openSub('subProfileEdit'));
+    // 垃圾回收站入口
+    const trashRow = $('#trashRow');
+    if (trashRow) trashRow.addEventListener('click', showTrashModal);
     $('#peAvatarFile').addEventListener('change', onPeAvatarFile);
     // 返回时有未提示的改动 → Toast 一次（subpage-back 的关闭逻辑在 bindSubpageEvents 统一绑定）
     $('#subProfileEdit .subpage-back').addEventListener('click', () => {
@@ -2292,7 +2131,7 @@ const Pages = (() => {
   }
 
   function bindProfileEvents() {
-    bindKeyEvents(); bindThemeEvents(); bindPluginEvents(); bindDataEvents(); bindTrashEvents(); bindProfileEditEvents(); bindChangelogEvents();
+    bindKeyEvents(); bindThemeEvents(); bindPluginEvents(); bindDataEvents(); bindProfileEditEvents(); bindChangelogEvents();
     bindSubpageEvents(); bindVoiceEvents(); bindAsrEvents(); bindLangEvents(); bindHelpEvents(); bindVoiceStudioEvents();
     $('#installRow').addEventListener('click', () => { if (window.AppInstall) AppInstall.prompt(); });
     $('#logoutBtn').addEventListener('click', () => {
@@ -2362,3 +2201,38 @@ function renderProxySection() {
     });
   });
 }
+
+  /* ---------- 垃圾回收站弹窗 ---------- */
+  function showTrashModal() {
+    const trash = Store.state.trash || [];
+    const now = Date.now();
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    let html = '<div class="trash-list">';
+    if (!trash.length) {
+      html += '<div class="trash-empty">回收站为空</div>';
+    } else {
+      trash.forEach(c => {
+        const daysLeft = Math.ceil((thirtyDays - (now - c.deletedAt)) / (24 * 60 * 60 * 1000));
+        html += '<div class="trash-item" data-id="' + c.id + '">' +
+          '<span class="trash-title">' + esc(c.title || '新对话') + '</span>' +
+          '<span class="trash-meta">' + (daysLeft > 0 ? daysLeft + '天后清理' : '即将清理') + '</span>' +
+          '<button class="trash-restore" data-restore="' + c.id + '">恢复</button>' +
+          '</div>';
+      });
+    }
+    html += '</div>';
+    confirmDialog('垃圾回收站', html, false).then(() => {});
+    setTimeout(() => {
+      $$('.trash-restore').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const id = btn.dataset.restore;
+          if (restoreFromTrash(id)) {
+            Toast.success('已恢复');
+            btn.closest('.trash-item').remove();
+          }
+        });
+      });
+    }, 100);
+  }
+
