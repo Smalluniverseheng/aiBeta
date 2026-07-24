@@ -1032,3 +1032,28 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
   padding: 12px 16px;
   overflow-y: auto;
 }
+
+/* ==================== 报错中心 ==================== */
+.error-log-item {
+  transition: background .15s ease;
+}
+.error-log-item:active {
+  background: var(--bg-hover);
+}
+.error-log-item:last-child {
+  border-bottom: none;
+}
+#subErrorCenterBody .btn-block {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-align: center;
+}
+#subErrorCenterBody .btn-danger {
+  background: var(--danger);
+  color: #fff;
+}

@@ -12,6 +12,50 @@ const UI = (() => {
     };
   }
 
+  /* ==================== 全局错误捕获（报错中心） ==================== */
+  (function initErrorCenter() {
+    const MAX_LOGS = 100;
+    function pushError(type, msg, detail) {
+      try {
+        const logs = (Store && Store.state && Store.state.errorLogs) || [];
+        logs.unshift({
+          id: 'err_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          time: Date.now(),
+          type: type,
+          msg: String(msg).slice(0, 500),
+          detail: String(detail || '').slice(0, 2000),
+          url: location.href,
+          ua: navigator.userAgent.slice(0, 200)
+        });
+        while (logs.length > MAX_LOGS) logs.pop();
+        if (Store && Store.state) {
+          Store.state.errorLogs = logs;
+          Store.save();
+        }
+      } catch (e) {}
+    }
+    window.onerror = function(msg, url, line, col, err) {
+      const detail = err && err.stack ? err.stack : (url + ':' + line + ':' + col);
+      pushError('JS Error', msg, detail);
+      if (window.Toast) Toast.error('出错了，请去「设置 → 报错中心」查看详情');
+      return true;
+    };
+    window.onunhandledrejection = function(e) {
+      pushError('Unhandled Promise', e.reason, e.reason && e.reason.stack ? e.reason.stack : '');
+      if (window.Toast) Toast.error('出错了，请去「设置 → 报错中心」查看详情');
+      return true;
+    };
+    const origError = console.error;
+    console.error = function(...args) {
+      const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+      if (msg.includes('Error') || msg.includes('error') || msg.includes('失败') || msg.includes('Fail')) {
+        pushError('Console Error', msg.slice(0, 200), msg.slice(0, 1000));
+      }
+      origError.apply(console, args);
+    };
+    window.pushErrorLog = pushError;
+  })();
+
   let msgObserverBound = false;
   const scheduleRender = {}; // msgId -> rAF 调度器
 
@@ -1544,13 +1588,93 @@ const UI = (() => {
     });
   }
 
+
+  /* ==================== 报错中心函数 ==================== */
+  function renderErrorCenter() {
+    const logs = Store.state.errorLogs || [];
+    const list = document.getElementById('errorLogsList');
+    const desc = document.getElementById('errorCenterDesc');
+    if (desc) desc.textContent = logs.length ? logs.length + ' 条报错' : '暂无报错';
+    if (!list) return;
+    if (!logs.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:14px;">暂无报错记录<br><span style="font-size:12px;">系统运行正常</span></div>';
+      const clearBtn = document.getElementById('errorClearBtn');
+      const copyBtn = document.getElementById('errorCopyBtn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      if (copyBtn) copyBtn.style.display = 'none';
+      return;
+    }
+    const clearBtn = document.getElementById('errorClearBtn');
+    const copyBtn = document.getElementById('errorCopyBtn');
+    if (clearBtn) clearBtn.style.display = 'block';
+    if (copyBtn) copyBtn.style.display = 'block';
+    list.innerHTML = logs.map((log, idx) => {
+      const time = window.fmtDate ? window.fmtDate(log.time) : new Date(log.time).toLocaleString();
+      const typeColor = log.type === 'JS Error' ? 'var(--danger)' : (log.type === 'Unhandled Promise' ? 'var(--warn)' : 'var(--text-3)');
+      return '<div class="error-log-item" style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;" data-err-idx="' + idx + '">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+          '<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:' + typeColor + ';color:#fff;font-weight:600;">' + log.type + '</span>' +
+          '<span style="font-size:12px;color:var(--text-3);flex:1;">' + time + '</span>' +
+        '</div>' +
+        '<div style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + log.msg + '</div>' +
+        '<div class="error-log-detail" style="display:none;margin-top:6px;padding:8px;background:var(--bg-soft);border-radius:6px;font-size:12px;color:var(--text-2);font-family:monospace;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;">' + log.detail + '</div>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.error-log-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const detail = item.querySelector('.error-log-detail');
+        if (detail) detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+  }
+
+  function bindErrorCenterEvents() {
+    const row = document.querySelector('[data-sub="subErrorCenter"]');
+    if (row) row.addEventListener('click', () => renderErrorCenter());
+    const copyBtn = document.getElementById('errorCopyBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const logs = Store.state.errorLogs || [];
+        if (!logs.length) return Toast.warning('暂无报错可复制');
+        const text = logs.map(l => {
+          return '[' + (window.fmtDate ? window.fmtDate(l.time) : new Date(l.time).toLocaleString()) + '] [' + l.type + '] ' + l.msg + '
+' + l.detail + '
+URL: ' + l.url + '
+---';
+        }).join('
+');
+        navigator.clipboard.writeText(text).then(() => Toast.success('已复制到剪贴板')).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          Toast.success('已复制到剪贴板');
+        });
+      });
+    }
+    const clearBtn = document.getElementById('errorClearBtn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        confirmDialog('清空报错日志', '确定清空所有报错记录吗？', true).then(ok => {
+          if (!ok) return;
+          Store.state.errorLogs = [];
+          Store.save();
+          renderErrorCenter();
+          Toast.success('已清空');
+        });
+      });
+    }
+  }
   return {
     showLogin, showApp, navigate, init,
     renderSidebar, renderChat, renderWelcome, appendMsg,
     setMsgContent, setMsgThinking, setMsgToolCalls, finishMsg, setMsgError,
     updateModelSel, updateModeSel, renderModeConfig, renderChips, syncAttachBtn,
     setSending, renderAttachments, updateMicBtn, updateWebSearchBtn, updateSpeakButtons,
-    scrollToBottom, applyTheme, userAvatarHtml, avatarView, AVATAR_GRADS, openLightbox
+    scrollToBottom, applyTheme, userAvatarHtml, avatarView, AVATAR_GRADS, openLightbox,
+    bindErrorCenterEvents
   };
 
   /* ==================== 多选管理 ==================== */

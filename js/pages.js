@@ -2292,7 +2292,7 @@ const Pages = (() => {
   }
 
   function bindProfileEvents() {
-    bindKeyEvents(); bindThemeEvents(); bindPluginEvents(); bindDataEvents(); bindTrashEvents(); bindProfileEditEvents(); bindChangelogEvents();
+    bindKeyEvents(); bindThemeEvents(); bindPluginEvents(); bindDataEvents(); bindTrashEvents(); UI.bindErrorCenterEvents(); bindErrorCenterEvents(); bindProfileEditEvents(); bindChangelogEvents();
     bindSubpageEvents(); bindVoiceEvents(); bindAsrEvents(); bindLangEvents(); bindHelpEvents(); bindVoiceStudioEvents();
     $('#installRow').addEventListener('click', () => { if (window.AppInstall) AppInstall.prompt(); });
     $('#logoutBtn').addEventListener('click', () => {
@@ -2300,6 +2300,85 @@ const Pages = (() => {
     });
     syncThemeCards();
   }
+  /* ==================== 报错中心 ==================== */
+  function renderErrorCenter() {
+    const logs = Store.state.errorLogs || [];
+    const list = $('#errorLogsList');
+    const desc = $('#errorCenterDesc');
+    if (desc) desc.textContent = logs.length ? logs.length + ' 条报错' : '暂无报错';
+    if (!list) return;
+    if (!logs.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:14px;">暂无报错记录<br><span style="font-size:12px;">系统运行正常</span></div>';
+      const clearBtn = $('#errorClearBtn');
+      const copyBtn = $('#errorCopyBtn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      if (copyBtn) copyBtn.style.display = 'none';
+      return;
+    }
+    const clearBtn = $('#errorClearBtn');
+    const copyBtn = $('#errorCopyBtn');
+    if (clearBtn) clearBtn.style.display = 'block';
+    if (copyBtn) copyBtn.style.display = 'block';
+    list.innerHTML = logs.map((log, idx) => {
+      const time = fmtDate(log.time);
+      const typeColor = log.type === 'JS Error' ? 'var(--danger)' : (log.type === 'Unhandled Promise' ? 'var(--warn)' : 'var(--text-3)');
+      return '<div class="error-log-item" style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;" data-err-idx="' + idx + '">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+          '<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:' + typeColor + ';color:#fff;font-weight:600;">' + esc(log.type) + '</span>' +
+          '<span style="font-size:12px;color:var(--text-3);flex:1;">' + time + '</span>' +
+        '</div>' +
+        '<div style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(log.msg) + '</div>' +
+        '<div class="error-log-detail" style="display:none;margin-top:6px;padding:8px;background:var(--bg-soft);border-radius:6px;font-size:12px;color:var(--text-2);font-family:monospace;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;">' + esc(log.detail) + '</div>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.error-log-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const detail = item.querySelector('.error-log-detail');
+        if (detail) detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+  }
+
+  function bindErrorCenterEvents() {
+    const row = document.querySelector('[data-sub="subErrorCenter"]');
+    if (row) row.addEventListener('click', () => renderErrorCenter());
+    const copyBtn = $('#errorCopyBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const logs = Store.state.errorLogs || [];
+        if (!logs.length) return Toast.warning('暂无报错可复制');
+        const text = logs.map(l => {
+          return '[' + fmtDate(l.time) + '] [' + l.type + '] ' + l.msg + '
+' + l.detail + '
+URL: ' + l.url + '
+---';
+        }).join('
+');
+        navigator.clipboard.writeText(text).then(() => Toast.success('已复制到剪贴板')).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          Toast.success('已复制到剪贴板');
+        });
+      });
+    }
+    const clearBtn = $('#errorClearBtn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        confirmDialog('清空报错日志', '确定清空所有报错记录吗？', true).then(ok => {
+          if (!ok) return;
+          Store.state.errorLogs = [];
+          Store.save();
+          renderErrorCenter();
+          Toast.success('已清空');
+        });
+      });
+    }
+  }
+
 
   function init() {
     bindModelsEvents();

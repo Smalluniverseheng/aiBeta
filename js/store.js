@@ -41,6 +41,7 @@ const Store = (() => {
     sidebarCollapsed: false,
     recentModels: [],
     tokenStats: { byModel: {}, updatedAt: 0 },  // Token 用量统计（js/token.js 读写，重置不影响其他字段）
+    errorLogs: [],  // 报错中心日志（全局错误捕获存储）
     trash: { chats: [], apiKeys: [], items: [], clearedAt: 0 },  // 回收站：已删除的对话/Key/数据
     cloudUser: null,        // 云端账号 {id, email, name, isAdmin}（js/supabase.js；游客/本地账号为 null）
     cloudMap: {},           // 会话映射 {本地会话id: 云端uuid}（管理员全量同步用）
