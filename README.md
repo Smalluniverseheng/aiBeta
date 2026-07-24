@@ -1,116 +1,129 @@
-# 第三方科技 · AI 智能聚合平台
+# 🔧 后端服务分支
 
-一个**纯前端、零后端依赖**的 AI 对话聚合应用。接入 23 家厂商 **270+ 模型**，支持单模型对话、多模型并行对比、AI 辩论、多模型协同四种模式，可作为 **PWA 应用**安装到手机/电脑桌面。
+> **这是 AI 聚合平台的「后端服务」专用分支。**
+> 前端代码在 `production` 分支维护，本分支只存放后端基础设施。
 
-**在线体验**：https://smalluniverseheng.github.io/AI/
+---
 
-## 功能总览
+## 分支职责
 
-| 模块 | 能力 |
+| 分支 | 用途 |
 |------|------|
-| 对话模式 | 单模型 / 多模型并行（同题竞技）/ 辩论（立论·攻辩·自由辩·总结·裁判点评）/ 协同（主持人拆解→协作者并行→评审修订→汇总） |
-| 模型生态 | 23 家厂商 270+ 模型，官方品牌图标（Lobe Icons），按厂商分组搜索，识图/思考/长文标签 |
-| 语音 | 语音输入（SpeechRecognition）+ AI 回复朗读（TTS，可选声音与语速） |
-| 文件 | 图片（视觉模型）、PDF / Word / TXT / Markdown / CSV / 代码文件解析后提问 |
-| AI 绘画 | OpenAI DALL·E / 火山引擎 Seedream / 通义万相，文字生成图片 |
-| 联网搜索 | Tavily 搜索注入，回答附带真实来源 |
-| 角色预设 | 30 个精品助手预设（学习助教、英语教练、编程专家、辩论教练…），支持自定义角色 |
-| 插件库 | 联网搜索 / GitHub 连接器 / 腾讯云托管 / 开源生态导览 |
-| 技能库 | 15 个 Prompt 技能模板 + 自定义技能 |
-| PWA | manifest + Service Worker，可安装、离线可用、桌面图标 |
-| 设备适配 | 电脑横向宽屏 / 手机竖屏 / 手表小屏（1:1、4:3）三端独立界面，语音优先 |
-| 数据 | 全量本地存储，对话导出/导入、Key 批量导入导出、全量备份恢复；云端同步（Supabase） |
-| 主题 | 亮色 / 暗色 / 跟随系统，七语言界面（简/繁/英/法/西/俄/阿） |
+| `production` | 前端代码（HTML/CSS/JS），GitHub Pages 部署 |
+| `preview` | 线上预览，同步 production |
+| `后端` | **本分支**，Cloudflare Worker + Supabase 后端服务 |
 
-## 设备分级
+---
 
-`js/device.js` 在页面绘制前完成设备识别（UA + 视口双重判定），给 `<html>` 打上
-`data-device="watch | mobile | desktop"` 标记，三套界面据此切换：
-
-- **desktop**（电脑）：侧边栏 + 宽屏横向布局，≥1400px 自动加宽对话区与网格
-- **mobile**（手机）：抽屉式侧边栏 + 底部导航，竖屏触控优化
-- **watch**（手表）：≤340px 或手表 UA 触发。极简单栏、大触控点、麦克风优先、
-  圆屏安全边距、强制单模型模式；兼容 Apple Watch（`disabled-adaptations` 真实视口）与 Wear OS 圆表
-
-## 快速开始
-
-```bash
-# 本地运行（任意静态服务器）
-python -m http.server 8000
-# 访问 http://localhost:8000
-```
-
-配置 API Key：登录后进入 **我的 → API Key 管理**，按厂商填写；支持 `slug=key` 每行一条的 txt 批量导入。
-
-## 技术架构
+## 后端架构
 
 ```
-纯静态：HTML + CSS + Vanilla JS（ES6+），无构建步骤
-存储：localStorage（Store 模块统一收口）+ 可选 Supabase 云端同步
-图标：Lobe Icons 官方品牌图标（npmmirror CDN 国内加速）+ 内置 SVG 图标
-可选 CDN 增强：KaTeX（公式）、pdf.js（PDF 解析）、mammoth（Word 解析）
-后端：Cloudflare Worker（TypeScript）+ Supabase（PostgreSQL + pgvector）
+用户浏览器 ──→ Cloudflare Worker ──→ 厂商 API (OpenAI/Claude/DeepSeek/...)
+                    │
+                    ├──→ Supabase (Auth + PostgreSQL + pgvector)
+                    │
+                    └──→ Cloudflare R2 (文件存储)
 ```
 
+---
+
+## 目录结构
+
 ```
-├── index.html          # 入口
-├── manifest.json       # PWA 清单
-├── sw.js               # Service Worker（离线缓存）
-├── icons/              # 应用图标
-├── css/                # base / layout / components / chat / login / pages / watch
-└── js/
-    ├── icons.js        # 内置 SVG 图标库
-    ├── models.js       # 270+ 模型数据（★ 嵌入式维护，见文件头说明）
-    ├── changelog.js    # 更新日志数据（★ 添加式维护，数组头部加一条即可）
-    ├── modelsync.js    # 模型实时同步 + 目录合并层
-    ├── providers.js    # 23 家厂商配置（API 适配/图标/Key）
-    ├── store.js        # 状态与本地存储（★ 后端接入点）
-    ├── api.js          # 统一 API 网关（★ 后端接入点）
-    ├── api-v2.js       # Worker 客户端（服务器代理模式）
-    ├── supabase.js     # Supabase 云端同步客户端
-    ├── chat.js         # 四种对话模式编排
-    ├── ui.js / pages.js# 渲染层 / 页面
-    ├── voice.js / files.js / presets.js / auth.js / markdown.js / util.js / app.js
+后端/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # GitHub Actions 自动部署 Worker
+├── worker/                      # Cloudflare Worker 代码
+│   ├── src/
+│   │   ├── index.ts            # Worker 入口
+│   │   ├── router.ts           # 路由分发
+│   │   └── routes/             # 各功能路由
+│   │       ├── chat.ts         # AI 对话代理
+│   │       ├── multi.ts        # 多模型并行
+│   │       ├── search.ts       # 联网搜索
+│   │       ├── image.ts        # AI 绘画
+│   │       ├── vector.ts       # 向量检索 (RAG)
+│   │       ├── storage.ts      # 文件上传
+│   │       ├── keys.ts         # API Key 管理
+│   │       └── health.ts       # 健康检查
+│   ├── wrangler.toml           # Worker 配置
+│   └── package.json
+├── supabase/
+│   └── migrations/
+│       └── 001_initial.sql     # 数据库初始化 (6表 + RLS + pgvector)
+├── js/                          # 前端对接参考代码
+│   ├── api-v2.js               # 前端调用 Worker 的 API 客户端
+│   └── api-keys.js             # API Key 管理前端逻辑
+└── .ai-handoff/                 # 项目交接文档
 ```
 
-## 接入后端（预留）
-
-代码已为服务端化预留两个接缝，前端 UI 无需改动：
-
-1. **API 网关**：`js/api.js` 顶部 `CONFIG.BACKEND_URL`，设置为你的服务端地址后，所有模型请求可改走服务端代理（Key 不再暴露于浏览器）。
-2. **存储层**：`js/store.js` 的 `load()/save()` 是所有持久化的唯一入口，替换为服务端同步即可实现跨设备数据同步。
-3. **账号体系**：`js/auth.js` 的 `login/register/logout` 替换为服务端接口即可。
+---
 
 ## 部署
 
-推送到 `production` 分支，GitHub Pages 自动部署（约 1-2 分钟生效）。
+### 手动部署
 
-## 维护指南
+```bash
+cd worker
+npm install -g wrangler@3.65.0
+wrangler deploy
+```
 
-- **更新模型**：编辑 `js/models.js`（字段说明见文件头注释），保存即生效；也可在「模型」页点**同步模型**按钮，从已配置 Key 的厂商实时拉取最新列表（自动标记新增/下架）。
-- **更新日志**：编辑 `js/changelog.js`，在数组最前面加一条 `{ version, date, major, items }` 即可，界面「我的 → 更新日志」自动展示。
+### 自动部署
 
-## 版本历史
+推送到本分支 → GitHub Actions 自动部署到 Cloudflare。
 
-| 版本 | 日期 | 核心更新 |
-|------|------|----------|
-| **v4.2** | 2026-07-24 | 排行榜改为独立页面（发现页入口跳转），左侧 11 分类导航 + 右侧图表与榜单 |
-| v4.1 | 2026-07-24 | 排行榜 UI 重构：分类导航 + 雷达图/柱状图实时渲染，修复雷达图 axes 错误 |
-| v4.0 | 2026-07-24 | 模型排行榜扩展至 50 名综合榜 + 10 个分类榜单（代码/英文/中文/数学等），六维评分体系 |
-| v3.9 | 2026-07-24 | 多选管理（批量删除/置顶/恢复），手表端长按菜单修复 |
-| v3.8 | 2026-07-24 | 回收站功能（对话与 API Key 删除后移入回收站，支持恢复/彻底删除） |
-| v3.7 | 2026-07-23 | 版本号统一规范化（全站对齐 x.y 格式），时间轴严格升序排列 |
-| v3.0 | 2026-07-19 | **云端后端上线**：Supabase 账号体系、聊天记录云端同步、AES-GCM 加密 API Key |
-| v2.9 | 2026-07-18 | 开屏页、插件库（联网/GitHub/腾讯云/开源生态）、技能库（15 个 Prompt 模板）、消息可编辑 |
-| v2.8 | 2026-07-18 | Token 用量统计、翻译独立空间（一对多语种）、侧滑手势、30 秒熔断 |
-| v2.7 | 2026-07-18 | 模型目录扩至 **270+**、排行榜数据校准（LMArena 2026-07）、工具调用卡片、思考面板升级 |
-| v2.6 | 2026-07-17 | 模型目录 230+、排行榜（综合/代码双榜）、模型详情页、角色助手 30 预设、效率工具四件套 |
-| v2.5 | 2026-07-17 | 语音工坊（合成/设计/克隆）、语音引擎切换、七语言界面、帮助中心、Kimi 式侧边栏 |
-| v2.2 | 2026-07-17 | **完全重构**：全新 Kimi 风格 UI、PWA 应用化、官方品牌图标、语音/文件/绘画/联网插件 |
-| v2.0 | 2026-07-15 | 多文件模块化、Kimi 风格 UI 雏形、Lobe Icons、API Key 批量导入导出 |
-| v1.1 | 2026-07-10 | 首次部署上线 GitHub Pages |
-| v1.0 | 2026-06-10 | 项目创立：首个 AI Chat Platform 版本 |
+---
 
-## 当前版本
+## API 端点
 
-**v4.2**（2026-07-24）— 第三方科技 · AI 智能聚合平台
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/v1/chat` | POST | 单模型对话 (SSE) |
+| `/api/v1/chat/multi` | POST | 多模型并行 (SSE) |
+| `/api/v1/search` | POST | 联网搜索 (Tavily) |
+| `/api/v1/image` | POST | AI 绘画 |
+| `/api/v1/vector/search` | POST | 向量检索 (RAG) |
+| `/api/v1/storage/upload` | POST | 文件上传 |
+| `/api/v1/keys` | GET/POST | API Key 管理 |
+| `/api/v1/health` | GET | 健康检查 |
+
+---
+
+## 环境变量
+
+在 Cloudflare Worker 设置以下 Secrets：
+
+```
+SUPABASE_URL
+SUPABASE_SERVICE_KEY
+OPENAI_API_KEY
+ANTHROPIC_API_KEY
+GOOGLE_API_KEY
+DEEPSEEK_API_KEY
+MOONSHOT_API_KEY
+ALIBABA_API_KEY
+BAICHUAN_API_KEY
+ZHIPU_API_KEY
+MINIMAX_API_KEY
+SPARK_API_KEY
+ERNIE_API_KEY
+HUNYUAN_API_KEY
+DOUBAO_API_KEY
+QWEN_API_KEY
+COZE_API_KEY
+GROQ_API_KEY
+COHERE_API_KEY
+MISTRAL_API_KEY
+PERPLEXITY_API_KEY
+TOGETHER_API_KEY
+FIREWORKS_API_KEY
+NOVITA_API_KEY
+SILICONFLOW_API_KEY
+TAVILY_API_KEY
+```
+
+---
+
+*本分支由 AI 维护，人类请勿直接修改前端相关文件。*
