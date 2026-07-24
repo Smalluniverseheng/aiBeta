@@ -1821,7 +1821,7 @@ const Pages = (() => {
   /* ---- 关于 ---- */
   function renderAboutSection() {
     $$('#aboutVersion, #aboutVersionSub').forEach(el => { el.textContent = APP_VERSION; });
-    const latest = CHANGELOG[0];
+    const latest = CHANGELOG[CHANGELOG.length - 1];
     if (latest) $('#changelogRowDesc').textContent = '最新 v' + latest.version + ' · ' + latest.date + '，共 ' + CHANGELOG.length + ' 个版本';
   }
 
