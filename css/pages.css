@@ -1032,3 +1032,16 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
   padding: 12px 16px;
   overflow-y: auto;
 }
+
+/* 排行榜页面返回按钮 */
+.page-back {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-2); transition: all var(--dur);
+  background: none; border: none; cursor: pointer;
+}
+.page-back:hover { background: var(--bg-hover); color: var(--text); }
+.page-back .icon { width: 19px; height: 19px; transform: rotate(180deg); }
+[dir="rtl"] .page-back .icon { transform: none; }
+
+
