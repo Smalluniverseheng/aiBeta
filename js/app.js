@@ -45,7 +45,7 @@
     if (!('serviceWorker' in navigator)) return;
     // file:// 协议下跳过
     if (location.protocol === 'file:') return;
-    navigator.serviceWorker.register('sw.js?v=4.3').then(reg => {
+    navigator.serviceWorker.register('sw.js?v=4.3.1').then(reg => {
       // 有更新时提示刷新
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
