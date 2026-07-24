@@ -288,16 +288,6 @@ const CHANGELOG = [
       '修复雷达图axes未定义错误'
     ]
   },
-  {
-    version: '4.3', date: '2026-07-24', major: false, items: [
-      '品牌图标统一为彩色星球（brand.jpg）',
-      '替换全部图标：favicon.ico / icon-192 / icon-512 / apple-touch-icon / maskable',
-      '添加 favicon.ico 引用，修复浏览器标签页图标不显示',
-      '更新关于平台介绍文字',
-      '修复排行榜页面返回按钮样式',
-      '更新 sw.js 缓存版本触发刷新'
-    ]
-  },
 
   {
     version: '4.2', date: '2026-07-24', major: false, items: [
