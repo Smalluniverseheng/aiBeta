@@ -958,7 +958,7 @@ const Pages = (() => {
     else if (id === 'subAsr') renderAsrSection();
     else if (id === 'subLang') renderLangList();
     else if (id === 'subHelp') renderHelp();
-    else if (id === 'subAbout') $('#aboutVersionSub').textContent = 'v' + APP_VERSION;
+    else if (id === 'subAbout') $('#aboutVersionSub').textContent = APP_VERSION;
     else if (id === 'subTheme') syncThemeCards();
     else if (id === 'subTokens') renderTokens();
     else if (id === 'subSync') renderSyncSection();
@@ -1820,7 +1820,7 @@ const Pages = (() => {
 
   /* ---- 关于 ---- */
   function renderAboutSection() {
-    $$('#aboutVersion, #aboutVersionSub').forEach(el => { el.textContent = 'v' + APP_VERSION; });
+    $$('#aboutVersion, #aboutVersionSub').forEach(el => { el.textContent = APP_VERSION; });
     const latest = CHANGELOG[CHANGELOG.length - 1];
     if (latest) $('#changelogRowDesc').textContent = '最新 v' + latest.version + ' · ' + latest.date + '，共 ' + CHANGELOG.length + ' 个版本';
   }
