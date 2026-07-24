@@ -250,47 +250,44 @@ const CHANGELOG = [
       '统一版本号规则：全站版本号统一为 x.y 格式，禁止 x.y.z 三级版本号',
       '修正版本号不一致：providers.js / index.html / sw.js / changelog.js 全部对齐到 3.7'
     ]
-  },
-  {
-    version: '3.8', date: '2026-07-24', major: false, items: [
-      '修复代理模式入口UI：改为与API Key管理一致的列表行样式（图标+标题/描述+箭头）',
-      '新增回收站功能：删除的对话和API Key移入回收站，支持恢复或彻底删除',
-      '回收站子页面：统一子页面风格，支持单条恢复/删除和一键清空',
-      '删除对话提示优化：从"已删除"改为"已移至回收站"，避免误操作焦虑'
-    ]
-  },
-  {
-    version: '3.9', date: '2026-07-24', major: false, items: [
-      '修复手表端长按菜单宽度：缩小到侧边栏宽度（320px），不超出历史栏边界',
-      '新增多选管理功能：长按菜单添加「多选」选项，进入多选页面批量操作',
-      '多选页面信息展示：每条对话显示标题 + 占用存储大小 + 最近使用时间',
-      '批量删除进回收站：多选删除的对话自动移入回收站，支持恢复',
-      '批量置顶：多选页面支持一键置顶选中的对话'
-    ]
-  },
-  {
-    version: '4.0', date: '2026-07-24', major: true, items: [
-      '更新模型排行榜：综合榜从15名扩展到50名，新增35个模型',
-      '新增10个分类榜单：代码/英文/困难提示/中文/多轮对话/创意写作/数学/指令遵循/日语/韩语',
-      '榜单数据来源：LMArena 2026-07-24 完整榜单，覆盖 Anthropic/Google/OpenAI/月之暗面/智谱AI/DeepSeek/xAI 等厂商',
-      '综合榜六维评分：根据各分类排名自动计算综合/推理/代码/长文本/多模态/速度评分'
-    ]
-  },
-  {
-    version: '4.1', date: '2026-07-24', major: false, items: [
-      '重构排行榜UI：左侧11个分类导航，右侧内容区',
-      '新增10个分类榜单：英文/困难提示/中文/多轮对话/创意写作/数学/指令遵循/日语/韩语',
-      '榜单行自动渲染小雷达图：根据dims六维数据实时绘制',
-      '综合榜顶部大图：Top5六维雷达对比图',
-      '其他分类榜顶部：Top10横向柱状图',
-      '修复雷达图axes未定义错误'
-    ]
-  },
-  {
-    version: '4.2', date: '2026-07-24', major: false, items: [
-      '排行榜改为独立页面：发现页点击入口跳转，不再展开折叠',
-      '排行榜独立页面：左侧11分类导航，右侧图表+榜单',
-      '修复排行榜在发现页占用空间问题'
-    ]
   }
 ];
+
+window.changelogOrder = window.changelogOrder || 'desc'; // 'desc'=新→旧, 'asc'=旧→新
+
+function renderChangelog() {
+  const container = document.getElementById('changelog-list');
+  if (!container) return;
+
+  // 排序切换按钮
+  const orderBtn = document.getElementById('changelog-order-btn');
+  if (orderBtn) {
+    orderBtn.textContent = changelogOrder === 'desc' ? '↓ 新→旧' : '↑ 旧→新';
+    orderBtn.onclick = () => {
+      window.changelogOrder = window.changelogOrder === 'desc' ? 'asc' : 'desc';
+      renderChangelog();
+    };
+  }
+
+  const entries = window.changelogOrder === 'desc' ? [...CHANGELOG].reverse() : [...CHANGELOG];
+  container.innerHTML = entries.map(entry => {
+    const majorBadge = entry.major ? '<span class="version-badge major">里程碑</span>' : '';
+    const items = entry.items.map(i => `<li>${i}</li>`).join('');
+    return `
+      <div class="changelog-entry ${entry.major ? 'major' : ''}">
+        <div class="changelog-header">
+          <span class="version">v${entry.version}</span>
+          ${majorBadge}
+          <span class="date">${entry.date}</span>
+        </div>
+        <ul class="changelog-items">${items}</ul>
+      </div>
+    `;
+  }).join('');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderChangelog);
+} else {
+  renderChangelog();
+}
