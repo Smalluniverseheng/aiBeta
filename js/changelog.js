@@ -295,5 +295,16 @@ const CHANGELOG = [
       '排行榜独立页面：左侧11分类导航，右侧图表+榜单',
       '修复排行榜在发现页占用空间问题'
     ]
-  }
+  
+  ,
+  {
+    version: '4.3', date: '2026-07-24', major: false, items: [
+      '品牌图标统一为彩色星球（brand.jpg）',
+      '替换全部图标：favicon.ico / icon-192 / icon-512 / apple-touch-icon / maskable',
+      '添加 favicon.ico 引用，修复浏览器标签页图标不显示',
+      '更新关于平台介绍文字',
+      '修复排行榜/多选页面返回按钮图标不显示（替换 data-icon 为 icon() 函数）',
+      '更新 sw.js 缓存版本触发刷新'
+    ]
+  }}
 ];
