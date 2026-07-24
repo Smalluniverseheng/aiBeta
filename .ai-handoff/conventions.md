@@ -5,12 +5,14 @@
 - 不引入任何 npm 依赖/构建步骤；第三方库只能 CDN 且需用户可接受（目前零运行时依赖，KaTeX 按需 CDN）。
 - 每个文件头是 `==== 模块名 · 职责 ====` 注释块。
 
-## 版本号规则（每次发版必做三件事）
+## 版本号规则（每次发版必做四件事）
 1. `js/providers.js` 的 `APP_VERSION`
-2. `index.html` 全部 `?v=X.Y.Z` 查询串（缓存穿透）
+2. `index.html` 全部 `?v=X.Y` 查询串（缓存穿透）
 3. `sw.js` 的 `VERSION`
-4. `js/changelog.js` 数组顶部追加一条 `{version, date, major, items[]}`
-5. 更新 `.ai-handoff/` 相关文档
+4. `js/changelog.js` 数组**末尾**追加一条 `{version, date, major, items[]}`（render 时 reverse 显示最新在前）
+5. 更新 `.ai-handoff/` 相关文档（roadmap.md / handoff-v2.md 等）
+
+**版本号格式**：严格 `x.y`（如 4.3），禁止 `x.y.z`。
 
 ## 测试
 - 每个改动的 js：`node --check js/xxx.js`
@@ -22,45 +24,31 @@
 执行环境可能无法直连 github.com（TLS 被重置）。可用镜像代理完成 git 操作：
 ```bash
 # 克隆/拉取/推送统一走 ghfast.top 前缀
-git clone https://ghfast.top/https://github.com/Smalluniverseheng/AI.git
-git push "https://<TOKEN>@ghfast.top/https://github.com/Smalluniverseheng/AI.git" main
+git clone https://ghfast.top/https://github.com/Smalluniverseheng/aiBeta.git
+git push "https://<TOKEN>@ghfast.top/https://github.com/Smalluniverseheng/aiBeta.git" main
 ```
 - 若本地是无 git 历史的 zip 快照：`git init` 后先 fetch 远端，`git rebase origin/main`（基线树一致时自动丢弃重复基线提交）再 push。
-- 推送后 GitHub Pages 约 1 分钟自动部署；用浏览器访问线上登录页看版本号确认。
+- 推送后 GitHub Pages 约 1 分钟自动部署；用浏览器访问线上测试版看版本号确认。
 - **Token 安全**：用户会把 PAT 直接贴在对话里。不要把它写进任何提交文件/日志/handoff 文档；用完提醒用户吊销换新的。
 
 ## 安全与隐私
 - API Key、插件 token 全部只存 localStorage，绝不外发（除对应厂商 API 域名）。
 - githubPush 用 Contents API：先 GET 取 sha（404=新建）再 PUT；401/404 给中文错误。
 
-
-## 分支与部署规范（2026-07-23 起生效）
+## 分支与部署规范
 
 ### 分支命名
 | 分支 | 用途 | 说明 |
 |------|------|------|
-| `production` | 正式版 | 默认分支，存放稳定代码 |
-| `preview` | 测试版 | GitHub Pages 部署分支，线上预览 |
-| `v2` | 重构实验 | Next.js 重构专用分支 |
+| `main` | **测试版（aiBeta）** | 默认分支，日常开发在这里 |
+| `production` | 正式版（AI 仓库） | 稳定代码，用户手动同步 |
+| `preview` | 正式版预览（AI 仓库） | GitHub Pages 备用部署 |
+| `v2` | 后端重构实验（AI 仓库） | Cloudflare Worker + Next.js |
 
 ### 推送规则
-1. **日常开发**：推送到 `production`
-2. **线上预览**：将 `production` 的修改同步到 `preview`
-3. **紧急修复**：直接在 `preview` 修改并验证，再合并回 `production`
+1. **日常开发**：推送到 `aiBeta/main`（本仓库）
+2. **正式版同步**：用户验证 aiBeta 无误后，手动合并到 `AI/production`
+3. **紧急修复**：直接在 `aiBeta/main` 修改并验证
 
-### 为什么必须同步到 preview？
-GitHub Pages 部署的是 `preview` 分支，不是 `production`。如果只推送到 `production`，线上看到的还是旧代码。
-
-### 同步命令
-```bash
-# 将 production 最新代码同步到 preview
-git checkout preview
-git merge production --no-edit
-git push origin preview
-```
-
-### 网络受限推送（中国大陆）
-```bash
-git push "https://<TOKEN>@ghfast.top/https://github.com/Smalluniverseheng/AI.git" production
-git push "https://<TOKEN>@ghfast.top/https://github.com/Smalluniverseheng/AI.git" preview
-```
+### 为什么区分 aiBeta 和 AI？
+aiBeta 是测试沙盒，新功能先在这里验证，稳定后再同步到正式版 AI。避免直接动正式版导致线上故障。
