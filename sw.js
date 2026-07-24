@@ -1,5 +1,5 @@
 /* ==================== Service Worker · PWA 离线缓存 ==================== */
-const VERSION = 'v4.2';
+const VERSION = 'v4.2.1';
 const CACHE_STATIC = 'thirdparty-ai-static-' + VERSION;
 const CACHE_RUNTIME = 'thirdparty-ai-runtime-' + VERSION;
 
@@ -13,7 +13,7 @@ const SHELL = [
   'js/api.js', 'js/voice.js', 'js/files.js', 'js/presets.js', 'js/auth.js', 'js/chat.js',
   'js/token.js', 'js/plugins.js', 'js/skills.js', 'js/supabase.js',
   'js/ui.js', 'js/pages.js', 'js/app.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'assets/brand.jpg',
+  'favicon.ico', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'assets/brand.jpg',
   'offline.html'
 ];
 
