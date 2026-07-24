@@ -60,6 +60,7 @@ const Pages = (() => {
         '</div>';
     });
     box.innerHTML = html || '<div class="empty-state">' + icon('search', 44) + '<div class="empty-title">没有找到匹配的模型</div></div>';
+    if (!kw && typeof MODEL_RANK !== "undefined") drawRankChart();
     updateSyncHint();
   }
 
@@ -67,10 +68,39 @@ const Pages = (() => {
   const RANK_COLORS = ['#6366F1', '#F59E0B', '#10B981', '#EC4899', '#0EA5E9'];
 
   function renderRankSection() {
-    return '<div class="settings-row clickable" id="rankEntryRow">' +
-      '<span class="row-icon" data-icon="trophy"></span>' +
-      '<span class="row-label"><span class="row-title">模型排行榜</span><span class="row-desc">公开榜单综合 · ' + esc(MODEL_RANK.updated) + ' 期</span></span>' +
-      '<span class="chev" data-icon="chevronRight"></span></div>';
+    const expanded = !!Store.state.rankExpanded;
+    const tab = Store.state.rankTab || 'overall';
+    if (!expanded) {
+      return '<div class="rank-section collapsed" id="rankSection">' +
+        '<div class="rank-head rank-toggle" id="rankToggle" title="点击展开">' +
+        '<span class="rank-title">' + icon('trophy', 17) + ' 模型排行榜</span>' +
+        '<span class="rank-updated">公开榜单综合 · ' + esc(MODEL_RANK.updated) + ' 期（点击展开）</span>' +
+        '<span class="rank-caret">' + icon('chevronDown', 15) + '</span></div></div>';
+    }
+    const tabs = [
+      {key:'overall', label:'综合榜'},
+      {key:'coding', label:'代码榜'},
+      {key:'english', label:'英文榜'},
+      {key:'hard', label:'困难提示'},
+      {key:'chinese', label:'中文榜'},
+      {key:'multiturn', label:'多轮对话'},
+      {key:'creative', label:'创意写作'},
+      {key:'math', label:'数学榜'},
+      {key:'instruct', label:'指令遵循'},
+      {key:'japanese', label:'日语榜'},
+      {key:'korean', label:'韩语榜'},
+    ];
+    const nav = tabs.map(t => '<button class="rank-nav-item' + (tab === t.key ? ' active' : '') + '" data-ranktab="' + t.key + '">' + t.label + '</button>').join('');
+    return '<div class="rank-section expanded" id="rankSection">' +
+      '<div class="rank-layout">' +
+        '<div class="rank-sidebar">' + nav + '</div>' +
+        '<div class="rank-main">' +
+          '<div class="rank-head">' +
+            '<span class="rank-title">' + icon('trophy', 17) + ' 模型排行榜</span>' +
+            '<span class="rank-updated">公开榜单综合 · ' + esc(MODEL_RANK.updated) + ' 期</span>' +
+            '<span class="rank-caret rank-toggle" id="rankToggle" title="点击收起">' + icon('chevronDown', 15) + '</span></div>' +
+          '<div class="rank-chart" id="rankChart"></div>' +
+          '<div class="rank-list" id="rankList"></div></div></div></div>';
   }
 
   function drawRankChart() {
@@ -152,8 +182,12 @@ const Pages = (() => {
 
   function bindRankEvents() {
     $('#modelsList').addEventListener('click', e => {
-      const entry = e.target.closest('#rankEntryRow');
-      if (entry) { openRankPage(); return; }
+      const tabBtn = e.target.closest('[data-ranktab]');
+      if (tabBtn) { Store.state.rankTab = tabBtn.dataset.ranktab; Store.save(); renderModels(); return; }
+      const chBtn = e.target.closest('[data-rankchart]');
+      if (chBtn) { Store.state.rankChart = chBtn.dataset.rankchart; Store.save(); renderModels(); return; }
+      const toggle = e.target.closest('#rankToggle');
+      if (toggle) { Store.state.rankExpanded = !Store.state.rankExpanded; Store.save(); renderModels(); return; }
       const row = e.target.closest('[data-rankmodel]');
       if (row && !row.disabled) { openModelInfo(row.dataset.rankmodel); return; }
       const fold = e.target.closest('[data-depfold]');
@@ -183,73 +217,6 @@ const Pages = (() => {
         }, 120);
       }
     });
-  }
-
-  function openRankPage() {
-    let page = $('#rankPage');
-    if (!page) {
-      page = document.createElement('div');
-      page.id = 'rankPage';
-      page.className = 'page rank-page';
-      page.innerHTML =
-        '<div class="page-header">' +
-          '<button class="page-back" id="rankPageBack"><span data-icon="chevronRight"></span></button>' +
-          '<h2>模型排行榜</h2>' +
-        '</div>' +
-        '<div class="page-body rank-page-body" id="rankPageBody"></div>';
-      document.body.appendChild(page);
-      $('#rankPageBack').addEventListener('click', () => page.classList.remove('show'));
-    }
-    Store.state.rankTab = Store.state.rankTab || 'overall';
-    renderRankPageContent();
-    page.classList.add('show');
-  }
-
-  function renderRankPageContent() {
-    const tab = Store.state.rankTab || 'overall';
-    const body = $('#rankPageBody');
-    if (!body) return;
-    const tabs = [
-      {key:'overall', label:'综合榜'},
-      {key:'coding', label:'代码榜'},
-      {key:'english', label:'英文榜'},
-      {key:'hard', label:'困难提示'},
-      {key:'chinese', label:'中文榜'},
-      {key:'multiturn', label:'多轮对话'},
-      {key:'creative', label:'创意写作'},
-      {key:'math', label:'数学榜'},
-      {key:'instruct', label:'指令遵循'},
-      {key:'japanese', label:'日语榜'},
-      {key:'korean', label:'韩语榜'},
-    ];
-    const nav = tabs.map(t => '<button class="rank-nav-item' + (tab === t.key ? ' active' : '') + '" data-ranktab="' + t.key + '">' + t.label + '</button>').join('');
-    body.innerHTML =
-      '<div class="rank-layout">' +
-        '<div class="rank-sidebar">' + nav + '</div>' +
-        '<div class="rank-main">' +
-          '<div class="rank-chart" id="rankChart"></div>' +
-          '<div class="rank-list" id="rankList"></div></div></div>';
-    drawRankChart();
-    // 绑定导航点击
-    body.querySelectorAll('[data-ranktab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        Store.state.rankTab = btn.dataset.ranktab;
-        Store.save();
-        renderRankPageContent();
-      });
-    });
-    // 绑定模型行点击
-    const listBox = $('#rankList');
-    if (listBox) {
-      listBox.addEventListener('click', e => {
-        const row = e.target.closest('[data-rankmodel]');
-        if (row && !row.disabled) {
-          const id = row.dataset.rankmodel;
-          const m = getModel(id);
-          if (m) openModelInfo(id);
-        }
-      });
-    }
   }
 
   /* ==================== 模型详情弹窗 ==================== */
