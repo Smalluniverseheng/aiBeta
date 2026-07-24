@@ -68,9 +68,9 @@ const Pages = (() => {
 
   function renderRankSection() {
     return '<div class="settings-row clickable" id="rankEntryRow">' +
-      ''<span class="row-icon">' + icon('trophy', 19) + '</span>'' +
+      '<span class="row-icon">' + icon('trophy', 19) + '</span>' +
       '<span class="row-label"><span class="row-title">模型排行榜</span><span class="row-desc">公开榜单综合 · ' + esc(MODEL_RANK.updated) + ' 期</span></span>' +
-      ''<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>';
+      '<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>';
   }
 
   function drawRankChart() {
@@ -193,7 +193,7 @@ const Pages = (() => {
       page.className = 'page rank-page';
       page.innerHTML =
         '<div class="page-header">' +
-          '<button class="page-back" id="rankPageBack">'+ icon('chevronRight', 19) + ''</button>' +
+          '<button class="page-back" id="rankPageBack">'+ icon('chevronRight', 19) + </button>' +
           '<h2>模型排行榜</h2>' +
         '</div>' +
         '<div class="page-body rank-page-body" id="rankPageBody"></div>';
@@ -1566,7 +1566,7 @@ const Pages = (() => {
     const sbReady = typeof SB !== 'undefined' && SB.ready();
     if (!cu) {
       box.innerHTML = '<div class="settings-card"><div class="settings-row">' +
-        ''<span class="row-icon">' + icon('info', 19) + '</span>'' +
+        '<span class="row-icon">' + icon('info', 19) + '</span>' +
         '<span class="row-label"><span class="row-title">' + esc(I18n.t('cld.notCloud')) + '</span>' +
         '<span class="row-desc" style="display:block">' + esc(I18n.t('cld.notCloudD')) + '</span></span></div></div>';
       fillIcons(box);
@@ -1574,7 +1574,7 @@ const Pages = (() => {
     }
     const st = SB.Sync.status();
     const row = (ic, title, desc) =>
-      '<div class="settings-row">'<span class="row-icon">' + icon('' + ic + '', 19) + '</span>'' +
+      '<div class="settings-row">'<span class="row-icon">' + icon('' + ic + '', 19) + '</span>' +
       '<span class="row-label"><span class="row-title">' + esc(title) + '</span>' +
       (desc ? '<span class="row-desc" style="display:block">' + esc(desc) + '</span>' : '') + '</span></div>';
     let html = '<div class="settings-card">' +
@@ -1586,13 +1586,13 @@ const Pages = (() => {
       '</div>' +
       '<div class="settings-card">' +
       '<div class="settings-row clickable" id="syncNowBtn">' +
-      ''<span class="row-icon">' + icon('refresh', 19) + '</span>'' +
+      '<span class="row-icon">' + icon('refresh', 19) + '</span>' +
       '<span class="row-label"><span class="row-title">' + esc(I18n.t('cld.syncNow')) + '</span>' +
       '<span class="row-desc" style="display:block">' + esc(sbReady ? I18n.t('cld.syncNowD') : I18n.t('cld.cloudOff')) + '</span></span>' +
       '<span class="sync-spin' + (st.syncing ? ' on' : '') + '" id="syncSpin"></span>' +
       '</div>' +
       '<div class="settings-row clickable" id="cloudSignOutBtn">' +
-      ''<span class="row-icon danger">' + icon('logout', 19) + '</span>'' +
+      '<span class="row-icon danger">' + icon('logout', 19) + '</span>' +
       '<span class="row-label"><span class="row-title" style="color:var(--danger)">' + esc(I18n.t('cld.signOut')) + '</span>' +
       '<span class="row-desc" style="display:block">' + esc(I18n.t('cld.signOutD')) + '</span></span>' +
       '</div></div>';
@@ -1643,15 +1643,15 @@ const Pages = (() => {
     if (!cu || !cu.isAdmin) { box.innerHTML = ''; return; }
     box.innerHTML =
       '<div class="settings-row clickable" id="cloudBackupBtn">' +
-      ''<span class="row-icon">' + icon('upload', 19) + '</span>'' +
+      '<span class="row-icon">' + icon('upload', 19) + '</span>' +
       '<span class="row-label"><span class="row-title">' + esc(I18n.t('cld.backupNow')) + '</span>' +
       '<span class="row-desc" style="display:block">' + esc(I18n.t('cld.backupNowD')) + '</span></span>' +
-      ''<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>' +
+      '<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>' +
       '<div class="settings-row clickable" id="cloudRestoreBtn">' +
-      ''<span class="row-icon">' + icon('download', 19) + '</span>'' +
+      '<span class="row-icon">' + icon('download', 19) + '</span>' +
       '<span class="row-label"><span class="row-title">' + esc(I18n.t('cld.restore')) + '</span>' +
       '<span class="row-desc" style="display:block">' + esc(I18n.t('cld.restoreD')) + '</span></span>' +
-      ''<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>' +
+      '<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>' +
       '<div id="cloudBackupList"></div>';
     fillIcons(box);
   }
@@ -1666,10 +1666,10 @@ const Pages = (() => {
     list.innerHTML = r.list.map(b => {
       const d = new Date(b.created_at || '');
       return '<div class="settings-row clickable cloud-backup-item" data-bid="' + esc(b.id) + '">' +
-      ''<span class="row-icon">' + icon('database', 19) + '</span>'' +
+      '<span class="row-icon">' + icon('database', 19) + '</span>' +
       '<span class="row-label"><span class="row-title">' + esc(b.backup_name || '') + '</span>' +
       '<span class="row-desc" style="display:block">' + esc(fmtBytes(b.size_bytes || 0)) + (isNaN(d) ? '' : ' · ' + esc(d.toLocaleString())) + '</span></span>' +
-      ''<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>';
+      '<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>';
     }).join('');
     fillIcons(list);
   }
@@ -2007,10 +2007,10 @@ const Pages = (() => {
       : '<span>' + esc((name || 'U').charAt(0).toUpperCase()) + '</span>';
     const secRow = (id, ic, title, val) =>
       '<div class="settings-row clickable" id="' + id + '">' +
-      ''<span class="row-icon">' + icon('' + ic + '', 19) + '</span>'' +
+      '<span class="row-icon">' + icon('' + ic + '', 19) + '</span>' +
       '<span class="row-label"><span class="row-title">' + esc(title) + '</span>' +
       '<span class="row-desc" style="display:block">' + esc(val) + '</span></span>' +
-      ''<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>';
+      '<span class="chev">' + icon('chevronRight', 19) + '</span>'</div>';
 
     let html =
       '<div class="settings-group-title">' + icon('user', 15) + ' ' + esc(I18n.t('pe.secA')) + '</div>' +
@@ -2039,7 +2039,7 @@ const Pages = (() => {
     } else {
       // 本地账号 / 游客：无云端凭据，隐藏账号安全操作
       html += '<div class="settings-card"><div class="settings-row">' +
-        ''<span class="row-icon">' + icon('info', 19) + '</span>'' +
+        '<span class="row-icon">' + icon('info', 19) + '</span>' +
         '<span class="row-label"><span class="row-title">' + esc(I18n.t('pe.localOnly')) + '</span>' +
         '<span class="row-desc" style="display:block">' + esc(I18n.t('pe.localOnlyD')) + '</span></span></div></div>';
     }
