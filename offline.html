@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>离线模式 · 第三方科技</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+  background: #0D0E13; color: #E8E8EC;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:100vh; padding:24px; text-align:center;
+}
+.icon { font-size:64px; margin-bottom:16px; opacity:.6 }
+h1 { font-size:20px; font-weight:600; margin-bottom:8px }
+p { font-size:14px; color:#888; line-height:1.6; max-width:320px; margin-bottom:24px }
+.btn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 20px; border-radius:12px; border:none;
+  background:#6366F1; color:#fff; font-size:14px; font-weight:500;
+  cursor:pointer; text-decoration:none;
+}
+.btn:active { transform:scale(.97) }
+.cache-info { margin-top:32px; font-size:12px; color:#555 }
+@media (prefers-color-scheme: light) {
+  body { background:#F5F6F8; color:#1A1A1E }
+  p { color:#666 }
+  .cache-info { color:#999 }
+}
+</style>
+</head>
+<body>
+<div class="icon">📡</div>
+<h1>当前处于离线状态</h1>
+<p>您已断开网络连接。已缓存的对话历史仍可查看，但无法发送新消息。</p>
+<a href="./" class="btn">↻ 刷新重试</a>
+<p class="cache-info" id="cache-status">正在检查缓存...</p>
+<script>
+// 检查缓存状态
+(async () => {
+  const status = document.getElementById('cache-status');
+  try {
+    const keys = await caches.keys();
+    const appCache = keys.find(k => k.includes('thirdparty-ai-static'));
+    if (appCache) {
+      const cache = await caches.open(appCache);
+      const reqs = await cache.keys();
+      status.textContent = `已缓存 ${reqs.length} 个资源，可离线浏览历史对话`;
+    } else {
+      status.textContent = '未检测到应用缓存';
+    }
+  } catch(e) {
+    status.textContent = '';
+  }
+})();
+</script>
+</body>
+</html>
