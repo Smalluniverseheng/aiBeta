@@ -45,14 +45,14 @@
     if (!('serviceWorker' in navigator)) return;
     // file:// 协议下跳过
     if (location.protocol === 'file:') return;
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    navigator.serviceWorker.register('sw.js?v=4.3').then(reg => {
       // 有更新时提示刷新
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
         if (!nw) return;
         nw.addEventListener('statechange', () => {
           if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            Toast.info('新版本已就绪，刷新后生效');
+            Toast.info('新版本已就绪，自动刷新中...'); setTimeout(() => location.reload(), 1500);
           }
         });
       });
