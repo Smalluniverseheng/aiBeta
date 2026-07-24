@@ -17,8 +17,8 @@ const api = {
           if (data === '[DONE]') continue;
           try {
             const json = JSON.parse(data);
-            const chunk = json.choices?.[0]?.delta?.content || json.content || '';
-            const thinking = json.choices?.[0]?.delta?.reasoning_content || json.thinking || '';
+            const chunk = (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content) || json.content || '';
+            const thinking = (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.reasoning_content) || json.thinking || '';
             if (chunk || thinking) onChunk(chunk, { thinking, model: json.model });
           } catch (e) {}
         }
@@ -34,10 +34,10 @@ const api = {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!res.ok) { onError?.('HTTP ' + res.status); return; }
+      if (!res.ok) { if (onError) onError('HTTP ' + res.status); return; }
       await this.parseSSE(res, onChunk);
-      onDone?.();
-    } catch (e) { onError?.(e.message); }
+      if (onDone) onDone();
+    } catch (e) { if (onError) onError(e.message); }
   },
 
   search: async function(query, maxResults = 5) {

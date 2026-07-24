@@ -41,7 +41,6 @@ const Store = (() => {
     sidebarCollapsed: false,
     recentModels: [],
     tokenStats: { byModel: {}, updatedAt: 0 },  // Token 用量统计（js/token.js 读写，重置不影响其他字段）
-    trash: { chats: [], apiKeys: [], items: [], clearedAt: 0 },  // 回收站：已删除的对话/Key/数据
     cloudUser: null,        // 云端账号 {id, email, name, isAdmin}（js/supabase.js；游客/本地账号为 null）
     cloudMap: {},           // 会话映射 {本地会话id: 云端uuid}（管理员全量同步用）
     cloudMeta: { lastSync: 0, lastSettingsSync: 0, lastUsagePush: 0, usageTotal: 0 }  // 同步游标
@@ -143,3 +142,96 @@ const Store = (() => {
 
   return { state, DEFAULTS, load, save, patch, reset, getUsers, saveUsers, stats, exportAll, importAll };
 })();
+
+
+// ========== 跨设备同步（v3.8 新增）==========
+// 这些函数在 Store 定义之后加载，不会破坏原有逻辑
+
+function syncToCloud() {
+  if (typeof getUserToken !== 'function') return;
+  getUserToken().then(function(token) {
+    if (!token) return;
+    var data = { api_keys: {} };
+    var providers = ['openai','anthropic','google','deepseek','moonshot','alibaba',
+      'baichuan','zhipu','minimax','spark','ernie','hunyuan','doubao','qwen',
+      'coze','groq','cohere','mistral','perplexity','together','fireworks','novita','siliconflow'];
+    for (var i = 0; i < providers.length; i++) {
+      var key = localStorage.getItem('apiKey_' + providers[i]);
+      if (key) data.api_keys[providers[i]] = key;
+    }
+    fetch('https://ai-gateway.1829487897.workers.dev/api/v1/keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ syncData: data, userToken: token })
+    }).catch(function(e) { console.warn('[Sync] 同步失败:', e); });
+  });
+}
+
+function restoreFromCloud() {
+  if (typeof getUserToken !== 'function') return;
+  getUserToken().then(function(token) {
+    if (!token) return;
+    fetch('https://ai-gateway.1829487897.workers.dev/api/v1/keys', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(res) { return res.json(); }).then(function(data) {
+      var count = 0;
+      var keys = data.keys || {};
+      for (var provider in keys) {
+        if (keys.hasOwnProperty(provider)) {
+          localStorage.setItem('apiKey_' + provider, keys[provider]);
+          count++;
+        }
+      }
+      if (count > 0 && typeof showToast === 'function') {
+        showToast('已从云端恢复 ' + count + ' 个 API Key');
+      }
+    }).catch(function(e) { console.warn('[Sync] 恢复失败:', e); });
+  });
+}
+
+function syncChatToCloud(chatId, title, model, mode, messages) {
+  if (typeof getUserToken !== 'function') return;
+  getUserToken().then(function(token) {
+    if (!token) return;
+    fetch('https://ai-gateway.1829487897.workers.dev/api/v1/chats/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId: chatId, title: title, model: model, mode: mode, messages: messages, userToken: token })
+    }).catch(function(e) { console.warn('[Sync] 聊天记录同步失败:', e); });
+  });
+}
+
+function restoreChatsFromCloud() {
+  if (typeof getUserToken !== 'function') return;
+  getUserToken().then(function(token) {
+    if (!token) return;
+    fetch('https://ai-gateway.1829487897.workers.dev/api/v1/chats', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(res) { return res.json(); }).then(function(data) {
+      if (data.chats && data.chats.length > 0) {
+        var localChats = JSON.parse(localStorage.getItem('ai_chat_state_v5') || '{}').chats || [];
+        var chatMap = {};
+        for (var i = 0; i < localChats.length; i++) {
+          chatMap[localChats[i].id] = localChats[i];
+        }
+        for (var j = 0; j < data.chats.length; j++) {
+          var cloudChat = data.chats[j];
+          var existing = chatMap[cloudChat.id];
+          if (!existing || new Date(cloudChat.updated_at) > new Date(existing.updated_at)) {
+            chatMap[cloudChat.id] = cloudChat;
+          }
+        }
+        var merged = [];
+        for (var id in chatMap) {
+          if (chatMap.hasOwnProperty(id)) merged.push(chatMap[id]);
+        }
+        var state = JSON.parse(localStorage.getItem('ai_chat_state_v5') || '{}');
+        state.chats = merged;
+        localStorage.setItem('ai_chat_state_v5', JSON.stringify(state));
+        if (typeof showToast === 'function') {
+          showToast('已同步 ' + data.chats.length + ' 个对话');
+        }
+      }
+    }).catch(function(e) { console.warn('[Sync] 聊天记录恢复失败:', e); });
+  });
+}

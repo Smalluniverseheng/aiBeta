@@ -74,18 +74,12 @@ const Chat = (() => {
   }
 
   function del(id) {
-    const chat = Store.state.chats.find(c => c.id === id);
-    if (chat) {
-      if (!Store.state.trash) Store.state.trash = { chats: [], apiKeys: [], items: [], clearedAt: 0 };
-      chat.deletedAt = Date.now();
-      Store.state.trash.chats.unshift(chat);
-    }
     Store.state.chats = Store.state.chats.filter(c => c.id !== id);
     if (Store.state.currentChatId === id) Store.state.currentChatId = null;
     Store.save();
     UI.renderSidebar();
     UI.renderChat();
-    Toast.success('已移至回收站');
+    Toast.success('已删除');
   }
 
   function selectModel(id) {
@@ -246,6 +240,11 @@ const Chat = (() => {
     chat.updatedAt = Date.now();
     Store.save();
 
+    // 同步到云端
+    if (typeof syncChatToCloud === 'function') {
+      syncChatToCloud(chat.id, chat.title, chat.modelId, chat.mode, chat.messages);
+    }
+
     UI.appendMsg(userMsg);
     UI.renderSidebar();
     input.value = '';
@@ -275,6 +274,12 @@ const Chat = (() => {
     UI.setSending(false);
     UI.renderSidebar();
     Store.save();
+
+    // 同步聊天记录到云端
+    const chat = getCurrentChat();
+    if (chat && typeof syncChatToCloud === 'function') {
+      syncChatToCloud(chat.id, chat.title, chat.modelId, chat.mode, chat.messages);
+    }
   }
 
   function makeTitle(text) {

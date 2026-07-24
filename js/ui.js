@@ -1,17 +1,6 @@
 /* ==================== UI · 渲染层 ==================== */
 const UI = (() => {
 
-  // 全局日期格式化工具（供多选、回收站等使用）
-  if (!window.fmtDate) {
-    window.fmtDate = function(ts) {
-      if (!ts) return '-';
-      const d = new Date(ts);
-      if (isNaN(d.getTime())) return '-';
-      const pad = n => String(n).padStart(2, '0');
-      return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-    };
-  }
-
   let msgObserverBound = false;
   const scheduleRender = {}; // msgId -> rAF 调度器
 
@@ -225,7 +214,6 @@ const UI = (() => {
       sheet.className = 'watch-action-sheet';
       sheet.innerHTML = '<button class="watch-action-sheet-item" data-act="rename"><span class="icon">' + icon('edit', 20) + '</span>重命名</button>' +
         '<button class="watch-action-sheet-item" data-act="pin"><span class="icon">' + icon('pin', 20) + '</span>置顶</button>' +
-        '<button class="watch-action-sheet-item" data-act="multi"><span class="icon">' + icon('checkSquare', 20) + '</span>多选</button>' +
         '<button class="watch-action-sheet-item danger" data-act="del"><span class="icon">' + icon('trash', 20) + '</span>删除</button>' +
         '<div class="watch-action-sheet-cancel" data-act="cancel">取消</div>';
       document.body.appendChild(sheet);
@@ -244,10 +232,8 @@ const UI = (() => {
           const idx = (Store.state.chats || []).findIndex(c => c.id === id);
           if (idx > 0) { const c = Store.state.chats.splice(idx, 1)[0]; Store.state.chats.unshift(c); Store.save(); renderSidebar(); Toast.success('已置顶'); }
           else if (idx === 0) { Toast.info('已经在最顶部'); }
-        } else if (act === 'multi') {
-          openMultiSelectPage(id);
         } else if (act === 'del') {
-          confirmDialog('删除对话', '删除后移入回收站，确定删除该对话吗？', true).then(ok => { if (ok) Chat.del(id); });
+          confirmDialog('删除对话', '删除后无法恢复，确定删除该对话吗？', true).then(ok => { if (ok) Chat.del(id); });
         }
       });
     }
@@ -1552,117 +1538,4 @@ const UI = (() => {
     setSending, renderAttachments, updateMicBtn, updateWebSearchBtn, updateSpeakButtons,
     scrollToBottom, applyTheme, userAvatarHtml, avatarView, AVATAR_GRADS, openLightbox
   };
-
-  /* ==================== 多选管理 ==================== */
-  function openMultiSelectPage(initialId) {
-    let page = $('#multiSelectPage');
-    if (!page) {
-      page = document.createElement('div');
-      page.id = 'multiSelectPage';
-      page.className = 'page multi-select-page';
-      page.innerHTML =
-        '<div class="page-header">' +
-          '<button class="page-back" id="multiSelectBack"><span data-icon="chevronRight"></span></button>' +
-          '<h2>多选管理</h2>' +
-          '<button class="page-action" id="multiSelectAll">全选</button>' +
-        '</div>' +
-        '<div class="page-body" id="multiSelectBody"></div>' +
-        '<div class="multi-select-bar" id="multiSelectBar">' +
-          '<span id="multiSelectCount">已选择 0 条</span>' +
-          '<button class="btn btn-sm" id="multiSelectPin">置顶</button>' +
-          '<button class="btn btn-sm btn-danger" id="multiSelectDel">删除</button>' +
-        '</div>';
-      document.body.appendChild(page);
-      $('#multiSelectBack').addEventListener('click', () => page.classList.remove('show'));
-      $('#multiSelectAll').addEventListener('click', toggleSelectAll);
-      $('#multiSelectDel').addEventListener('click', batchDelete);
-      $('#multiSelectPin').addEventListener('click', batchPin);
-    }
-    renderMultiSelectList(initialId);
-    page.classList.add('show');
-  }
-
-  function renderMultiSelectList(initialId) {
-    const body = $('#multiSelectBody');
-    const chats = Store.state.chats || [];
-    if (!chats.length) {
-      body.innerHTML = '<div class="empty" style="padding:40px;text-align:center;color:var(--text-3);">暂无对话</div>';
-      updateSelectCount();
-      return;
-    }
-    body.innerHTML = chats.map(c => {
-      const size = estimateChatSize(c);
-      const lastTime = c.messages && c.messages.length ? fmtDate(c.messages[c.messages.length - 1].time || c.updatedAt) : fmtDate(c.updatedAt);
-      const checked = initialId && c.id === initialId ? 'checked' : '';
-      return '<label class="multi-select-item" data-id="' + c.id + '">' +
-        '<input type="checkbox" class="multi-select-check" ' + checked + '>' +
-        '<span class="multi-select-info">' +
-          '<span class="multi-select-title">' + esc(c.title || '未命名对话') + '</span>' +
-          '<span class="multi-select-meta">' + size + ' · 最近使用 ' + lastTime + '</span>' +
-        '</span>' +
-      '</label>';
-    }).join('');
-    body.querySelectorAll('.multi-select-check').forEach(cb => {
-      cb.addEventListener('change', updateSelectCount);
-    });
-    updateSelectCount();
-  }
-
-  function estimateChatSize(chat) {
-    try {
-      const json = JSON.stringify(chat);
-      const bytes = new Blob([json]).size;
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    } catch (e) { return '0 B'; }
-  }
-
-  function toggleSelectAll() {
-    const checks = document.querySelectorAll('.multi-select-check');
-    const allChecked = Array.from(checks).every(c => c.checked);
-    checks.forEach(c => { c.checked = !allChecked; });
-    updateSelectCount();
-  }
-
-  function updateSelectCount() {
-    const checked = document.querySelectorAll('.multi-select-check:checked').length;
-    const countEl = $('#multiSelectCount');
-    const barEl = $('#multiSelectBar');
-    if (countEl) countEl.textContent = '已选择 ' + checked + ' 条';
-    if (barEl) barEl.style.display = checked > 0 ? 'flex' : 'none';
-  }
-
-  function batchDelete() {
-    const ids = Array.from(document.querySelectorAll('.multi-select-item')).filter(item => {
-      return item.querySelector('.multi-select-check').checked;
-    }).map(item => item.dataset.id);
-    if (!ids.length) return Toast.warning('未选择任何对话');
-    confirmDialog('批量删除', '将 ' + ids.length + ' 条对话移入回收站，确定继续吗？', true).then(ok => {
-      if (!ok) return;
-      ids.forEach(id => Chat.del(id));
-      renderMultiSelectList();
-      Toast.success('已移至回收站');
-    });
-  }
-
-  function batchPin() {
-    const ids = Array.from(document.querySelectorAll('.multi-select-item')).filter(item => {
-      return item.querySelector('.multi-select-check').checked;
-    }).map(item => item.dataset.id);
-    if (!ids.length) return Toast.warning('未选择任何对话');
-    const chats = Store.state.chats;
-    const pinned = [];
-    const rest = [];
-    chats.forEach(c => {
-      if (ids.includes(c.id)) pinned.push(c);
-      else rest.push(c);
-    });
-    Store.state.chats = [...pinned, ...rest];
-    Store.save();
-    UI.renderSidebar();
-    renderMultiSelectList();
-    Toast.success('已置顶 ' + ids.length + ' 条');
-  }
-
 })();

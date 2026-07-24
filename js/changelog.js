@@ -253,44 +253,105 @@ const CHANGELOG = [
   },
   {
     version: '3.8', date: '2026-07-24', major: false, items: [
-      '修复代理模式入口UI：改为与API Key管理一致的列表行样式（图标+标题/描述+箭头）',
-      '新增回收站功能：删除的对话和API Key移入回收站，支持恢复或彻底删除',
-      '回收站子页面：统一子页面风格，支持单条恢复/删除和一键清空',
-      '删除对话提示优化：从"已删除"改为"已移至回收站"，避免误操作焦虑'
-    ]
-  },
-  {
-    version: '3.9', date: '2026-07-24', major: false, items: [
-      '修复手表端长按菜单宽度：缩小到侧边栏宽度（320px），不超出历史栏边界',
-      '新增多选管理功能：长按菜单添加「多选」选项，进入多选页面批量操作',
-      '多选页面信息展示：每条对话显示标题 + 占用存储大小 + 最近使用时间',
-      '批量删除进回收站：多选删除的对话自动移入回收站，支持恢复',
-      '批量置顶：多选页面支持一键置顶选中的对话'
-    ]
-  },
-  {
-    version: '4.0', date: '2026-07-24', major: true, items: [
-      '更新模型排行榜：综合榜从15名扩展到50名，新增35个模型',
-      '新增10个分类榜单：代码/英文/困难提示/中文/多轮对话/创意写作/数学/指令遵循/日语/韩语',
-      '榜单数据来源：LMArena 2026-07-24 完整榜单，覆盖 Anthropic/Google/OpenAI/月之暗面/智谱AI/DeepSeek/xAI 等厂商',
-      '综合榜六维评分：根据各分类排名自动计算综合/推理/代码/长文本/多模态/速度评分'
-    ]
-  },
-  {
-    version: '4.1', date: '2026-07-24', major: false, items: [
-      '重构排行榜UI：左侧11个分类导航，右侧内容区',
-      '新增10个分类榜单：英文/困难提示/中文/多轮对话/创意写作/数学/指令遵循/日语/韩语',
-      '榜单行自动渲染小雷达图：根据dims六维数据实时绘制',
-      '综合榜顶部大图：Top5六维雷达对比图',
-      '其他分类榜顶部：Top10横向柱状图',
-      '修复雷达图axes未定义错误'
-    ]
-  },
-  {
-    version: '4.2', date: '2026-07-24', major: false, items: [
-      '排行榜改为独立页面：发现页点击入口跳转，不再展开折叠',
-      '排行榜独立页面：左侧11分类导航，右侧图表+榜单',
-      '修复排行榜在发现页占用空间问题'
+      '【后端代理】前端所有请求走 Cloudflare Worker，API Key 不再暴露给浏览器',
+      '【跨设备同步】API Key 支持同步到云端（Supabase），换设备自动恢复',
+      '【跨设备同步】聊天记录自动同步到云端，换设备无缝继续对话',
+      '【Key 管理】API Key 设置页添加「同步到云端」开关',
+      '【后端架构】Worker 支持前端传入 apiKey，优先使用用户真实 Key',
+      '【后端架构】新增聊天记录云端保存/读取/删除路由',
+      '【修复】去掉 ES2020 语法（?. / AbortSignal.timeout），兼容旧浏览器',
+      '【修复】后端不可用时前端自动降级为本地直连厂商',
+      '【修复】messages 表 id null 错误',
+      '【修复】deploy.yml 触发分支 [v2] → [后端]，Worker 自动部署恢复正常',
+      '【修复】恢复 preview 分支，GitHub Pages 正常部署'
     ]
   }
 ];
+
+window.changelogOrder = window.changelogOrder || 'desc'; // 'desc'=新→旧, 'asc'=旧→新
+
+function renderChangelog() {
+  const container = document.getElementById('changelog-list');
+  if (!container) return;
+
+  // 排序切换按钮
+  const orderBtn = document.getElementById('changelog-order-btn');
+  if (orderBtn) {
+    orderBtn.textContent = changelogOrder === 'desc' ? '从新到旧' : '从旧到新';
+    orderBtn.onclick = () => {
+      changelogOrder = changelogOrder === 'desc' ? 'asc' : 'desc';
+      renderChangelog();
+    };
+  }
+
+  // 排序
+  const sorted = [...CHANGELOG];
+  if (changelogOrder === 'desc') sorted.reverse();
+
+  let html = '';
+  sorted.forEach(entry => {
+    const isMajor = entry.major;
+    const badge = isMajor ? '<span class="cl-badge major">里程碑</span>' : '';
+    html += '<div class="cl-entry">' +
+      '<div class="cl-header">' +
+      '<span class="cl-version">' + entry.version + '</span>' +
+      '<span class="cl-date">' + entry.date + '</span>' +
+      badge +
+      '</div>' +
+      '<ul class="cl-list">' + entry.items.map(i => '<li>' + i + '</li>').join('') + '</ul>' +
+      '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function renderChangelogModal() {
+  const sorted = [...CHANGELOG].reverse();
+  const latest = sorted[0];
+  const prev = sorted[1];
+
+  let html = '<div class="tl-overlay" onclick="if(event.target===this)closeModal()">' +
+    '<div class="tl-modal">' +
+    '<div class="tl-header">' +
+    '<h2>更新日志</h2>' +
+    '<button class="tl-close" onclick="closeModal()">×</button>' +
+    '</div>' +
+    '<div class="tl-body">';
+
+  // 最新版本
+  if (latest) {
+    html += '<div class="tl-section">' +
+      '<div class="tl-version-row">' +
+      '<span class="tl-version">' + latest.version + '</span>' +
+      '<span class="tl-date">' + latest.date + '</span>' +
+      (latest.major ? '<span class="tl-badge">里程碑</span>' : '') +
+      '</div>' +
+      '<ul class="tl-list">' + latest.items.map(i => '<li>' + i + '</li>').join('') + '</ul>' +
+      '</div>';
+  }
+
+  // 上一版本
+  if (prev) {
+    html += '<div class="tl-section tl-prev">' +
+      '<div class="tl-version-row">' +
+      '<span class="tl-version">' + prev.version + '</span>' +
+      '<span class="tl-date">' + prev.date + '</span>' +
+      '</div>' +
+      '<span class="tl-summary">' + prev.items.length + ' 项更新</span>' +
+      '</div>';
+  }
+
+  // 历史版本入口
+  html += '<div class="tl-footer">' +
+    '<a href="javascript:void(0)" onclick="showPage('changelog')">查看完整版本历史 →</a>' +
+    '</div>' +
+    '</div></div></div>';
+
+  const existing = document.getElementById('changelog-modal');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'changelog-modal';
+  div.innerHTML = html;
+  document.body.appendChild(div);
+}

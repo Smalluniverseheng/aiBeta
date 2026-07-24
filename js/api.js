@@ -5,7 +5,8 @@
 const API = (() => {
 
   const CONFIG = {
-    BACKEND_URL: null,   // 例: 'https://your-server.com'  后期接入后端时填写
+    BACKEND_URL: 'https://ai-gateway.1829487897.workers.dev',  // Cloudflare Worker 代理
+  USE_BACKEND: true,  // 用户可切换是否使用后端代理
     TIMEOUT: 60000,
     SSE_WATCHDOG: 30000  // 流式读取熔断：连续该毫秒数未收到任何字节则判定超时
   };
@@ -266,13 +267,19 @@ const API = (() => {
   /* ---------- 聊天调用 ---------- */
   function chat(opts) {
     // ===== v3.4: 代理模式切换 =====
-    const proxyMode = (typeof Store !== 'undefined' && Store.state) ? (Store.state.proxyMode || 'local') : 'local';
+    let proxyMode = (typeof Store !== 'undefined' && Store.state) ? (Store.state.proxyMode || 'local') : 'local';
+    // 后端不可用时自动降级为本地直连
+    if (proxyMode === 'server' && CONFIG.BACKEND_URL && typeof isBackendAvailable === 'function' && !isBackendAvailable()) {
+      proxyMode = 'local';
+      console.log('[API] 后端不可用，自动降级为本地直连');
+    }
     if (proxyMode === 'server' && CONFIG.BACKEND_URL) {
       // 服务器代理模式
+      const userKey = localStorage.getItem('apiKey_' + model.provider) || '';
       return fetch(CONFIG.BACKEND_URL + '/api/v1/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: model.provider, model: modelId, messages, temperature: 0.7, stream: typeof onChunk === 'function' })
+        body: JSON.stringify({ provider: model.provider, model: modelId, messages, temperature: 0.7, stream: typeof onChunk === 'function', apiKey: userKey })
       }).then(res => {
         if (!res.ok) throw new Error('Worker error: ' + res.status);
         if (typeof onChunk === 'function') return streamSSE(res, onChunk, onThinking);

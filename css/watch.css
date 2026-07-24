@@ -319,13 +319,10 @@ html[data-device="watch"] .chat-item.long-press {
 /* 手表端底部 Action Sheet 菜单 */
 .watch-action-sheet {
   position: fixed;
-  bottom: 0; left: 0;
-  width: var(--sidebar-w, 320px);
-  max-width: 100%;
+  bottom: 0; left: 0; right: 0;
   background: var(--bg-elev);
-  border-radius: 0 16px 0 0;
+  border-radius: 16px 16px 0 0;
   border-top: 1px solid var(--border);
-  border-right: 1px solid var(--border);
   padding: 8px 0 24px;
   z-index: 200;
   transform: translateY(100%);
