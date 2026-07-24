@@ -3,6 +3,15 @@
    每次发版在数组末尾追加新条目。 */
 const CHANGELOG = [
   {
+    version: '4.3', date: '2026-07-24', major: false, items: [
+      '品牌图标统一为彩色星球（brand.jpg）',
+      '替换全部图标：favicon.ico / icon-192 / icon-512 / apple-touch-icon / maskable',
+      '添加 favicon.ico 引用，修复浏览器标签页图标不显示',
+      '更新 sw.js 缓存版本触发刷新'
+    ]
+  },
+
+  {
     version: '1.0', date: '2026-06-10', major: true, items: [
       '首个版本发布：AI Chat Platform',
       '多模型对话、四种对话模式雏形'
