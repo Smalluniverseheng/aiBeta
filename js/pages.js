@@ -193,7 +193,7 @@ const Pages = (() => {
       page.className = 'page rank-page';
       page.innerHTML =
         '<div class="page-header">' +
-          '<button class="page-back" id="rankPageBack">'+ icon('chevronRight', 19) + </button>' +
+          '<button class="page-back" id="rankPageBack">'+ icon('chevronRight', 19) + ''</button>' +
           '<h2>模型排行榜</h2>' +
         '</div>' +
         '<div class="page-body rank-page-body" id="rankPageBody"></div>';
