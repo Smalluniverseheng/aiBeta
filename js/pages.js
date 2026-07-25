@@ -964,6 +964,7 @@ const Pages = (() => {
     else if (id === 'subSync') renderSyncSection();
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
+    else if (id === 'subProxy') renderProxySection();
     else if (id === 'subTrash') renderTrash();
   }
 
