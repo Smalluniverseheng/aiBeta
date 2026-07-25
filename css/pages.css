@@ -1052,5 +1052,50 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
 /* Bug fix: 排行榜返回键暗色下不可见 */
 .rank-page .page-back { color: var(--text-1); }
 
-/* Bug fix: 模型列表排行榜图标变黑 */
+/* Bug fix: 模型列表排行榜图标颜色异常 */
 #rankEntryRow .row-icon { color: var(--accent); }
+
+
+/* ==================== Mermaid 图表渲染 ==================== */
+.mermaid-wrap {
+  margin: 8px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.mermaid-wrap .code-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.mermaid-wrap .code-block-head .code-lang {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.mermaid-code {
+  padding: 16px;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60px;
+}
+.mermaid-code.rendered svg {
+  max-width: 100%;
+  height: auto;
+}
+.mermaid-code:not(.rendered) {
+  color: var(--text-3);
+  font-size: 13px;
+  text-align: center;
+}
+.mermaid-code:not(.rendered)::before {
+  content: '⏳ 正在渲染图表...';
+}
