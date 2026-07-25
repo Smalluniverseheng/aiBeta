@@ -295,8 +295,8 @@ const CHANGELOG = [
       '排行榜独立页面：左侧11分类导航，右侧图表+榜单',
       '修复排行榜在发现页占用空间问题'
     ]
-  
-  ,
+  },
+
   {
     version: '4.3', date: '2026-07-24', major: false, items: [
       '品牌图标统一为彩色星球（brand.jpg）',
@@ -314,6 +314,24 @@ const CHANGELOG = [
       '新增 api-v2.js 完整 Worker 客户端：对话/多模型/搜索/绘画/RAG/文件/会话',
       '代理模式支持流式 SSE、thinking 推理、tool_calls 工具调用',
       'Worker 部署至 ai-gateway.1829487897.workers.dev，Supabase 已配置'
+    ]
+  },
+  {
+    version: '4.5', date: '2026-07-25', major: false, items: [
+      'Worker 混合架构代码完成（api.js + api-v2.js）',
+      'Cloudflare Worker 部署至 ai-gateway.1829487897.workers.dev',
+      'Supabase URL + Service Key 配置到 Worker Secrets',
+      'changelog.js 语法错误修复',
+      '创建 4.5 备份分支'
+    ]
+  },
+  {
+    version: '4.6', date: '2026-07-25', major: false, items: [
+      '修复代理模式/回收站/帮助中心点击无反应（改为 document 事件委托）',
+      '修复顶部导航栏在非对话页面显示问题（改为 JS 控制 display）',
+      '修复排行榜返回键暗色下不可见',
+      '修复模型列表排行榜图标颜色异常',
+      '补全 subProxy 缺失的 subpage DOM 结构'
     ]
   },
 ];
