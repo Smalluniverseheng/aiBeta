@@ -295,7 +295,8 @@ const CHANGELOG = [
       '排行榜独立页面：左侧11分类导航，右侧图表+榜单',
       '修复排行榜在发现页占用空间问题'
     ]
-  },
+  
+  ,
   {
     version: '4.3', date: '2026-07-24', major: false, items: [
       '品牌图标统一为彩色星球（brand.jpg）',
@@ -305,7 +306,7 @@ const CHANGELOG = [
       '修复排行榜/多选页面返回按钮图标不显示（替换 data-icon 为 icon() 函数）',
       '更新 sw.js 缓存版本触发刷新'
     ]
-  },
+  };
   {
     version: '4.4', date: '2026-07-25', major: true, items: [
       '后端混合架构上线：Cloudflare Worker 网关 + Supabase 数据存储',
@@ -313,15 +314,6 @@ const CHANGELOG = [
       '新增 api-v2.js 完整 Worker 客户端：对话/多模型/搜索/绘画/RAG/文件/会话',
       '代理模式支持流式 SSE、thinking 推理、tool_calls 工具调用',
       'Worker 部署至 ai-gateway.1829487897.workers.dev，Supabase 已配置'
-    ]
-  },
-  {
-    version: '4.5', date: '2026-07-25', major: true, items: [
-      '修复代理模式 subpage DOM 缺失导致点击报错',
-      '修复回收站按钮点击无反应（改为事件委托绑定）',
-      '修复排行榜返回键在暗色主题下不可见',
-      '修复模型列表排行榜入口图标颜色缺失',
-      'Worker 混合架构上线（Cloudflare Worker + Supabase）'
     ]
   },
 ];
