@@ -348,8 +348,6 @@
   [dir="rtl"] .sidebar { left: auto; right: 0; transform: translateX(104%); }
   .sidebar.open { transform: none; }
   .sidebar.collapsed { margin-left: 0; }
-  .sidebar.swiping { transition: none !important; }
-  .sidebar-overlay { transition: opacity 0.25s ease; }
   .sidebar-toggle { display: none; }
   .sidebar-overlay.show { display: block; }
   .hamburger-btn { display: flex; }
