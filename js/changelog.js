@@ -295,7 +295,8 @@ const CHANGELOG = [
       '排行榜独立页面：左侧11分类导航，右侧图表+榜单',
       '修复排行榜在发现页占用空间问题'
     ]
-  },
+  
+  ,
   {
     version: '4.3', date: '2026-07-24', major: false, items: [
       '品牌图标统一为彩色星球（brand.jpg）',
@@ -305,7 +306,7 @@ const CHANGELOG = [
       '修复排行榜/多选页面返回按钮图标不显示（替换 data-icon 为 icon() 函数）',
       '更新 sw.js 缓存版本触发刷新'
     ]
-  },
+  };
   {
     version: '4.4', date: '2026-07-25', major: true, items: [
       '后端混合架构上线：Cloudflare Worker 网关 + Supabase 数据存储',
@@ -313,28 +314,6 @@ const CHANGELOG = [
       '新增 api-v2.js 完整 Worker 客户端：对话/多模型/搜索/绘画/RAG/文件/会话',
       '代理模式支持流式 SSE、thinking 推理、tool_calls 工具调用',
       'Worker 部署至 ai-gateway.1829487897.workers.dev，Supabase 已配置'
-    ]
-  },
-  {
-    version: '4.5', date: '2026-07-25', major: false, items: [
-      'Worker 混合架构代码完成（api.js + api-v2.js）',
-      'Cloudflare Worker 部署至 ai-gateway.1829487897.workers.dev',
-      'Supabase URL + Service Key 配置到 Worker Secrets',
-      'changelog.js 语法错误修复',
-      '创建 4.5 备份分支'
-    ]
-  },
-  {
-    version: '4.6', date: '2026-07-25', major: false, items: [
-      '修复代理模式/回收站/帮助中心点击无反应（改为 document 事件委托）',
-      '修复顶部导航栏在非对话页面显示问题（改为 JS 控制 display）',
-      '修复排行榜返回键暗色下不可见',
-      '修复模型列表排行榜图标颜色异常',
-      '补全 subProxy 缺失的 subpage DOM 结构',
-      '新增 Mermaid 图表渲染：AI 回复中的 ```mermaid 代码块自动渲染为流程图/时序图/类图等',
-      'Mermaid 支持暗色主题自适应，CDN 失败不影响正文显示',
-      '新增 SwarmEngine AI 集群模式：多模型独立应答 → 交叉评审 → 领队汇总',
-      '集群模式支持 3-8 个模型，可配置评审轮数（1-3）和领队模型'
     ]
   },
 ];
