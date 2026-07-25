@@ -964,20 +964,11 @@ const Pages = (() => {
     else if (id === 'subSync') renderSyncSection();
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
-    else if (id === 'subProxy') renderProxySection();
-    else if (id === 'subTrash') renderTrash();
-    else if (id === 'subSwarm') renderSwarmSection();
   }
 
   function bindSubpageEvents() {
-    document.addEventListener('click', function(e) {
-      const row = e.target.closest('[data-sub]');
-      if (row) { openSub(row.dataset.sub); return; }
-      const back = e.target.closest('.subpage-back');
-      if (back) { closeSubs(); return; }
-      const swarmRow = e.target.closest('[data-sub="subSwarm"]');
-      if (swarmRow) { openSub('subSwarm'); renderSwarmSection(); return; }
-    });
+    $$('[data-sub]').forEach(row => row.addEventListener('click', () => openSub(row.dataset.sub)));
+    $$('.subpage-back').forEach(btn => btn.addEventListener('click', closeSubs));
     $('#feedbackRow').addEventListener('click', () => {
       window.open('https://github.com/Smalluniverseheng/AI/issues', '_blank');
     });
@@ -2341,65 +2332,13 @@ const Pages = (() => {
     });
   }
 
-
-  /* ==================== SwarmEngine 配置 ==================== */
-  function renderSwarmSection() {
-    const box = document.getElementById('subSwarmBody');
-    if (!box) return;
-    const models = Store.state.swarmModels || [];
-    const leader = Store.state.swarmLeader || (models.length ? models[0] : null);
-    const rounds = Store.state.swarmRounds || 1;
-    const allModels = Object.values(MODELS).filter(m => isSelectableModel(m));
-    const listHtml = allModels.map(m => {
-      const checked = models.includes(m.id) ? 'checked' : '';
-      return '<label style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;">' +
-        '<input type="checkbox" data-swarm-model="' + m.id + '" ' + checked + ' style="margin-right:10px;">' +
-        '<span>' + esc(m.name) + '</span></label>';
-    }).join('');
-    const listBox = box.querySelector('#swarmModelsList');
-    if (listBox) listBox.innerHTML = listHtml || '<div style="padding:16px;color:var(--text-3);">暂无可用模型</div>';
-    const leaderBox = box.querySelector('#swarmLeaderSelect');
-    if (leaderBox) {
-      const leaderHtml = models.map(mId => {
-        const m = getModel(mId);
-        return '<label style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;">' +
-          '<input type="radio" name="swarmLeader" value="' + mId + '" ' + (mId === leader ? 'checked' : '') + ' style="margin-right:10px;">' +
-          '<span>' + esc(m ? m.name : mId) + '</span></label>';
-      }).join('');
-      leaderBox.innerHTML = leaderHtml || '<div style="padding:16px;color:var(--text-3);">请先选择集群模型</div>';
-    }
-    const sel = box.querySelector('#swarmRoundsSelect');
-    if (sel) sel.value = String(rounds);
-  }
-
-  function bindSwarmEvents() {
-    const box = document.getElementById('subSwarmBody');
-    if (!box) return;
-    box.addEventListener('change', e => {
-      const cb = e.target.closest('[data-swarm-model]');
-      if (cb) {
-        const models = Store.state.swarmModels || [];
-        const id = cb.dataset.swarmModel;
-        if (cb.checked) { if (!models.includes(id)) models.push(id); }
-        else { const idx = models.indexOf(id); if (idx >= 0) models.splice(idx, 1); }
-        Store.patch({ swarmModels: models });
-        renderSwarmSection();
-      }
-      const rd = e.target.closest('input[name="swarmLeader"]');
-      if (rd) Store.patch({ swarmLeader: rd.value });
-      const sel = e.target.closest('#swarmRoundsSelect');
-      if (sel) Store.patch({ swarmRounds: parseInt(sel.value, 10) });
-    });
-  }
-
-  bindSwarmEvents();
   return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo };
 })();
 
 
 function renderProxySection() {
-  const box = document.getElementById('subProxyBody');
-  if (!box) { console.warn('[Proxy] subProxyBody element not found'); return; }
+  const box = document.getElementById('subProxy');
+  if (!box) { console.warn('[Proxy] subProxy element not found'); return; }
   const mode = (Store.state && Store.state.proxyMode) || 'local';
   box.innerHTML = 
     '<div class="settings-group-title">代理模式</div>' +
@@ -2416,11 +2355,10 @@ function renderProxySection() {
   box.querySelectorAll('.proxy-option').forEach(el => {
     el.addEventListener('click', () => {
       const newMode = el.dataset.mode;
-      Store.patch({proxyMode: newMode});
+      Store.set('proxyMode', newMode);
       renderProxySection();
       renderRowDescs();
       if (typeof showToast === 'function') showToast(newMode === 'server' ? '已切换至服务器代理' : '已切换至本地直连');
     });
   });
 }
-})();
