@@ -204,6 +204,85 @@ const UI = (() => {
       $('#sidebarOverlay').classList.add('show');
     });
     $('#sidebarOverlay').addEventListener('click', closeSidebarMobile);
+
+    /* ---------- 移动端侧边栏左右滑动手势（Kimi 风格） ---------- */
+    (function bindSidebarSwipe() {
+      if (window.innerWidth > 860) return; // 仅移动端
+      const sidebar = $('#sidebar');
+      const overlay = $('#sidebarOverlay');
+      const SIDEBAR_W = 280; // 侧边栏宽度
+      const EDGE_THRESHOLD = 30; // 边缘触发阈值
+      let startX = 0, startY = 0, currentX = 0, isDragging = false, isOpen = false;
+
+      // 从屏幕左边缘向右滑动打开
+      document.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isOpen = sidebar.classList.contains('open');
+        // 从左侧边缘开始 或 在已打开的侧边栏内开始
+        if (startX < EDGE_THRESHOLD || (isOpen && startX < SIDEBAR_W)) {
+          isDragging = true;
+          sidebar.classList.add('swiping');
+          currentX = isOpen ? 0 : -SIDEBAR_W;
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchmove', e => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - startX;
+        // 垂直滑动超过 45 度取消
+        const deltaY = touch.clientY - startY;
+        if (Math.abs(deltaY) > Math.abs(deltaX) * 0.8) {
+          isDragging = false;
+          sidebar.classList.remove('swiping');
+          return;
+        }
+        // 限制范围
+        let tx = isOpen ? Math.min(0, deltaX) : Math.max(-SIDEBAR_W, Math.min(0, -SIDEBAR_W + deltaX));
+        sidebar.style.transform = 'translateX(' + tx + 'px)';
+        // 遮罩透明度跟随
+        const progress = 1 - Math.abs(tx) / SIDEBAR_W;
+        overlay.style.opacity = String(progress * 0.5);
+        if (progress > 0.05) overlay.style.display = 'block';
+      }, { passive: true });
+
+      document.addEventListener('touchend', e => {
+        if (!isDragging) return;
+        isDragging = false;
+        sidebar.classList.remove('swiping');
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - startX;
+        const velocity = deltaX / (Date.now() - startTime + 1); // 速度
+        const threshold = SIDEBAR_W * 0.35; // 距离阈值
+
+        if (isOpen) {
+          // 已打开，判断是否关闭
+          if (deltaX < -threshold || velocity < -0.5) {
+            closeSidebarMobile();
+          } else {
+            sidebar.style.transform = '';
+            overlay.style.opacity = '';
+          }
+        } else {
+          // 未打开，判断是否打开
+          if (deltaX > threshold || velocity > 0.5) {
+            sidebar.classList.add('open');
+            overlay.classList.add('show');
+            sidebar.style.transform = '';
+            overlay.style.opacity = '';
+          } else {
+            sidebar.style.transform = '';
+            overlay.style.display = '';
+            overlay.style.opacity = '';
+          }
+        }
+      }, { passive: true });
+
+      let startTime = 0;
+      document.addEventListener('touchstart', () => { startTime = Date.now(); }, { passive: true });
+    })();
   }
 
   function closeSidebarMobile() {
