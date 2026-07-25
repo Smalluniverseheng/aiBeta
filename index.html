@@ -614,7 +614,29 @@
     </div>
 
     <!-- 帮助中心 -->
-    <div class="subpage"     <!-- ==================== 回收站 ==================== -->
+    <div class="subpage"     <!-- ==================== 代理模式 ==================== -->
+    <div class="subpage" id="subProxy">
+      <div class="subpage-header"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>代理模式</h2></div>
+      <div class="subpage-body">
+        <div class="settings-group-title">连接方式</div>
+        <div class="settings-card">
+          <label class="settings-row" style="justify-content:space-between;cursor:pointer;padding:12px 16px;">
+            <span>本地直连</span>
+            <input type="radio" name="proxyMode" value="local" checked style="accent-color:var(--accent);">
+          </label>
+          <label class="settings-row" style="justify-content:space-between;cursor:pointer;padding:12px 16px;">
+            <span>服务器代理</span>
+            <input type="radio" name="proxyMode" value="server" style="accent-color:var(--accent);">
+          </label>
+        </div>
+        <div style="padding:16px;font-size:13px;color:var(--text-3);line-height:1.6;">
+          本地直连：前端直接连接厂商 API，速度最快，但 API Key 暴露在前端。<br><br>
+          服务器代理：通过 Cloudflare Worker 中转，Key 隐藏在后端，更安全。
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 回收站 ==================== -->
     <div class="subpage" id="subTrash">
       <div class="subpage-header"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>回收站</h2></div>
       <div class="subpage-body" id="subTrashBody">
