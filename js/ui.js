@@ -1484,10 +1484,15 @@ const UI = (() => {
     function cleanup() {
       tracking = false; decided = false; mode = null;
       const s = sb(), o = ov();
+      const mainArea = document.querySelector('.main-area');
       s.classList.remove('swiping');
       s.style.transform = '';
       o.style.opacity = '';
       o.style.animation = '';
+      if (mainArea) {
+        mainArea.classList.remove('swiping');
+        mainArea.style.transform = '';
+      }
     }
 
     function endDrag(dx) {
@@ -1524,19 +1529,21 @@ const UI = (() => {
         decided = true;
         // 水平意图（水平位移 > 垂直位移*1.5）才接管；否则交还列表纵向滚动
         if (Math.abs(dx) <= Math.abs(dy) * 1.5) { tracking = false; mode = null; return; }
-        sb().classList.add('swiping'); // 拖拽期间关掉过渡，跟随手指
+        const mainArea = document.querySelector('.main-area');
+        if (mainArea) mainArea.classList.add('swiping'); // 拖拽期间关掉过渡，跟随手指
         ov().classList.add('show');
         ov().style.animation = 'none'; // 避免 fadeIn 覆盖拖拽中的内联透明度
       }
       e.preventDefault();
       const w = sb().getBoundingClientRect().width || 288;
+      const mainArea = document.querySelector('.main-area');
       if (mode === 'open') {
         const p = Math.min(Math.max(dx / w, 0), 1);
-        sb().style.transform = 'translateX(' + (-104 + p * 104) + '%)';
+        if (mainArea) mainArea.style.transform = 'translateX(' + (p * w) + 'px)';
         ov().style.opacity = String(p);
       } else {
         const p = Math.min(Math.max(-dx / w, 0), 1);
-        sb().style.transform = 'translateX(' + (-p * 104) + '%)';
+        if (mainArea) mainArea.style.transform = 'translateX(' + ((1 - p) * w) + 'px)';
         ov().style.opacity = String(1 - p);
       }
     }, { passive: false });
