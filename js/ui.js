@@ -1173,30 +1173,33 @@ const UI = (() => {
 
     $('#sendBtn').addEventListener('click', () => { Chat.isSending() ? Chat.stop() : Chat.send(); updateTokenEst(); });
     /* ==================== 底部工具抽屉 ==================== */
-    const plusBtn = document.getElementById('inputPlusBtn');
-    const sheet = document.getElementById('inputToolsSheet');
-    const sheetOverlay = sheet?.querySelector('.sheet-overlay');
+    var plusBtn = document.getElementById('inputPlusBtn');
+    var sheet = document.getElementById('inputToolsSheet');
+    var sheetOverlay = sheet ? sheet.querySelector('.sheet-overlay') : null;
 
     if (plusBtn && sheet) {
-      plusBtn.addEventListener('click', () => {
-        const isOpen = sheet.classList.contains('active');
+      plusBtn.addEventListener('click', function() {
+        var isOpen = sheet.classList.contains('active');
         if (isOpen) {
           sheet.classList.remove('active');
           plusBtn.classList.remove('active');
         } else {
+          syncSheetStates();
           sheet.classList.add('active');
           plusBtn.classList.add('active');
         }
       });
 
-      sheetOverlay?.addEventListener('click', () => {
-        sheet.classList.remove('active');
-        plusBtn.classList.remove('active');
-      });
+      if (sheetOverlay) {
+        sheetOverlay.addEventListener('click', function() {
+          sheet.classList.remove('active');
+          plusBtn.classList.remove('active');
+        });
+      }
 
-      sheet.querySelectorAll('.sheet-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const action = item.dataset.action;
+      sheet.querySelectorAll('.sheet-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var action = item.dataset.action;
           handleToolAction(action);
           sheet.classList.remove('active');
           plusBtn.classList.remove('active');
@@ -1205,21 +1208,44 @@ const UI = (() => {
     }
 
     function handleToolAction(action) {
+      var el;
       switch(action) {
         case 'camera':
-          document.getElementById('cameraInput')?.click();
+          el = document.getElementById('cameraInput');
+          if (el) el.click();
           break;
         case 'photo':
-          document.getElementById('imageInput')?.click();
+          el = document.getElementById('imageInput');
+          if (el) el.click();
           break;
         case 'file':
-          document.getElementById('fileInput')?.click();
+          el = document.getElementById('fileInput');
+          if (el) el.click();
           break;
-        case 'wechat':
-          Toast.info('微信文件功能即将开放');
+        case 'think':
+          Store.state.thinkingOn = !(Store.state.thinkingOn !== false);
+          syncThinkBtn();
+          Toast.info(Store.state.thinkingOn ? '深度思考已开启' : '深度思考已关闭');
           break;
-        case 'phone':
-          document.getElementById('micBtn')?.click();
+        case 'voice':
+          el = document.getElementById('micBtn');
+          if (el) el.click();
+          break;
+        case 'websearch':
+          var ws = Store.state.webSearch;
+          var newEnabled = !ws.enabled;
+          var hasKey = !!(ws.tavilyKey && ws.tavilyKey.trim());
+          var model = Models.current ? Models.current() : null;
+          var native = model && (model.webSearch || model.provider === 'Perplexity');
+          if (newEnabled && !hasKey && !native) {
+            Toast.warn('请先配置 Tavily Key 或选择支持原生联网的模型');
+            return;
+          }
+          Store.patch({
+            webSearch: Object.assign({}, ws, { enabled: newEnabled, mode: newEnabled ? 'auto' : 'off' })
+          });
+          updateWebSearchBtn();
+          Toast.info(newEnabled ? '联网搜索已开启' : '联网搜索已关闭');
           break;
         case 'phrase':
           if (typeof openPhrasePicker === 'function') openPhrasePicker();
@@ -1227,42 +1253,20 @@ const UI = (() => {
       }
     }
 
-    /* ==================== 联网搜索下拉 ==================== */
-    const searchToggle = document.getElementById('searchToggleBtn');
-    const searchDropdown = document.getElementById('webSearchDropdown');
-    const searchOverlay = searchDropdown?.querySelector('.search-overlay');
-    const searchOptions = searchDropdown?.querySelectorAll('.search-option');
-
-    if (searchToggle && searchDropdown) {
-      searchToggle.addEventListener('click', () => {
-        searchDropdown.classList.add('active');
-        searchToggle.classList.add('active');
+    function syncSheetStates() {
+      var thinkItems = document.querySelectorAll('.sheet-item[data-action="think"]');
+      thinkItems.forEach(function(item) {
+        var isOn = Store.state.thinkingOn !== false;
+        item.classList.toggle('on', isOn);
+        var badge = item.querySelector('.sheet-badge');
+        if (badge) badge.textContent = isOn ? '开' : '';
       });
-
-      searchOverlay?.addEventListener('click', () => {
-        searchDropdown.classList.remove('active');
-        searchToggle.classList.remove('active');
-      });
-
-      searchOptions?.forEach(opt => {
-        opt.addEventListener('click', () => {
-          searchOptions.forEach(o => o.classList.remove('active'));
-          opt.classList.add('active');
-          const val = opt.dataset.value;
-
-          Store.patch({ 
-            webSearch: Object.assign({}, Store.state.webSearch, { 
-              enabled: val === 'auto', 
-              mode: val 
-            }) 
-          });
-
-          const statusLabel = document.getElementById('searchStatus');
-          if (statusLabel) statusLabel.textContent = val === 'auto' ? '自动' : '关闭';
-
-          searchDropdown.classList.remove('active');
-          searchToggle.classList.remove('active');
-        });
+      var webItems = document.querySelectorAll('.sheet-item[data-action="websearch"]');
+      webItems.forEach(function(item) {
+        var isOn = Store.state.webSearch.enabled;
+        item.classList.toggle('on', isOn);
+        var badge = item.querySelector('.sheet-badge');
+        if (badge) badge.textContent = isOn ? '开' : '关';
       });
     }
 
