@@ -51,9 +51,11 @@ const UI = (() => {
     const modelSelBtn = $('#modelSelBtn');
     const modeSelBtn = $('#modeSelBtn');
     const hamburgerBtn = $('#hamburgerBtn');
+    const newChatTopBtn = $('#newChatTopBtn');
     if (modelSelBtn) modelSelBtn.style.display = (page === 'chat') ? '' : 'none';
     if (modeSelBtn) modeSelBtn.style.display = (page === 'chat') ? '' : 'none';
     if (hamburgerBtn) hamburgerBtn.style.display = (page === 'chat') ? '' : 'none';
+    if (newChatTopBtn) newChatTopBtn.style.display = (page === 'chat') ? '' : 'none';
     closeSidebarMobile();
   }
 
