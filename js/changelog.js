@@ -306,7 +306,7 @@ const CHANGELOG = [
       '修复排行榜/多选页面返回按钮图标不显示（替换 data-icon 为 icon() 函数）',
       '更新 sw.js 缓存版本触发刷新'
     ]
-  };
+  },
   {
     version: '4.4', date: '2026-07-25', major: true, items: [
       '后端混合架构上线：Cloudflare Worker 网关 + Supabase 数据存储',
