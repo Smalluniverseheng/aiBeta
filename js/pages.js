@@ -964,11 +964,16 @@ const Pages = (() => {
     else if (id === 'subSync') renderSyncSection();
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
+    else if (id === 'subProxy') renderProxySection();
   }
 
   function bindSubpageEvents() {
-    $$('[data-sub]').forEach(row => row.addEventListener('click', () => openSub(row.dataset.sub)));
-    $$('.subpage-back').forEach(btn => btn.addEventListener('click', closeSubs));
+    document.addEventListener('click', function(e) {
+      const row = e.target.closest('[data-sub]');
+      if (row) { openSub(row.dataset.sub); return; }
+      const back = e.target.closest('.subpage-back');
+      if (back) { closeSubs(); return; }
+    });
     $('#feedbackRow').addEventListener('click', () => {
       window.open('https://github.com/Smalluniverseheng/AI/issues', '_blank');
     });
