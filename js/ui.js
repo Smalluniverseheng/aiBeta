@@ -47,6 +47,10 @@ const UI = (() => {
     if (page === 'models') Pages.renderModels();
     if (page === 'discover') Pages.renderDiscover();
     if (page === 'profile') Pages.renderProfile();
+    const modelSelBtn = $('#modelSelBtn');
+    const modeSelBtn = $('#modeSelBtn');
+    if (modelSelBtn) modelSelBtn.style.display = (page === 'chat') ? '' : 'none';
+    if (modeSelBtn) modeSelBtn.style.display = (page === 'chat') ? '' : 'none';
     closeSidebarMobile();
   }
 
