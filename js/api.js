@@ -5,7 +5,7 @@
 const API = (() => {
 
   const CONFIG = {
-    BACKEND_URL: null,   // 例: 'https://your-server.com'  后期接入后端时填写
+    BACKEND_URL: 'https://ai-gateway.1829487897.workers.dev',  // Cloudflare Worker 网关
     TIMEOUT: 60000,
     SSE_WATCHDOG: 30000  // 流式读取熔断：连续该毫秒数未收到任何字节则判定超时
   };
@@ -265,22 +265,52 @@ const API = (() => {
 
   /* ---------- 聊天调用 ---------- */
   function chat(opts) {
-    // ===== v3.4: 代理模式切换 =====
+    // ===== v4.4: 代理模式切换 =====
     const proxyMode = (typeof Store !== 'undefined' && Store.state) ? (Store.state.proxyMode || 'local') : 'local';
     if (proxyMode === 'server' && CONFIG.BACKEND_URL) {
-      // 服务器代理模式
+      // 服务器代理模式：请求走 Cloudflare Worker，Key 隐藏在后端
+      const model = getModel(modelId);
+      if (!model) return Promise.reject(new Error('模型不存在: ' + modelId));
+      const cfg = PROVIDERS[model.provider];
+      if (!cfg) return Promise.reject(new Error('暂不支持该厂商: ' + model.provider));
+      const key = getKeyForModel(model);
+      if (!key) return Promise.reject(new Error('请先在「我的 → API Key」中配置 ' + model.provider + ' 的 Key'));
+
+      const streaming = typeof onChunk === 'function';
+      const ac = new AbortController();
+      if (opts.signal) opts.signal.addEventListener('abort', () => ac.abort());
+      controllers.push(ac);
+
+      const body = {
+        provider: cfg.keySlug || model.provider,
+        model: modelId,
+        messages,
+        temperature: 0.7,
+        stream: streaming,
+        apiKey: key
+      };
+      if (model.thinking) body.enable_thinking = true;
+
       return fetch(CONFIG.BACKEND_URL + '/api/v1/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: model.provider, model: modelId, messages, temperature: 0.7, stream: typeof onChunk === 'function' })
+        body: JSON.stringify(body),
+        signal: ac.signal
       }).then(res => {
-        if (!res.ok) throw new Error('Worker error: ' + res.status);
-        if (typeof onChunk === 'function') return streamSSE(res, onChunk, onThinking);
-        return res.json().then(j => j.content || j.text || '');
-      }).catch(err => {
-        console.warn('[Worker] 代理失败，回退到本地直连:', err.message);
-        // 继续执行下面的本地逻辑（不 return，让代码继续）
-      });
+        if (!res.ok) {
+          return res.text().then(t => { throw new Error(friendlyError(res.status, t)); });
+        }
+        if (streaming) {
+          return streamSSE(res, 'openai', onChunk, onThinking, opts.onToolCall);
+        }
+        return res.json().then(d => ({
+          content: d.content || d.text || '',
+          thinking: d.thinking || '',
+          toolCalls: d.toolCalls || [],
+          usage: d.usage
+        }));
+      }).then(result => accountUsage(modelId, messages, result))
+        .finally(() => { controllers = controllers.filter(c => c !== ac); });
     }
     // ===== /代理模式 =====
 
