@@ -48,14 +48,8 @@ const UI = (() => {
     if (page === 'discover') Pages.renderDiscover();
     if (page === 'profile') Pages.renderProfile();
     // Bug fix: 顶部导航栏仅在对话页显示
-    const modelSelBtn = $('#modelSelBtn');
-    const modeSelBtn = $('#modeSelBtn');
-    const hamburgerBtn = $('#hamburgerBtn');
-    const newChatTopBtn = $('#newChatTopBtn');
-    if (modelSelBtn) modelSelBtn.style.display = (page === 'chat') ? '' : 'none';
-    if (modeSelBtn) modeSelBtn.style.display = (page === 'chat') ? '' : 'none';
-    if (hamburgerBtn) hamburgerBtn.style.display = (page === 'chat') ? '' : 'none';
-    if (newChatTopBtn) newChatTopBtn.style.display = (page === 'chat') ? '' : 'none';
+    const topbar = $('#topbar');
+    if (topbar) topbar.classList.toggle('mobile-hidden', page !== 'chat');
     closeSidebarMobile();
   }
 
