@@ -1509,6 +1509,15 @@ const UI = (() => {
   }
 
   /* ==================== 初始化绑定 ==================== */
+  function replaceIcons() {
+    $$('[data-icon]').forEach(el => {
+      const name = el.getAttribute('data-icon');
+      if (name && window.hasIcon && window.hasIcon(name)) {
+        el.outerHTML = window.icon(name, 20);
+      }
+    });
+  }
+
   function init() {
     bindSidebarEvents();
     bindModelDD();
