@@ -307,4 +307,13 @@ const CHANGELOG = [
       '更新 sw.js 缓存版本触发刷新'
     ]
   };
+  {
+    version: '4.4', date: '2026-07-25', major: true, items: [
+      '后端混合架构上线：Cloudflare Worker 网关 + Supabase 数据存储',
+      'Worker 代理模式修复：Key 隐藏在后端，支持 23 家厂商',
+      '新增 api-v2.js 完整 Worker 客户端：对话/多模型/搜索/绘画/RAG/文件/会话',
+      '代理模式支持流式 SSE、thinking 推理、tool_calls 工具调用',
+      'Worker 部署至 ai-gateway.1829487897.workers.dev，Supabase 已配置'
+    ]
+  },
 ];
