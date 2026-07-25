@@ -770,6 +770,7 @@ const UI = (() => {
     $$('.thinking-toggle', root).forEach(bindThinking);
     $$('.toolcall-card', root).forEach(syncTcCollapse);
     $$('.msg-content-slot', root).forEach(el => MD.renderMath(el));
+    $$('.msg-content-slot', root).forEach(el => MD.renderMermaid(el));
     $$('.msg-image', root).forEach(img => {
       if (img.dataset.bound) return;
       img.dataset.bound = '1';
@@ -992,6 +993,7 @@ const UI = (() => {
     if (slot) {
       slot.innerHTML = content ? renderMd(content) : '<span style="color:var(--text-3);font-size:13px">（无内容）</span>';
       MD.renderMath(slot);
+        MD.renderMermaid(slot);
       $$('.msg-image', slot).forEach(img => img.addEventListener('click', () => openLightbox(img.src)));
     }
     const think = $('.thinking-box', card);
