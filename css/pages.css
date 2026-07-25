@@ -1051,3 +1051,7 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
 .rank-page .page-back svg { fill: currentColor; }
 #rankEntryRow .row-icon { color: var(--accent); }
 #rankEntryRow .row-icon svg { fill: currentColor; }
+
+/* v4.5 顶部模型选择栏只在对话页面显示 */
+#modelSelBtn, #modeSelBtn { display: none !important; }
+#pageChat #modelSelBtn, #pageChat #modeSelBtn { display: flex !important; }
