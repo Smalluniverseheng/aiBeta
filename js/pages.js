@@ -965,6 +965,7 @@ const Pages = (() => {
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
     else if (id === 'subProxy') renderProxySection();
+    else if (id === 'subTrash') renderTrash();
   }
 
   function bindSubpageEvents() {
@@ -2342,8 +2343,8 @@ const Pages = (() => {
 
 
 function renderProxySection() {
-  const box = document.getElementById('subProxy');
-  if (!box) { console.warn('[Proxy] subProxy element not found'); return; }
+  const box = document.getElementById('subProxyBody');
+  if (!box) { console.warn('[Proxy] subProxyBody element not found'); return; }
   const mode = (Store.state && Store.state.proxyMode) || 'local';
   box.innerHTML = 
     '<div class="settings-group-title">代理模式</div>' +
@@ -2360,7 +2361,7 @@ function renderProxySection() {
   box.querySelectorAll('.proxy-option').forEach(el => {
     el.addEventListener('click', () => {
       const newMode = el.dataset.mode;
-      Store.set('proxyMode', newMode);
+      Store.patch({proxyMode: newMode});
       renderProxySection();
       renderRowDescs();
       if (typeof showToast === 'function') showToast(newMode === 'server' ? '已切换至服务器代理' : '已切换至本地直连');
