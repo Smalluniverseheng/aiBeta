@@ -358,6 +358,9 @@
     transform: translateX(80%);
   }
   [dir="rtl"] .sidebar { left: auto; right: 0; transform: translateX(104%); }
+  [dir="rtl"] .sidebar.open ~ .main-area {
+    transform: translateX(calc(-1 * var(--sidebar-w)));
+  }
   .sidebar.open { transform: none; }
   .sidebar.collapsed { margin-left: 0; }
   .topbar.mobile-hidden { display: none !important; }
