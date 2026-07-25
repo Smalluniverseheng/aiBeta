@@ -57,21 +57,11 @@ const MD = (() => {
         while (i < lines.length && !/^```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
         i++;
         const raw = buf.join('\n');
-        if (lang === 'mermaid') {
-          const uid = 'mermaid-' + Math.random().toString(36).slice(2, 10);
-          out.push(
-            '<div class="mermaid-wrap" id="' + uid + '">' +
-            '<div class="code-block-head"><span class="code-lang">mermaid</span>' +
-            '<button class="code-copy" data-code="' + encodeURIComponent(raw) + '">' + icon('copy', 13) + '<span>复制</span></button></div>' +
-            '<div class="mermaid-code" data-code="' + encodeURIComponent(raw) + '" data-uid="' + uid + '"></div></div>'
-          );
-        } else {
-          out.push(
-            '<div class="code-block"><div class="code-block-head"><span class="code-lang">' + esc(lang) + '</span>' +
-            '<button class="code-copy" data-code="' + encodeURIComponent(raw) + '">' + icon('copy', 13) + '<span>复制</span></button></div>' +
-            '<pre><code>' + highlight(raw, lang) + '</code></pre></div>'
-          );
-        }
+        out.push(
+          '<div class="code-block"><div class="code-block-head"><span class="code-lang">' + esc(lang) + '</span>' +
+          '<button class="code-copy" data-code="' + encodeURIComponent(raw) + '">' + icon('copy', 13) + '<span>复制</span></button></div>' +
+          '<pre><code>' + highlight(raw, lang) + '</code></pre></div>'
+        );
         continue;
       }
 
@@ -174,36 +164,5 @@ const MD = (() => {
     });
   }
 
-  /* Mermaid 图表渲染（可选增强，CDN 失败不影响正文） */
-  let mermaidLoading = null;
-  function renderMermaid(container) {
-    const nodes = container.querySelectorAll('.mermaid-code[data-code]');
-    if (!nodes.length) return;
-    if (!mermaidLoading) {
-      mermaidLoading = loadScript('https://registry.npmmirror.com/mermaid/latest/files/dist/mermaid.min.js', () => window.mermaid)
-        .catch(() => null);
-    }
-    mermaidLoading.then(mermaid => {
-      if (!mermaid) return;
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-        (document.documentElement.getAttribute('data-theme') === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default', securityLevel: 'strict' });
-      nodes.forEach(node => {
-        const code = decodeURIComponent(node.dataset.code || '');
-        const uid = node.dataset.uid || ('mermaid-' + Math.random().toString(36).slice(2, 10));
-        try {
-          mermaid.render(uid, code).then(result => {
-            node.innerHTML = result.svg;
-            node.classList.add('rendered');
-          }).catch(err => {
-            node.innerHTML = '<pre style="color:var(--text-3);font-size:12px;">Mermaid 渲染失败: ' + esc(err.message || String(err)) + '</pre>';
-          });
-        } catch (e) {
-          node.innerHTML = '<pre style="color:var(--text-3);font-size:12px;">Mermaid 渲染失败</pre>';
-        }
-      });
-    });
-  }
-
-  return { render, bindCopy, renderMath, renderMermaid, inline };
+  return { render, bindCopy, renderMath, inline };
 })();
