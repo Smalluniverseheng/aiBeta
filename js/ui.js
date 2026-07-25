@@ -1479,14 +1479,12 @@ const UI = (() => {
     const sb = () => $('#sidebar');
     const ov = () => $('#sidebarOverlay');
     const mobile = () => window.matchMedia('(max-width: 860px)').matches || (window.DeviceInfo && DeviceInfo.isWatch());
-    const blocked = () => document.querySelector('.subpage.show') || document.querySelector('.modal-overlay.show');
+    const blocked = () => document.querySelector('.subpage.show') || document.querySelector('.modal-overlay.show') || document.querySelector('.sheet-overlay') || document.querySelector('.sidebar-overlay.show') || document.querySelector('.toast.show');
 
     function cleanup() {
       tracking = false; decided = false; mode = null;
-      const s = sb(), o = ov();
+      const o = ov();
       const mainArea = document.querySelector('.main-area');
-      s.classList.remove('swiping');
-      s.style.transform = '';
       o.style.opacity = '';
       o.style.animation = '';
       if (mainArea) {
