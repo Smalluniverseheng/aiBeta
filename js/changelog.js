@@ -316,4 +316,22 @@ const CHANGELOG = [
       'Worker 部署至 ai-gateway.1829487897.workers.dev，Supabase 已配置'
     ]
   },
+  {
+    version: '4.5', date: '2026-07-25', major: false, items: [
+      'Worker 混合架构代码完成（api.js + api-v2.js）',
+      'Cloudflare Worker 部署至 ai-gateway.1829487897.workers.dev',
+      'Supabase URL + Service Key 配置到 Worker Secrets',
+      'changelog.js 语法错误修复',
+      '创建 4.5 备份分支'
+    ]
+  },
+  {
+    version: '4.6', date: '2026-07-25', major: false, items: [
+      '修复代理模式/回收站/帮助中心点击无反应（改为 document 事件委托）',
+      '修复顶部导航栏在非对话页面显示问题（改为 JS 控制 display）',
+      '修复排行榜返回键暗色下不可见',
+      '修复模型列表排行榜图标颜色异常',
+      '补全 subProxy 缺失的 subpage DOM 结构'
+    ]
+  },
 ];
