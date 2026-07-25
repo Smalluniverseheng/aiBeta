@@ -969,11 +969,24 @@ const Pages = (() => {
   }
 
   function bindSubpageEvents() {
-    $$('[data-sub]').forEach(row => row.addEventListener('click', () => openSub(row.dataset.sub)));
+    // 使用事件委托绑定到 pageProfile 容器，确保动态生成的元素也能响应
+    const profilePage = document.getElementById('pageProfile');
+    if (profilePage) {
+      profilePage.addEventListener('click', e => {
+        const row = e.target.closest('[data-sub]');
+        if (row) {
+          e.stopPropagation();
+          openSub(row.dataset.sub);
+        }
+      });
+    }
     $$('.subpage-back').forEach(btn => btn.addEventListener('click', closeSubs));
-    $('#feedbackRow').addEventListener('click', () => {
-      window.open('https://github.com/Smalluniverseheng/AI/issues', '_blank');
-    });
+    const feedbackRow = $('#feedbackRow');
+    if (feedbackRow) {
+      feedbackRow.addEventListener('click', () => {
+        window.open('https://github.com/Smalluniverseheng/AI/issues', '_blank');
+      });
+    }
   }
 
   /* ==================== AI 绘画 ==================== */
