@@ -143,6 +143,7 @@
               <div class="dd-divider"></div>
               <button class="mode-dd-item" data-mode="debate"><span class="mode-ic" data-icon="sword"></span><span><span class="mode-name">辩论模式</span><span class="mode-desc" style="display:block">正反交锋 · 裁判点评</span></span></button>
               <button class="mode-dd-item" data-mode="collab"><span class="mode-ic" data-icon="handshake"></span><span><span class="mode-name">协同合作</span><span class="mode-desc" style="display:block">多 AI 分工协作完成任务</span></span></button>
+              <button class="mode-dd-item" data-mode="swarm"><span class="mode-ic" data-icon="cpu"></span><span><span class="mode-name">集群模式</span><span class="mode-desc" style="display:block">多模型交叉验证共识</span></span></button>
             </div>
           </div>
         </div>
@@ -203,6 +204,14 @@
               <div class="mode-params" style="margin-top:8px">
                 <button class="add-model-btn" data-role="collab">+ 添加模型</button>
                 <span class="param">修订轮数 <input type="number" id="collabRounds" value="2" min="1" max="5"></span>
+              </div>
+            </div>
+            <div id="swarmConfig" style="display:none">
+              <label>集群模型配置（至少 2 个，第 1 个默认为领队）</label>
+              <div class="model-chips" id="swarmModelChips"></div>
+              <div class="mode-params" style="margin-top:8px">
+                <button class="add-model-btn" data-role="swarm">+ 添加模型</button>
+                <span class="param">评审轮数 <input type="number" id="swarmRoundsInput" value="1" min="1" max="3"></span>
               </div>
             </div>
           </div>
@@ -322,6 +331,11 @@
             <div class="settings-row clickable" data-sub="subProxy">
               <span class="row-icon" data-icon="refresh"></span>
               <span class="row-label"><span class="row-title">代理模式</span><span class="row-desc" id="proxyRowDesc">本地直连</span></span>
+              <span class="chev" data-icon="chevronRight"></span>
+            </div>
+            <div class="settings-row clickable" data-sub="subSwarm">
+              <span class="row-icon" data-icon="cpu"></span>
+              <span class="row-label"><span class="row-title">集群模式</span><span class="row-desc">多模型交叉验证，输出共识答案</span></span>
               <span class="chev" data-icon="chevronRight"></span>
             </div>
           </div>
