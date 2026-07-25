@@ -964,29 +964,14 @@ const Pages = (() => {
     else if (id === 'subSync') renderSyncSection();
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
-    else if (id === 'subProxy') renderProxySection();
-    else if (id === 'subTrash') renderTrash();
   }
 
   function bindSubpageEvents() {
-    // 使用事件委托绑定到 pageProfile 容器，确保动态生成的元素也能响应
-    const profilePage = document.getElementById('pageProfile');
-    if (profilePage) {
-      profilePage.addEventListener('click', e => {
-        const row = e.target.closest('[data-sub]');
-        if (row) {
-          e.stopPropagation();
-          openSub(row.dataset.sub);
-        }
-      });
-    }
+    $$('[data-sub]').forEach(row => row.addEventListener('click', () => openSub(row.dataset.sub)));
     $$('.subpage-back').forEach(btn => btn.addEventListener('click', closeSubs));
-    const feedbackRow = $('#feedbackRow');
-    if (feedbackRow) {
-      feedbackRow.addEventListener('click', () => {
-        window.open('https://github.com/Smalluniverseheng/AI/issues', '_blank');
-      });
-    }
+    $('#feedbackRow').addEventListener('click', () => {
+      window.open('https://github.com/Smalluniverseheng/AI/issues', '_blank');
+    });
   }
 
   /* ==================== AI 绘画 ==================== */
@@ -1775,7 +1760,8 @@ const Pages = (() => {
   }
 
   function bindTrashEvents() {
-    // trashRow 的点击由 bindSubpageEvents 统一处理（data-sub="subTrash" → openSub → renderSubContent → renderTrash）
+    const trashRow = document.querySelector('[data-sub="subTrash"]');
+    if (trashRow) trashRow.addEventListener('click', () => renderTrash());
     const trashBody = $('#subTrashBody');
     if (trashBody) {
       trashBody.addEventListener('click', e => {
@@ -1920,28 +1906,15 @@ const Pages = (() => {
   }
 
   function bindChangelogEvents() {
-    const changelogRow = $('#changelogRow');
-    if (changelogRow) {
-      changelogRow.addEventListener('click', () => {
-        window.changelogModalOrder = 'desc';
-        renderChangelogModal();
-        const modal = $('#changelogModal');
-        if (modal) modal.classList.add('show');
-      });
-    }
-    const changelogClose = $('#changelogClose');
-    if (changelogClose) {
-      changelogClose.addEventListener('click', () => {
-        const modal = $('#changelogModal');
-        if (modal) modal.classList.remove('show');
-      });
-    }
-    const changelogModal = $('#changelogModal');
-    if (changelogModal) {
-      changelogModal.addEventListener('click', e => {
-        if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
-      });
-    }
+    $('#changelogRow').addEventListener('click', () => {
+      window.changelogModalOrder = 'desc';
+      renderChangelogModal();
+      $('#changelogModal').classList.add('show');
+    });
+    $('#changelogClose').addEventListener('click', () => $('#changelogModal').classList.remove('show'));
+    $('#changelogModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
+    });
     // 点击版本卡片头展开 / 收起（展开态不持久化）
     $('#changelogModalBody').addEventListener('click', e => {
       const head = e.target.closest('.tl-toggle');
@@ -2359,6 +2332,10 @@ const Pages = (() => {
     });
   }
 
+  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo };
+})();
+
+
 function renderProxySection() {
   const box = document.getElementById('subProxy');
   if (!box) { console.warn('[Proxy] subProxy element not found'); return; }
@@ -2385,9 +2362,3 @@ function renderProxySection() {
     });
   });
 }
-
-  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo };
-})();
-
-
-
