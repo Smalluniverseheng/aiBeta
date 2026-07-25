@@ -1045,9 +1045,3 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
 [dir="rtl"] .page-back .icon { transform: none; }
 
 
-
-/* v4.4.1 排行榜样式修复 */
-.rank-page .page-back { color: var(--text-1); }
-.rank-page .page-back svg { fill: currentColor; }
-#rankEntryRow .row-icon { color: var(--accent); }
-#rankEntryRow .row-icon svg { fill: currentColor; }
