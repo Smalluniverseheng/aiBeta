@@ -2359,10 +2359,6 @@ const Pages = (() => {
     });
   }
 
-  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo };
-})();
-
-
 function renderProxySection() {
   const box = document.getElementById('subProxy');
   if (!box) { console.warn('[Proxy] subProxy element not found'); return; }
@@ -2389,3 +2385,9 @@ function renderProxySection() {
     });
   });
 }
+
+  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo };
+})();
+
+
+
