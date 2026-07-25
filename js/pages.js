@@ -964,6 +964,8 @@ const Pages = (() => {
     else if (id === 'subSync') renderSyncSection();
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
+    else if (id === 'subProxy') renderProxySection();
+    else if (id === 'subTrash') renderTrash();
   }
 
   function bindSubpageEvents() {
@@ -1760,8 +1762,7 @@ const Pages = (() => {
   }
 
   function bindTrashEvents() {
-    const trashRow = document.querySelector('[data-sub="subTrash"]');
-    if (trashRow) trashRow.addEventListener('click', () => renderTrash());
+    // trashRow 的点击由 bindSubpageEvents 统一处理（data-sub="subTrash" → openSub → renderSubContent → renderTrash）
     const trashBody = $('#subTrashBody');
     if (trashBody) {
       trashBody.addEventListener('click', e => {
@@ -1906,15 +1907,28 @@ const Pages = (() => {
   }
 
   function bindChangelogEvents() {
-    $('#changelogRow').addEventListener('click', () => {
-      window.changelogModalOrder = 'desc';
-      renderChangelogModal();
-      $('#changelogModal').classList.add('show');
-    });
-    $('#changelogClose').addEventListener('click', () => $('#changelogModal').classList.remove('show'));
-    $('#changelogModal').addEventListener('click', e => {
-      if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
-    });
+    const changelogRow = $('#changelogRow');
+    if (changelogRow) {
+      changelogRow.addEventListener('click', () => {
+        window.changelogModalOrder = 'desc';
+        renderChangelogModal();
+        const modal = $('#changelogModal');
+        if (modal) modal.classList.add('show');
+      });
+    }
+    const changelogClose = $('#changelogClose');
+    if (changelogClose) {
+      changelogClose.addEventListener('click', () => {
+        const modal = $('#changelogModal');
+        if (modal) modal.classList.remove('show');
+      });
+    }
+    const changelogModal = $('#changelogModal');
+    if (changelogModal) {
+      changelogModal.addEventListener('click', e => {
+        if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
+      });
+    }
     // 点击版本卡片头展开 / 收起（展开态不持久化）
     $('#changelogModalBody').addEventListener('click', e => {
       const head = e.target.closest('.tl-toggle');
