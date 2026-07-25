@@ -1,5 +1,4 @@
 /* ==================== UI · 渲染层 ==================== */
-const MODE_META = { single: { icon: 'message', label: '单模型' }, multi: { icon: 'grid', label: '多模型对比' }, debate: { icon: 'sword', label: '辩论模式' }, collab: { icon: 'handshake', label: '协同模式' }, swarm: { icon: 'cpu', label: '集群模式' } };
 const UI = (() => {
 
   // 全局日期格式化工具（供多选、回收站等使用）
@@ -48,11 +47,6 @@ const UI = (() => {
     if (page === 'models') Pages.renderModels();
     if (page === 'discover') Pages.renderDiscover();
     if (page === 'profile') Pages.renderProfile();
-    // Bug fix: 顶部导航栏仅在对话页显示
-    const modelSelBtn = $('#modelSelBtn');
-    const modeSelBtn = $('#modeSelBtn');
-    if (modelSelBtn) modelSelBtn.style.display = (page === 'chat') ? '' : 'none';
-    if (modeSelBtn) modeSelBtn.style.display = (page === 'chat') ? '' : 'none';
     closeSidebarMobile();
   }
 
@@ -372,11 +366,9 @@ const UI = (() => {
     $('#multiConfig').style.display = mode === 'multi' ? 'block' : 'none';
     $('#debateConfig').style.display = mode === 'debate' ? 'block' : 'none';
     $('#collabConfig').style.display = mode === 'collab' ? 'block' : 'none';
-    $('#swarmConfig').style.display = mode === 'swarm' ? 'block' : 'none';
     if (mode === 'multi') renderChips('multi');
     if (mode === 'debate') { renderChips('pro'); renderChips('con'); renderChips('judge'); }
     if (mode === 'collab') renderChips('collab');
-    if (mode === 'swarm') renderChips('swarm');
     $('#debateRounds').value = Store.state.debateRounds;
     $('#debateFormat').value = Store.state.debateFormat;
     $('#collabRounds').value = Store.state.collabRounds;
@@ -773,7 +765,6 @@ const UI = (() => {
     $$('.thinking-toggle', root).forEach(bindThinking);
     $$('.toolcall-card', root).forEach(syncTcCollapse);
     $$('.msg-content-slot', root).forEach(el => MD.renderMath(el));
-    $$('.msg-content-slot', root).forEach(el => MD.renderMermaid(el));
     $$('.msg-image', root).forEach(img => {
       if (img.dataset.bound) return;
       img.dataset.bound = '1';
@@ -996,7 +987,6 @@ const UI = (() => {
     if (slot) {
       slot.innerHTML = content ? renderMd(content) : '<span style="color:var(--text-3);font-size:13px">（无内容）</span>';
       MD.renderMath(slot);
-        MD.renderMermaid(slot);
       $$('.msg-image', slot).forEach(img => img.addEventListener('click', () => openLightbox(img.src)));
     }
     const think = $('.thinking-box', card);
@@ -1242,7 +1232,6 @@ const UI = (() => {
     if (mode === 'multi') return anyVision(Store.state.multiModels);
     if (mode === 'debate') return anyVision((Store.state.debatePro || []).concat(Store.state.debateCon || [], Store.state.debateJudge || []));
     if (mode === 'collab') return anyVision(Store.state.collabModels);
-    if (mode === 'swarm') return anyVision(Store.state.swarmModels);
     const m = getModel(Store.state.currentModelId);
     return !!(m && m.vision);
   }
