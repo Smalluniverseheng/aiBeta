@@ -261,6 +261,11 @@ function getKeyForModel(model) {
 }
 
 /* 应用信息（更新日志数据在 js/changelog.js，添加式维护） */
-const APP_VERSION = '4.6';
+const APP_VERSION = '4.4';
 
-
+const MODE_META = {
+  single: { icon: 'message', label: '单模型', desc: '与单个 AI 对话' },
+  multi: { icon: 'grid', label: '多模型', desc: '多个 AI 同时回答' },
+  debate: { icon: 'sword', label: '辩论模式', desc: '立论 · 攻辩 · 总结' },
+  collab: { icon: 'handshake', label: '协同合作', desc: '多 AI 协作完成任务' }
+};
