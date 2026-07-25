@@ -331,7 +331,9 @@ const CHANGELOG = [
       '修复顶部导航栏在非对话页面显示问题（改为 JS 控制 display）',
       '修复排行榜返回键暗色下不可见',
       '修复模型列表排行榜图标颜色异常',
-      '补全 subProxy 缺失的 subpage DOM 结构'
+      '补全 subProxy 缺失的 subpage DOM 结构',
+      '新增 Mermaid 图表渲染：AI 回复中的 ```mermaid 代码块自动渲染为流程图/时序图/类图等',
+      'Mermaid 支持暗色主题自适应，CDN 失败不影响正文显示'
     ]
   },
 ];
