@@ -315,4 +315,13 @@ const CHANGELOG = [
       'Worker 部署至 ai-gateway.1829487897.workers.dev，Supabase 已配置'
     ]
   },
+  {
+    version: '4.5', date: '2026-07-25', major: true, items: [
+      '修复代理模式 subpage DOM 缺失导致点击报错',
+      '修复回收站按钮点击无反应（改为事件委托绑定）',
+      '修复排行榜返回键在暗色主题下不可见',
+      '修复模型列表排行榜入口图标颜色缺失',
+      'Worker 混合架构上线（Cloudflare Worker + Supabase）'
+    ]
+  },
 ];
