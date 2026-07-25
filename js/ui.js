@@ -50,8 +50,10 @@ const UI = (() => {
     // Bug fix: 顶部导航栏仅在对话页显示
     const modelSelBtn = $('#modelSelBtn');
     const modeSelBtn = $('#modeSelBtn');
+    const hamburgerBtn = $('#hamburgerBtn');
     if (modelSelBtn) modelSelBtn.style.display = (page === 'chat') ? '' : 'none';
     if (modeSelBtn) modeSelBtn.style.display = (page === 'chat') ? '' : 'none';
+    if (hamburgerBtn) hamburgerBtn.style.display = (page === 'chat') ? '' : 'none';
     closeSidebarMobile();
   }
 
