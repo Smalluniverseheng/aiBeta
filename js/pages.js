@@ -2423,3 +2423,4 @@ function renderProxySection() {
     });
   });
 }
+})();
