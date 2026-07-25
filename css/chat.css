@@ -983,6 +983,37 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
   font-size: 12px;
   color: var(--text-2);
 }
+.sheet-item {
+  position: relative;
+}
+.sheet-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.sheet-item.on .sheet-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sheet-item.on .sheet-badge {
+  opacity: 1;
+  transform: scale(1);
+}
 
 /* 联网搜索下拉 */
 .web-search-dropdown {
