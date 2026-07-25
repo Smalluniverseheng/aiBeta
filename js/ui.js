@@ -1172,6 +1172,101 @@ const UI = (() => {
     });
 
     $('#sendBtn').addEventListener('click', () => { Chat.isSending() ? Chat.stop() : Chat.send(); updateTokenEst(); });
+    /* ==================== 底部工具抽屉 ==================== */
+    const plusBtn = document.getElementById('inputPlusBtn');
+    const sheet = document.getElementById('inputToolsSheet');
+    const sheetOverlay = sheet?.querySelector('.sheet-overlay');
+
+    if (plusBtn && sheet) {
+      plusBtn.addEventListener('click', () => {
+        const isOpen = sheet.classList.contains('active');
+        if (isOpen) {
+          sheet.classList.remove('active');
+          plusBtn.classList.remove('active');
+        } else {
+          sheet.classList.add('active');
+          plusBtn.classList.add('active');
+        }
+      });
+
+      sheetOverlay?.addEventListener('click', () => {
+        sheet.classList.remove('active');
+        plusBtn.classList.remove('active');
+      });
+
+      sheet.querySelectorAll('.sheet-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const action = item.dataset.action;
+          handleToolAction(action);
+          sheet.classList.remove('active');
+          plusBtn.classList.remove('active');
+        });
+      });
+    }
+
+    function handleToolAction(action) {
+      switch(action) {
+        case 'camera':
+          document.getElementById('cameraInput')?.click();
+          break;
+        case 'photo':
+          document.getElementById('imageInput')?.click();
+          break;
+        case 'file':
+          document.getElementById('fileInput')?.click();
+          break;
+        case 'wechat':
+          Toast.info('微信文件功能即将开放');
+          break;
+        case 'phone':
+          document.getElementById('micBtn')?.click();
+          break;
+        case 'phrase':
+          if (typeof openPhrasePicker === 'function') openPhrasePicker();
+          break;
+      }
+    }
+
+    /* ==================== 联网搜索下拉 ==================== */
+    const searchToggle = document.getElementById('searchToggleBtn');
+    const searchDropdown = document.getElementById('webSearchDropdown');
+    const searchOverlay = searchDropdown?.querySelector('.search-overlay');
+    const searchOptions = searchDropdown?.querySelectorAll('.search-option');
+
+    if (searchToggle && searchDropdown) {
+      searchToggle.addEventListener('click', () => {
+        searchDropdown.classList.add('active');
+        searchToggle.classList.add('active');
+      });
+
+      searchOverlay?.addEventListener('click', () => {
+        searchDropdown.classList.remove('active');
+        searchToggle.classList.remove('active');
+      });
+
+      searchOptions?.forEach(opt => {
+        opt.addEventListener('click', () => {
+          searchOptions.forEach(o => o.classList.remove('active'));
+          opt.classList.add('active');
+          const val = opt.dataset.value;
+
+          Store.patch({ 
+            webSearch: Object.assign({}, Store.state.webSearch, { 
+              enabled: val === 'auto', 
+              mode: val 
+            }) 
+          });
+
+          const statusLabel = document.getElementById('searchStatus');
+          if (statusLabel) statusLabel.textContent = val === 'auto' ? '自动' : '关闭';
+
+          searchDropdown.classList.remove('active');
+          searchToggle.classList.remove('active');
+        });
+      });
+    }
+
+    // 保留原有按钮事件（隐藏但仍需功能）
     $('#attachBtn').addEventListener('click', () => $('#fileInput').click());
     $('#fileInput').addEventListener('change', e => {
       Array.from(e.target.files).forEach(f => Chat.addAttachment(f));
@@ -1219,6 +1314,7 @@ const UI = (() => {
     });
 
     // 预设角色横幅：清除角色
+// 预设角色横幅：清除角色
     $('#presetBannerClear').addEventListener('click', () => {
       const chat = Chat.getCurrentChat();
       if (!chat) return;
