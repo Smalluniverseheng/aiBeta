@@ -671,6 +671,28 @@ id="subHelp">
       <div class="subpage-body" id="subProxyBody"></div>
     </div>
 
+    <!-- 集群模式 -->
+    <div class="subpage" id="subSwarm">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>集群模式配置</h2></div>
+      <div class="subpage-body" id="subSwarmBody">
+        <div class="settings-group-title">集群模型（至少 2 个）</div>
+        <div class="settings-card" id="swarmModelsList"></div>
+        <div class="settings-group-title" style="margin-top:16px;">领队模型</div>
+        <div class="settings-card" id="swarmLeaderSelect"></div>
+        <div class="settings-group-title" style="margin-top:16px;">评审轮数</div>
+        <div class="settings-card">
+          <div class="settings-row" style="justify-content:space-between;">
+            <span>交叉评审轮数</span>
+            <select id="swarmRoundsSelect" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text-1);">
+              <option value="1">1 轮</option>
+              <option value="2">2 轮</option>
+              <option value="3">3 轮</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 移动端底部导航 -->
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
