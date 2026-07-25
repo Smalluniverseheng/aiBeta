@@ -1045,3 +1045,12 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
 [dir="rtl"] .page-back .icon { transform: none; }
 
 
+
+
+/* ==================== v4.6 Bug Fixes ==================== */
+
+/* Bug fix: 排行榜返回键暗色下不可见 */
+.rank-page .page-back { color: var(--text-1); }
+
+/* Bug fix: 模型列表排行榜图标颜色异常 */
+#rankEntryRow .row-icon { color: var(--accent); }
