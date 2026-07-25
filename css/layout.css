@@ -348,6 +348,7 @@
   [dir="rtl"] .sidebar { left: auto; right: 0; transform: translateX(104%); }
   .sidebar.open { transform: none; }
   .sidebar.collapsed { margin-left: 0; }
+  .topbar.mobile-hidden { display: none !important; }
   .sidebar-toggle { display: none; }
   .sidebar-overlay.show { display: block; }
   .hamburger-btn { display: flex; }
