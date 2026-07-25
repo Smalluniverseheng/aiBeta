@@ -296,7 +296,6 @@ const CHANGELOG = [
       '修复排行榜在发现页占用空间问题'
     ]
   },
-
   {
     version: '4.3', date: '2026-07-24', major: false, items: [
       '品牌图标统一为彩色星球（brand.jpg）',
@@ -306,7 +305,7 @@ const CHANGELOG = [
       '修复排行榜/多选页面返回按钮图标不显示（替换 data-icon 为 icon() 函数）',
       '更新 sw.js 缓存版本触发刷新'
     ]
-  };
+  },
   {
     version: '4.4', date: '2026-07-25', major: true, items: [
       '后端混合架构上线：Cloudflare Worker 网关 + Supabase 数据存储',
@@ -331,7 +330,9 @@ const CHANGELOG = [
       '修复顶部导航栏在非对话页面显示问题（改为 JS 控制 display）',
       '修复排行榜返回键暗色下不可见',
       '修复模型列表排行榜图标颜色异常',
-      '补全 subProxy 缺失的 subpage DOM 结构'
+      '补全 subProxy 缺失的 subpage DOM 结构',
+      '新增 Mermaid 图表渲染：AI 回复中的 ```mermaid 代码块自动渲染为流程图/时序图/类图等',
+      'Mermaid 支持暗色主题自适应，CDN 失败不影响正文显示'
     ]
   },
 ];
