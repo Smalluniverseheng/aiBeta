@@ -108,6 +108,21 @@ const UI = (() => {
     let longPressTarget = null;
     let isLongPress = false;
 
+    // 手表端：点击主内容区（侧边栏右侧空白）关闭侧边栏返回对话
+    if (window.DeviceInfo && DeviceInfo.isWatch()) {
+      const mainArea = document.querySelector('.main-area');
+      if (mainArea) {
+        mainArea.addEventListener('click', (e) => {
+          const sidebar = $('#sidebar');
+          if (sidebar && sidebar.classList.contains('show')) {
+            if (!e.target.closest('#sidebar')) {
+              closeSidebarMobile();
+            }
+          }
+        });
+      }
+    }
+
     // 手表端：touch 事件（长按菜单 + 点击切换）
     sidebarList.addEventListener('touchstart', e => {
       const item = e.target.closest('.chat-item');
@@ -1588,7 +1603,13 @@ const UI = (() => {
       const dy = e.touches[0].clientY - startY;
       if (!decided) {
         if (Math.abs(dx) < DECIDE && Math.abs(dy) < DECIDE) return;
-        if (Math.abs(dy) > Math.abs(dx) * 1.5) { tracking = false; return; }
+        // 在侧边栏列表内滑动时：垂直优先，提高水平阈值防止误触关闭
+        const inSidebarList = e.target.closest && e.target.closest('#sidebarList');
+        if (inSidebarList && sb().classList.contains('show')) {
+          if (Math.abs(dy) > Math.abs(dx)) { tracking = false; return; }
+        } else {
+          if (Math.abs(dy) > Math.abs(dx) * 1.5) { tracking = false; return; }
+        }
         decided = true;
         const sidebarOpen = sb().classList.contains('show');
         // 右滑打开，左滑关闭
