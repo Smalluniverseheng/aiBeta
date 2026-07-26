@@ -965,6 +965,7 @@ const Pages = (() => {
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
     else if (id === 'subProxy') renderProxySection();
+    else if (id === 'subNavSettings') renderNavSettings();
     else if (id === 'subTrash') renderTrash();
   }
 
