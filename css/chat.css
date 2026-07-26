@@ -1024,3 +1024,107 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
 [data-theme="dark"] .sheet-icon {
   background: #2a2a2a;
 }
+
+
+/* ==================== v4.9 滑动切换对话 + 功能选择面板 ==================== */
+
+/* 滑动动画 */
+.chat-scroll {
+  touch-action: pan-y;
+}
+.chat-container {
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease;
+}
+.chat-container.swipe-left {
+  transform: translateX(-30px);
+  opacity: 0.7;
+}
+.chat-container.swipe-right {
+  transform: translateX(30px);
+  opacity: 0.7;
+}
+
+/* 功能选择面板 */
+.feature-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.feature-sheet.active {
+  pointer-events: auto;
+  opacity: 1;
+}
+.feature-sheet .sheet-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(2px);
+}
+.feature-sheet .sheet-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-elev);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px 32px;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.feature-sheet.active .sheet-content {
+  transform: translateY(0);
+}
+.feature-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+.feature-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.feature-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.feature-option:active {
+  background: var(--bg-hover);
+}
+.feature-option.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.feature-option .opt-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.feature-option .opt-label {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+}
+.feature-option .opt-check {
+  width: 20px;
+  height: 20px;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.feature-option:not(.active) .opt-check {
+  display: none;
+}
