@@ -2347,33 +2347,72 @@ const Pages = (() => {
     });
   }
 
-  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo };
-})();
+  function renderProxySection() {
+    const box = document.getElementById('subProxyBody');
+    if (!box) { console.warn('[Proxy] subProxyBody element not found'); return; }
+    const mode = (Store.state && Store.state.proxyMode) || 'local';
+    box.innerHTML = 
+      '<div class="settings-group-title">代理模式</div>' +
+      '<div class="proxy-option' + (mode === 'local' ? ' active' : '') + '" data-mode="local" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;cursor:pointer;background:' + (mode === 'local' ? '#f0fdf4' : '#fff') + ';">' +
+      '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">📱 本地直连</div>' +
+      '<div style="font-size:13px;color:#666;">API Key 保存在本机浏览器中，直接请求厂商服务器。适合个人使用，响应更快。</div>' +
+      '</div>' +
+      '<div class="proxy-option' + (mode === 'server' ? ' active' : '') + '" data-mode="server" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;cursor:pointer;background:' + (mode === 'server' ? '#eff6ff' : '#fff') + ';">' +
+      '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">☁️ 服务器代理</div>' +
+      '<div style="font-size:13px;color:#666;">API Key 保存在云端 Worker，通过服务器转发请求。适合多设备同步，Key 不暴露前端。</div>' +
+      '</div>' +
+      '<div style="padding:12px 16px;font-size:12px;color:#999;margin-top:8px;">切换后下次对话生效</div>';
 
-
-function renderProxySection() {
-  const box = document.getElementById('subProxyBody');
-  if (!box) { console.warn('[Proxy] subProxyBody element not found'); return; }
-  const mode = (Store.state && Store.state.proxyMode) || 'local';
-  box.innerHTML = 
-    '<div class="settings-group-title">代理模式</div>' +
-    '<div class="proxy-option' + (mode === 'local' ? ' active' : '') + '" data-mode="local" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;cursor:pointer;background:' + (mode === 'local' ? '#f0fdf4' : '#fff') + ';">' +
-    '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">📱 本地直连</div>' +
-    '<div style="font-size:13px;color:#666;">API Key 保存在本机浏览器中，直接请求厂商服务器。适合个人使用，响应更快。</div>' +
-    '</div>' +
-    '<div class="proxy-option' + (mode === 'server' ? ' active' : '') + '" data-mode="server" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;cursor:pointer;background:' + (mode === 'server' ? '#eff6ff' : '#fff') + ';">' +
-    '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">☁️ 服务器代理</div>' +
-    '<div style="font-size:13px;color:#666;">API Key 保存在云端 Worker，通过服务器转发请求。适合多设备同步，Key 不暴露前端。</div>' +
-    '</div>' +
-    '<div style="padding:12px 16px;font-size:12px;color:#999;margin-top:8px;">切换后下次对话生效</div>';
-
-  box.querySelectorAll('.proxy-option').forEach(el => {
-    el.addEventListener('click', () => {
-      const newMode = el.dataset.mode;
-      Store.patch({proxyMode: newMode});
-      renderProxySection();
-      renderRowDescs();
-      if (typeof showToast === 'function') showToast(newMode === 'server' ? '已切换至服务器代理' : '已切换至本地直连');
+    box.querySelectorAll('.proxy-option').forEach(el => {
+      el.addEventListener('click', () => {
+        const newMode = el.dataset.mode;
+        Store.patch({proxyMode: newMode});
+        renderProxySection();
+        renderRowDescs();
+        if (typeof showToast === 'function') showToast(newMode === 'server' ? '已切换至服务器代理' : '已切换至本地直连');
+      });
     });
-  });
-}
+  }
+
+  function renderNavSettings() {
+    const devices = [
+      { key: 'desktop', label: '桌面端', icon: 'monitor' },
+      { key: 'mobile', label: '移动端', icon: 'smartphone' },
+      { key: 'watch', label: '手表端', icon: 'watch' }
+    ];
+    const modes = [
+      { key: 'navbar', label: '导航栏' },
+      { key: 'float', label: '悬浮按钮' },
+      { key: 'both', label: '两者' },
+      { key: 'none', label: '关闭' }
+    ];
+
+    devices.forEach(dev => {
+      const container = $('#nav' + dev.key.charAt(0).toUpperCase() + dev.key.slice(1) + 'Opts');
+      if (!container) return;
+      const current = (Store.state.navSettings || {})[dev.key] || (dev.key === 'watch' ? 'float' : 'navbar');
+      container.innerHTML = modes.map(m => {
+        const active = m.key === current;
+        return '<div class="settings-row clickable nav-opt-row" data-device="' + dev.key + '" data-mode="' + m.key + '" style="' + (active ? 'background:var(--accent-10);color:var(--accent);font-weight:500' : '') + '">' +
+          '<span class="row-label"><span class="row-title">' + m.label + '</span></span>' +
+          (active ? '<span data-icon="check" style="color:var(--accent)"></span>' : '') +
+          '</div>';
+      }).join('');
+    });
+
+    $$('.nav-opt-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const device = row.dataset.device;
+        const mode = row.dataset.mode;
+        const ns = Object.assign({}, Store.state.navSettings || {});
+        ns[device] = mode;
+        Store.patch({ navSettings: ns });
+        renderNavSettings();
+        renderRowDescs();
+        window.dispatchEvent(new CustomEvent('pagechange', { detail: { page: Store.state.currentPage } }));
+      });
+    });
+  }
+
+  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings };
+})();
