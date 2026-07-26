@@ -1223,9 +1223,15 @@ const UI = (() => {
           if (el) el.click();
           break;
         case 'think':
-          Store.state.thinkingOn = !(Store.state.thinkingOn !== false);
-          syncThinkBtn();
-          Toast.info(Store.state.thinkingOn ? '深度思考已开启' : '深度思考已关闭');
+          openFeatureSheet('深度思考', [
+            { value: 'on', label: '开启', active: Store.state.thinkingOn !== false, icon: '<path d="M12 2a7 7 0 00-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 002 2h4a2 2 0 002-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 00-7-7z"/><path d="M9 21h6"/>' },
+            { value: 'off', label: '关闭', active: Store.state.thinkingOn === false, icon: '<path d="M12 2a7 7 0 00-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 002 2h4a2 2 0 002-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 00-7-7z"/><path d="M9 21h6"/>' }
+          ], function(val) {
+            Store.state.thinkingOn = val === 'on';
+            Store.save();
+            if (typeof syncThinkBtn === 'function') syncThinkBtn();
+            Toast.info(Store.state.thinkingOn ? '深度思考已开启' : '深度思考已关闭（响应更快）');
+          });
           break;
         case 'voice':
           el = document.getElementById('micBtn');
@@ -1233,19 +1239,25 @@ const UI = (() => {
           break;
         case 'websearch':
           var ws = Store.state.webSearch;
-          var newEnabled = !ws.enabled;
           var hasKey = !!(ws.tavilyKey && ws.tavilyKey.trim());
           var model = Models.current ? Models.current() : null;
           var native = model && (model.webSearch || model.provider === 'Perplexity');
-          if (newEnabled && !hasKey && !native) {
-            Toast.warn('请先配置 Tavily Key 或选择支持原生联网的模型');
-            return;
+          var opts = [
+            { value: 'off', label: '关闭', active: !ws.enabled, icon: '<circle cx="12" cy="12" r="10"/><line x1="8" y1="8" x2="16" y2="16"/><line x1="16" y1="8" x2="8" y2="16"/>' },
+            { value: 'on', label: '自动联网', active: ws.enabled && !hasKey, icon: '<circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/>' }
+          ];
+          if (hasKey) {
+            opts.push({ value: 'tavily', label: 'Tavily 搜索', active: ws.enabled && hasKey, icon: '<circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/>' });
           }
-          Store.patch({
-            webSearch: Object.assign({}, ws, { enabled: newEnabled, mode: newEnabled ? 'auto' : 'off' })
+          openFeatureSheet('联网搜索', opts, function(val) {
+            var newEnabled = val !== 'off';
+            var mode = val === 'tavily' ? 'tavily' : 'auto';
+            Store.patch({
+              webSearch: Object.assign({}, ws, { enabled: newEnabled, mode: mode })
+            });
+            if (typeof updateWebSearchBtn === 'function') updateWebSearchBtn();
+            Toast.info(newEnabled ? '联网搜索已开启' : '联网搜索已关闭');
           });
-          updateWebSearchBtn();
-          Toast.info(newEnabled ? '联网搜索已开启' : '联网搜索已关闭');
           break;
         case 'phrase':
           if (typeof openPhrasePicker === 'function') openPhrasePicker();
@@ -1317,7 +1329,93 @@ const UI = (() => {
       Toast.info(Store.state.thinkingOn ? '深度思考已开启' : '深度思考已关闭（响应更快）');
     });
 
-    // 预设角色横幅：清除角色
+    
+
+    /* ==================== 左右滑动切换对话 ==================== */
+    (function initSwipe() {
+      var chatScroll = document.querySelector('.chat-scroll');
+      if (!chatScroll) return;
+      var startX = 0, startY = 0, isDragging = false;
+      var SWIPE_THRESHOLD = 60;
+
+      chatScroll.addEventListener('touchstart', function(e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        isDragging = true;
+      }, { passive: true });
+
+      chatScroll.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+        var dx = e.touches[0].clientX - startX;
+        var dy = e.touches[0].clientY - startY;
+        if (Math.abs(dy) > Math.abs(dx)) {
+          isDragging = false;
+          return;
+        }
+        var container = document.querySelector('.chat-container');
+        if (container) {
+          if (dx > 20) container.classList.add('swipe-right');
+          else if (dx < -20) container.classList.add('swipe-left');
+        }
+      }, { passive: true });
+
+      chatScroll.addEventListener('touchend', function(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        var dx = e.changedTouches[0].clientX - startX;
+        var container = document.querySelector('.chat-container');
+        if (container) {
+          container.classList.remove('swipe-left', 'swipe-right');
+        }
+        if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+
+        var chats = Store.state.chats;
+        var currentId = Store.state.currentChatId;
+        var currentIndex = -1;
+        for (var i = 0; i < chats.length; i++) {
+          if (chats[i].id === currentId) { currentIndex = i; break; }
+        }
+        if (currentIndex === -1) return;
+
+        if (dx > 0 && currentIndex < chats.length - 1) {
+          Chat.load(chats[currentIndex + 1].id);
+        } else if (dx < 0 && currentIndex > 0) {
+          Chat.load(chats[currentIndex - 1].id);
+        }
+      }, { passive: true });
+    })();
+
+    /* ==================== 功能选择面板 ==================== */
+    var featureSheet = document.getElementById('featureSheet');
+    var featureOverlay = featureSheet && featureSheet.querySelector('.sheet-overlay');
+    var featureTitle = document.getElementById('featureTitle');
+    var featureOptions = document.getElementById('featureOptions');
+
+    function openFeatureSheet(title, options, onSelect) {
+      if (!featureSheet || !featureOptions) return;
+      featureTitle.textContent = title;
+      featureOptions.innerHTML = '';
+      options.forEach(function(opt) {
+        var div = document.createElement('div');
+        div.className = 'feature-option' + (opt.active ? ' active' : '');
+        div.innerHTML = '<svg class="opt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + opt.icon + '</svg>' +
+          '<span class="opt-label">' + opt.label + '</span>' +
+          '<svg class="opt-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+        div.addEventListener('click', function() {
+          onSelect(opt.value);
+          featureSheet.classList.remove('active');
+        });
+        featureOptions.appendChild(div);
+      });
+      featureSheet.classList.add('active');
+    }
+
+    if (featureOverlay) {
+      featureOverlay.addEventListener('click', function() {
+        featureSheet.classList.remove('active');
+      });
+    }
+// 预设角色横幅：清除角色
 // 预设角色横幅：清除角色
     $('#presetBannerClear').addEventListener('click', () => {
       const chat = Chat.getCurrentChat();
