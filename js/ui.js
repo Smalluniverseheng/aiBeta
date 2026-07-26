@@ -1240,7 +1240,9 @@ const UI = (() => {
         case 'websearch':
           var ws = Store.state.webSearch;
           var hasKey = !!(ws.tavilyKey && ws.tavilyKey.trim());
-          var model = Models.current ? Models.current() : null;
+          var modelId = Store.state.currentModelId;
+          var model = null;
+          try { if (typeof getModel === 'function') model = getModel(modelId); } catch(e) {}
           var native = model && (model.webSearch || model.provider === 'Perplexity');
           var opts = [
             { value: 'off', label: '关闭', active: !ws.enabled, icon: '<circle cx="12" cy="12" r="10"/><line x1="8" y1="8" x2="16" y2="16"/><line x1="16" y1="8" x2="8" y2="16"/>' },
@@ -1252,9 +1254,15 @@ const UI = (() => {
           openFeatureSheet('联网搜索', opts, function(val) {
             var newEnabled = val !== 'off';
             var mode = val === 'tavily' ? 'tavily' : 'auto';
+            if (typeof Store.patch === 'function') {
             Store.patch({
               webSearch: Object.assign({}, ws, { enabled: newEnabled, mode: mode })
             });
+          } else {
+            ws.enabled = newEnabled;
+            ws.mode = mode;
+            Store.save();
+          }
             if (typeof updateWebSearchBtn === 'function') updateWebSearchBtn();
             Toast.info(newEnabled ? '联网搜索已开启' : '联网搜索已关闭');
           });
@@ -1346,26 +1354,26 @@ const UI = (() => {
 
       chatScroll.addEventListener('touchmove', function(e) {
         if (!isDragging) return;
-        var dx = e.touches[0].clientX - startX;
-        var dy = e.touches[0].clientY - startY;
-        if (Math.abs(dy) > Math.abs(dx)) {
+        var moveDx = e.touches[0].clientX - startX;
+        var moveDy = e.touches[0].clientY - startY;
+        if (Math.abs(moveDy) > Math.abs(moveDx)) {
           isDragging = false;
           return;
         }
-        var container = document.querySelector('.chat-container');
-        if (container) {
-          if (dx > 20) container.classList.add('swipe-right');
-          else if (dx < -20) container.classList.add('swipe-left');
+        var swipeContainer = document.querySelector('.chat-container');
+        if (swipeContainer) {
+          if (moveDx > 20) swipeContainer.classList.add('swipe-right');
+          else if (moveDx < -20) swipeContainer.classList.add('swipe-left');
         }
       }, { passive: true });
 
       chatScroll.addEventListener('touchend', function(e) {
         if (!isDragging) return;
         isDragging = false;
-        var dx = e.changedTouches[0].clientX - startX;
-        var container = document.querySelector('.chat-container');
-        if (container) {
-          container.classList.remove('swipe-left', 'swipe-right');
+        var endDx = e.changedTouches[0].clientX - startX;
+        var endContainer = document.querySelector('.chat-container');
+        if (endContainer) {
+          endContainer.classList.remove('swipe-left', 'swipe-right');
         }
         if (Math.abs(dx) < SWIPE_THRESHOLD) return;
 
@@ -1392,7 +1400,7 @@ const UI = (() => {
     var featureOptions = document.getElementById('featureOptions');
 
     function openFeatureSheet(title, options, onSelect) {
-      if (!featureSheet || !featureOptions) return;
+      if (!featureSheet || !featureOptions || !featureTitle) return;
       featureTitle.textContent = title;
       featureOptions.innerHTML = '';
       options.forEach(function(opt) {
