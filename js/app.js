@@ -45,7 +45,7 @@
     const btn = $('#floatBackBtn');
     if (!btn) return;
 
-    let dragging = false, moved = false;
+    let dragging = false, moved = false, moveDist = 0;
     let startX, startY, startLeft, startTop;
     let currentDevice = DeviceInfo.type;
 
@@ -67,12 +67,13 @@
     }
 
     btn.addEventListener('click', (e) => {
-      if (moved) { moved = false; return; }
+      if (moved && moveDist > 10) { moved = false; moveDist = 0; return; }
+      moved = false; moveDist = 0;
       UI.navigate('chat');
     });
 
     btn.addEventListener('touchstart', (e) => {
-      dragging = true; moved = false;
+      dragging = true; moved = false; moveDist = 0;
       const t = e.touches[0];
       startX = t.clientX; startY = t.clientY;
       const rect = btn.getBoundingClientRect();
@@ -85,7 +86,8 @@
       if (!dragging) return;
       const t = e.touches[0];
       const dx = t.clientX - startX, dy = t.clientY - startY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      moveDist = Math.sqrt(dx*dx + dy*dy);
+      if (moveDist > 8) moved = true;
       let nx = startLeft + dx, ny = startTop + dy;
       const ww = window.innerWidth, wh = window.innerHeight;
       nx = Math.max(0, Math.min(ww - 48, nx));
@@ -97,11 +99,14 @@
 
     document.addEventListener('touchend', () => {
       if (!dragging) return;
-      dragging = false; btn.classList.remove('dragging');
+      dragging = false;
+      btn.classList.remove('dragging');
+      // 延迟重置，确保 click 事件能正确判断
+      setTimeout(() => { moved = false; moveDist = 0; }, 60);
     });
 
     btn.addEventListener('mousedown', (e) => {
-      dragging = true; moved = false;
+      dragging = true; moved = false; moveDist = 0;
       startX = e.clientX; startY = e.clientY;
       const rect = btn.getBoundingClientRect();
       startLeft = rect.left; startTop = rect.top;
@@ -112,7 +117,8 @@
     document.addEventListener('mousemove', (e) => {
       if (!dragging) return;
       const dx = e.clientX - startX, dy = e.clientY - startY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      moveDist = Math.sqrt(dx*dx + dy*dy);
+      if (moveDist > 8) moved = true;
       let nx = startLeft + dx, ny = startTop + dy;
       const ww = window.innerWidth, wh = window.innerHeight;
       nx = Math.max(0, Math.min(ww - 48, nx));
@@ -123,7 +129,9 @@
 
     document.addEventListener('mouseup', () => {
       if (!dragging) return;
-      dragging = false; btn.classList.remove('dragging');
+      dragging = false;
+      btn.classList.remove('dragging');
+      setTimeout(() => { moved = false; moveDist = 0; }, 60);
     });
 
     window.addEventListener('pagechange', updateVisibility);
