@@ -40,6 +40,104 @@
     };
   })();
 
+  /* ---------- 可拖动悬浮返回按钮 ---------- */
+  function initFloatBackBtn() {
+    const btn = $('#floatBackBtn');
+    if (!btn) return;
+
+    let dragging = false, moved = false;
+    let startX, startY, startLeft, startTop;
+    let currentDevice = DeviceInfo.type;
+
+    function updateVisibility() {
+      const page = Store.state.currentPage || 'chat';
+      const settings = Store.state.navSettings || {};
+      const mode = settings[currentDevice] || (currentDevice === 'watch' ? 'float' : 'navbar');
+      const isChat = page === 'chat';
+
+      if (isChat) {
+        btn.style.display = 'none';
+        document.documentElement.dataset.floatVisible = 'false';
+        return;
+      }
+
+      const showFloat = mode === 'float' || mode === 'both';
+      btn.style.display = showFloat ? 'flex' : 'none';
+      document.documentElement.dataset.floatVisible = showFloat ? 'true' : 'false';
+    }
+
+    btn.addEventListener('click', (e) => {
+      if (moved) { moved = false; return; }
+      UI.navigate('chat');
+    });
+
+    btn.addEventListener('touchstart', (e) => {
+      dragging = true; moved = false;
+      const t = e.touches[0];
+      startX = t.clientX; startY = t.clientY;
+      const rect = btn.getBoundingClientRect();
+      startLeft = rect.left; startTop = rect.top;
+      btn.classList.add('dragging');
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX, dy = t.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      let nx = startLeft + dx, ny = startTop + dy;
+      const ww = window.innerWidth, wh = window.innerHeight;
+      nx = Math.max(0, Math.min(ww - 48, nx));
+      ny = Math.max(0, Math.min(wh - 48, ny));
+      btn.style.left = nx + 'px'; btn.style.right = 'auto';
+      btn.style.top = ny + 'px'; btn.style.bottom = 'auto';
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false; btn.classList.remove('dragging');
+    });
+
+    btn.addEventListener('mousedown', (e) => {
+      dragging = true; moved = false;
+      startX = e.clientX; startY = e.clientY;
+      const rect = btn.getBoundingClientRect();
+      startLeft = rect.left; startTop = rect.top;
+      btn.classList.add('dragging');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      let nx = startLeft + dx, ny = startTop + dy;
+      const ww = window.innerWidth, wh = window.innerHeight;
+      nx = Math.max(0, Math.min(ww - 48, nx));
+      ny = Math.max(0, Math.min(wh - 48, ny));
+      btn.style.left = nx + 'px'; btn.style.right = 'auto';
+      btn.style.top = ny + 'px'; btn.style.bottom = 'auto';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false; btn.classList.remove('dragging');
+    });
+
+    window.addEventListener('pagechange', updateVisibility);
+    window.addEventListener('resize', () => {
+      const newDevice = DeviceInfo.type;
+      if (newDevice !== currentDevice) {
+        currentDevice = newDevice;
+        updateVisibility();
+      }
+    });
+
+    updateVisibility();
+  }
+
   /* ---------- Service Worker 注册 ---------- */
   function registerSW() {
     if (!('serviceWorker' in navigator)) return;
@@ -209,6 +307,8 @@
 
     if (Auth.checkSession()) { UI.showApp(); restoreCloud(); }
     else UI.showLogin();
+
+    initFloatBackBtn();
 
     // 断网恢复：补一次同步（SB 内部自行判断登录态/离线，静默跳过）
     window.addEventListener('online', () => { if (Store.state.cloudUser) SB.Sync.schedulePush(0); });
