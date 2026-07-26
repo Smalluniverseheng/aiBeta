@@ -50,6 +50,8 @@ const UI = (() => {
     // Bug fix: 顶部导航栏仅在对话页显示
     const topbar = $('#topbar');
     if (topbar) topbar.classList.toggle('mobile-hidden', page !== 'chat');
+    // 触发浮动按钮可见性更新
+    window.dispatchEvent(new CustomEvent('pagechange', { detail: { page } }));
     closeSidebarMobile();
   }
 
