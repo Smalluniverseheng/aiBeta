@@ -45,7 +45,7 @@
     const btn = $('#floatBackBtn');
     if (!btn) return;
 
-    let dragging = false, moved = false, moveDist = 0;
+    let dragging = false, moved = false;
     let startX, startY, startLeft, startTop;
     let currentDevice = DeviceInfo.type;
 
@@ -66,59 +66,65 @@
       document.documentElement.dataset.floatVisible = showFloat ? 'true' : 'false';
     }
 
+    // 点击返回对话（关闭子页面 + 切换页面）
     btn.addEventListener('click', (e) => {
-      if (moved && moveDist > 10) { moved = false; moveDist = 0; return; }
-      moved = false; moveDist = 0;
+      if (moved) { moved = false; return; }
+      // 关闭所有子页面
+      $$('.subpage').forEach(s => s.classList.remove('show'));
       UI.navigate('chat');
     });
 
+    // 触摸拖动
     btn.addEventListener('touchstart', (e) => {
-      dragging = true; moved = false; moveDist = 0;
+      dragging = true; moved = false;
       const t = e.touches[0];
       startX = t.clientX; startY = t.clientY;
       const rect = btn.getBoundingClientRect();
       startLeft = rect.left; startTop = rect.top;
       btn.classList.add('dragging');
-      e.preventDefault();
-    }, { passive: false });
+    }, { passive: true });
 
     document.addEventListener('touchmove', (e) => {
       if (!dragging) return;
       const t = e.touches[0];
       const dx = t.clientX - startX, dy = t.clientY - startY;
-      moveDist = Math.sqrt(dx*dx + dy*dy);
-      if (moveDist > 8) moved = true;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
       let nx = startLeft + dx, ny = startTop + dy;
       const ww = window.innerWidth, wh = window.innerHeight;
       nx = Math.max(0, Math.min(ww - 48, nx));
       ny = Math.max(0, Math.min(wh - 48, ny));
       btn.style.left = nx + 'px'; btn.style.right = 'auto';
       btn.style.top = ny + 'px'; btn.style.bottom = 'auto';
-      e.preventDefault();
-    }, { passive: false });
+    }, { passive: true });
 
     document.addEventListener('touchend', () => {
       if (!dragging) return;
       dragging = false;
       btn.classList.remove('dragging');
-      // 延迟重置，确保 click 事件能正确判断
-      setTimeout(() => { moved = false; moveDist = 0; }, 60);
+      // 吸附到左右边缘
+      const rect = btn.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      if (cx < vw / 2) { btn.style.left = '12px'; btn.style.right = 'auto'; }
+      else { btn.style.left = 'auto'; btn.style.right = '12px'; }
+      if (cy < 60) { btn.style.top = '60px'; btn.style.bottom = 'auto'; }
+      else if (cy > vh - 60) { btn.style.top = 'auto'; btn.style.bottom = '12px'; }
     });
 
+    // 鼠标拖动（桌面端）
     btn.addEventListener('mousedown', (e) => {
-      dragging = true; moved = false; moveDist = 0;
+      dragging = true; moved = false;
       startX = e.clientX; startY = e.clientY;
       const rect = btn.getBoundingClientRect();
       startLeft = rect.left; startTop = rect.top;
       btn.classList.add('dragging');
-      e.preventDefault();
     });
 
     document.addEventListener('mousemove', (e) => {
       if (!dragging) return;
       const dx = e.clientX - startX, dy = e.clientY - startY;
-      moveDist = Math.sqrt(dx*dx + dy*dy);
-      if (moveDist > 8) moved = true;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
       let nx = startLeft + dx, ny = startTop + dy;
       const ww = window.innerWidth, wh = window.innerHeight;
       nx = Math.max(0, Math.min(ww - 48, nx));
@@ -131,7 +137,14 @@
       if (!dragging) return;
       dragging = false;
       btn.classList.remove('dragging');
-      setTimeout(() => { moved = false; moveDist = 0; }, 60);
+      const rect = btn.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      if (cx < vw / 2) { btn.style.left = '12px'; btn.style.right = 'auto'; }
+      else { btn.style.left = 'auto'; btn.style.right = '12px'; }
+      if (cy < 60) { btn.style.top = '60px'; btn.style.bottom = 'auto'; }
+      else if (cy > vh - 60) { btn.style.top = 'auto'; btn.style.bottom = '12px'; }
     });
 
     window.addEventListener('pagechange', updateVisibility);
