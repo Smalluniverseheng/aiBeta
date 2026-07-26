@@ -31,22 +31,33 @@ const Chat = (() => {
     const now = Date.now();
     if (now - lastCreateTime < 300) return;
     lastCreateTime = now;
-    // 自动删除上一个空对话（没有任何消息）
+    // 如果当前对话为空，直接复用，不创建新对话
     const current = getCurrentChat();
     if (current && (!current.messages || current.messages.length === 0)) {
-      Store.state.chats = Store.state.chats.filter(c => c.id !== current.id);
+      current.title = opts.title || getNewChatTitle();
+      current.modelId = Store.state.currentModelId;
+      current.mode = opts.mode || Store.state.currentMode;
+      current.system = opts.system || '';
+      current.presetId = opts.presetId || '';
+      current.createdAt = now;
+      current.updatedAt = now;
+      Store.save();
+      UI.renderSidebar();
+      UI.renderChat();
+      UI.syncAttachBtn();
+      return current;
     }
     const id = genId();
     const chat = {
       id,
-      title: opts.title || '新对话',
+      title: opts.title || getNewChatTitle(),
       modelId: Store.state.currentModelId,
       mode: opts.mode || Store.state.currentMode,
       system: opts.system || '',
       presetId: opts.presetId || '',
       messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+      createdAt: now,
+      updatedAt: now
     };
     Store.state.chats.unshift(chat);
     Store.state.currentChatId = id;
@@ -55,6 +66,23 @@ const Chat = (() => {
     UI.renderChat();
     UI.syncAttachBtn();
     return chat;
+  }
+
+  function getNewChatTitle() {
+    var lang = Store.state.lang || 'zh-CN';
+    var titles = {
+      'zh-CN': '新对话',
+      'zh-TW': '新對話',
+      'en': 'New Chat',
+      'ja': '新しい会話',
+      'ko': '새 대화',
+      'fr': 'Nouvelle conversation',
+      'de': 'Neues Gespräch',
+      'es': 'Nueva conversación',
+      'ru': 'Новый диалог',
+      'ar': 'محادثة جديدة'
+    };
+    return titles[lang] || titles['zh-CN'];
   }
 
   function load(id) {
