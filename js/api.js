@@ -230,6 +230,12 @@ const API = (() => {
       case '腾讯混元':
         if (model.thinking) body.enable_thinking = thinkOn;
         break;
+    case 'kimi':
+      if (model.thinking) {
+        body.enable_thinking = true;
+      }
+      break;
+
     }
   }
 
@@ -265,6 +271,7 @@ const API = (() => {
 
   /* ---------- 聊天调用 ---------- */
   function chat(opts) {
+    const { modelId, messages, onChunk, onThinking } = opts;
     // ===== v4.4: 代理模式切换 =====
     const proxyMode = (typeof Store !== 'undefined' && Store.state) ? (Store.state.proxyMode || 'local') : 'local';
     if (proxyMode === 'server' && CONFIG.BACKEND_URL) {
@@ -314,7 +321,6 @@ const API = (() => {
     }
     // ===== /代理模式 =====
 
-    const { modelId, messages, onChunk, onThinking } = opts;
     const model = getModel(modelId);
     if (!model) return Promise.reject(new Error('模型不存在: ' + modelId));
     const cfg = PROVIDERS[model.provider];
