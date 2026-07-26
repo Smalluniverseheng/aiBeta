@@ -333,19 +333,34 @@
   .sidebar {
     position: fixed;
     top: 0; left: 0; bottom: 0;
-    transform: translateX(-104%);
+    transform: none;
     box-shadow: var(--shadow-lg);
+    z-index: 1;
   }
-  /* 手表端：sidebar 占 80%，右侧露出 1/5 对话内容 */
+  .main-area {
+    z-index: 2;
+    background: var(--bg);
+    transition: transform .28s var(--ease);
+  }
+  .main-area.swiping {
+    transition: none;
+  }
+  .sidebar.open ~ .main-area {
+    transform: translateX(var(--sidebar-w));
+  }
+  /* 手表端：sidebar 占 80%，主内容区推开 80% */
   html[data-device="watch"] .sidebar {
     width: 80%;
     max-width: 280px;
-    transform: translateX(-100%);
+    transform: none;
   }
-  html[data-device="watch"] .sidebar.open {
-    transform: translateX(0);
+  html[data-device="watch"] .sidebar.open ~ .main-area {
+    transform: translateX(80%);
   }
   [dir="rtl"] .sidebar { left: auto; right: 0; transform: translateX(104%); }
+  [dir="rtl"] .sidebar.open ~ .main-area {
+    transform: translateX(calc(-1 * var(--sidebar-w)));
+  }
   .sidebar.open { transform: none; }
   .sidebar.collapsed { margin-left: 0; }
   .topbar.mobile-hidden { display: none !important; }
