@@ -1578,15 +1578,15 @@ const UI = (() => {
     right.insertBefore(speakBtn, themeBtn);
     right.insertBefore(newBtn, themeBtn);
 
-    // 移动端实例：注入输入栏工具区（thinkBtn 之后、输入框之前）
+    // 移动端实例：注入输入栏工具区（inputPlusBtn 之后、输入框之前）
     const inputBox = $('.input-box');
     if (inputBox && !$('#autoSpeakInputBtn')) {
       const speakInBtn = document.createElement('button');
       speakInBtn.className = 'input-btn';
       speakInBtn.id = 'autoSpeakInputBtn';
       speakInBtn.addEventListener('click', toggleAutoSpeak);
-      const thinkBtn = $('#thinkBtn');
-      inputBox.insertBefore(speakInBtn, thinkBtn ? thinkBtn.nextSibling : $('#chatInput'));
+      const plusBtn = $('#inputPlusBtn');
+      inputBox.insertBefore(speakInBtn, plusBtn ? plusBtn.nextSibling : $('#chatInput'));
     }
     syncAutoSpeakBtn();
   }
