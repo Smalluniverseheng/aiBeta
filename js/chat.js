@@ -69,7 +69,12 @@ const Chat = (() => {
   }
 
   function getNewChatTitle() {
-    var lang = Store.state.lang || 'zh-CN';
+    var lang = 'zh-CN';
+    try {
+      if (Store && Store.state && Store.state.lang) {
+        lang = Store.state.lang;
+      }
+    } catch(e) {}
     var titles = {
       'zh-CN': '新对话',
       'zh-TW': '新對話',
