@@ -44,7 +44,8 @@ const Store = (() => {
     trash: { chats: [], apiKeys: [], items: [], clearedAt: 0 },  // 回收站：已删除的对话/Key/数据
     cloudUser: null,        // 云端账号 {id, email, name, isAdmin}（js/supabase.js；游客/本地账号为 null）
     cloudMap: {},           // 会话映射 {本地会话id: 云端uuid}（管理员全量同步用）
-    cloudMeta: { lastSync: 0, lastSettingsSync: 0, lastUsagePush: 0, usageTotal: 0 }  // 同步游标
+    cloudMeta: { lastSync: 0, lastSettingsSync: 0, lastUsagePush: 0, usageTotal: 0 },  // 同步游标
+    navSettings: { desktop: 'navbar', mobile: 'navbar', watch: 'float' }  // 三端导航方式：navbar(导航栏) / float(悬浮按钮)
   };
 
   let state = JSON.parse(JSON.stringify(DEFAULTS));
