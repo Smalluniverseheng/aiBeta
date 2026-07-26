@@ -352,6 +352,11 @@
               <span class="row-label"><span class="row-title" data-i18n-text="pf.theme">颜色主题</span><span class="row-desc" id="themeRowDesc">跟随系统</span></span>
               <span class="chev" data-icon="chevronRight"></span>
             </div>
+            <div class="settings-row clickable" data-sub="subNavSettings">
+              <span class="row-icon" data-icon="navigation"></span>
+              <span class="row-label"><span class="row-title">导航方式</span><span class="row-desc" id="navRowDesc">导航栏</span></span>
+              <span class="chev" data-icon="chevronRight"></span>
+            </div>
             <div class="settings-row clickable" data-sub="subLang">
               <span class="row-icon" data-icon="globe"></span>
               <span class="row-label"><span class="row-title" data-i18n-text="pf.lang">语言</span><span class="row-desc" id="langRowDesc">简体中文</span></span>
@@ -440,6 +445,25 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- 导航设置 -->
+    <div class="subpage" id="subNavSettings">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>导航设置</h2></div>
+      <div class="subpage-body">
+        <div class="settings-group-title">桌面端</div>
+        <div class="settings-card" id="navDesktopOpts"></div>
+        <div class="settings-group-title">移动端</div>
+        <div class="settings-card" id="navMobileOpts"></div>
+        <div class="settings-group-title">手表端</div>
+        <div class="settings-card" id="navWatchOpts"></div>
+        <div class="settings-tip" style="padding:12px 16px;color:var(--text-3);font-size:13px;line-height:1.6">
+          导航栏：底部/顶部固定导航条<br>
+          悬浮按钮：可拖动的圆形返回按钮<br>
+          两者：同时显示导航栏和悬浮按钮<br>
+          关闭：都不显示（手势/键盘返回）
+        </div>
+      </div>
     </div>
 
     <!-- ==================== 设置子页（全屏覆盖，点击条目进入） ==================== -->
@@ -902,7 +926,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<!-- ==================== 手表端悬浮返回按钮 ==================== -->
+<!-- ==================== 可拖动悬浮返回按钮 ==================== -->
 <div id="floatBackBtn" class="float-back-btn" style="display:none">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 12h18M3 12l6-6M3 12l6 6"/>
