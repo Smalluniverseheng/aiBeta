@@ -1339,60 +1339,6 @@ const UI = (() => {
 
     
 
-    /* ==================== 左右滑动切换对话 ==================== */
-    (function initSwipe() {
-      var chatScroll = document.querySelector('.chat-scroll');
-      if (!chatScroll) return;
-      var startX = 0, startY = 0, isDragging = false;
-      var SWIPE_THRESHOLD = 60;
-
-      chatScroll.addEventListener('touchstart', function(e) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        isDragging = true;
-      }, { passive: true });
-
-      chatScroll.addEventListener('touchmove', function(e) {
-        if (!isDragging) return;
-        var moveDx = e.touches[0].clientX - startX;
-        var moveDy = e.touches[0].clientY - startY;
-        if (Math.abs(moveDy) > Math.abs(moveDx)) {
-          isDragging = false;
-          return;
-        }
-        var swipeContainer = document.querySelector('.chat-container');
-        if (swipeContainer) {
-          if (moveDx > 20) swipeContainer.classList.add('swipe-right');
-          else if (moveDx < -20) swipeContainer.classList.add('swipe-left');
-        }
-      }, { passive: true });
-
-      chatScroll.addEventListener('touchend', function(e) {
-        if (!isDragging) return;
-        isDragging = false;
-        var endDx = e.changedTouches[0].clientX - startX;
-        var endContainer = document.querySelector('.chat-container');
-        if (endContainer) {
-          endContainer.classList.remove('swipe-left', 'swipe-right');
-        }
-        if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-
-        var chats = Store.state.chats;
-        var currentId = Store.state.currentChatId;
-        var currentIndex = -1;
-        for (var i = 0; i < chats.length; i++) {
-          if (chats[i].id === currentId) { currentIndex = i; break; }
-        }
-        if (currentIndex === -1) return;
-
-        if (dx > 0 && currentIndex < chats.length - 1) {
-          Chat.load(chats[currentIndex + 1].id);
-        } else if (dx < 0 && currentIndex > 0) {
-          Chat.load(chats[currentIndex - 1].id);
-        }
-      }, { passive: true });
-    })();
-
     /* ==================== 功能选择面板 ==================== */
     var featureSheet = document.getElementById('featureSheet');
     var featureOverlay = featureSheet && featureSheet.querySelector('.sheet-overlay');
@@ -1580,8 +1526,8 @@ const UI = (() => {
    * 仅移动端断点（与 layout.css 一致 max-width:860px）且非手表端启用；
    * 水平位移 >60px 且 >垂直位移*1.5 才触发，纵向滚动不受影响。 */
   function bindSwipeGesture() {
-    const EDGE = 24, TRIGGER = 60, DECIDE = 8;
-    let tracking = false, decided = false, startX = 0, startY = 0, mode = null; // mode: 'open' | 'close'
+    const TRIGGER = 60, DECIDE = 8;
+    let tracking = false, decided = false, startX = 0, startY = 0, mode = null;
     const sb = () => $('#sidebar');
     const ov = () => $('#sidebarOverlay');
     const mobile = () => window.matchMedia('(max-width: 860px)').matches || (window.DeviceInfo && DeviceInfo.isWatch());
@@ -1600,54 +1546,66 @@ const UI = (() => {
     }
 
     function endDrag(dx) {
-      const s = sb(), o = ov();
-      if (decided) {
-        if (mode === 'open' && dx > TRIGGER) { s.classList.add('open'); o.classList.add('show'); }
-        else if (mode === 'close' && dx < -TRIGGER) { s.classList.remove('open'); o.classList.remove('show'); }
-        else if (mode === 'open') { o.classList.remove('show'); }
-      } else if (mode === 'open') { o.classList.remove('show'); }
+      tracking = false;
+      const sidebarOpen = sb().classList.contains('show');
+      const w = sb().offsetWidth || 280;
+      const mainArea = document.querySelector('.main-area');
+      if (mode === 'open') {
+        if (dx > TRIGGER) {
+          openSidebarMobile();
+        } else {
+          sb().classList.remove('show');
+          ov().classList.remove('show');
+          if (mainArea) mainArea.style.transform = '';
+        }
+      } else if (mode === 'close') {
+        if (dx < -TRIGGER) {
+          closeSidebarMobile();
+        } else {
+          sb().classList.add('show');
+          ov().classList.add('show');
+          if (mainArea) mainArea.style.transform = '';
+        }
+      }
       cleanup();
     }
 
     document.addEventListener('touchstart', e => {
-      if (!mobile() || blocked() || e.touches.length !== 1) return;
-      const open = sb().classList.contains('open');
-      const x = e.touches[0].clientX;
-      if (!open) {
-        if (x > EDGE || Store.state.currentPage !== 'chat') return; // 仅对话页左边缘起步可打开
-        mode = 'open';
-      } else {
-        mode = 'close'; // 侧栏打开时，任意位置左滑可关闭
-      }
-      tracking = true; decided = false;
-      startX = x; startY = e.touches[0].clientY;
+      if (!mobile() || blocked()) return;
+      const t = e.targetTouches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      tracking = true;
+      decided = false;
+      mode = null;
     }, { passive: true });
 
     document.addEventListener('touchmove', e => {
       if (!tracking) return;
-      if (e.touches.length !== 1) { endDrag(0); return; } // 多指介入：放弃手势并回弹
       const dx = e.touches[0].clientX - startX;
       const dy = e.touches[0].clientY - startY;
       if (!decided) {
         if (Math.abs(dx) < DECIDE && Math.abs(dy) < DECIDE) return;
+        if (Math.abs(dy) > Math.abs(dx) * 1.5) { tracking = false; return; }
         decided = true;
-        // 水平意图（水平位移 > 垂直位移*1.5）才接管；否则交还列表纵向滚动
-        if (Math.abs(dx) <= Math.abs(dy) * 1.5) { tracking = false; mode = null; return; }
+        const sidebarOpen = sb().classList.contains('show');
+        // 右滑打开，左滑关闭
+        if (dx > 0 && !sidebarOpen) mode = 'open';
+        else if (dx < 0 && sidebarOpen) mode = 'close';
+        else { tracking = false; return; }
         const mainArea = document.querySelector('.main-area');
-        if (mainArea) mainArea.classList.add('swiping'); // 拖拽期间关掉过渡，跟随手指
-        ov().classList.add('show');
-        ov().style.animation = 'none'; // 避免 fadeIn 覆盖拖拽中的内联透明度
+        if (mainArea) mainArea.classList.add('swiping');
       }
+      if (!mode) return;
       e.preventDefault();
-      const w = sb().getBoundingClientRect().width || 288;
-      const mainArea = document.querySelector('.main-area');
+      const w = sb().offsetWidth || 280;
       if (mode === 'open') {
         const p = Math.min(Math.max(dx / w, 0), 1);
-        if (mainArea) mainArea.style.transform = 'translateX(' + (p * w) + 'px)';
-        ov().style.opacity = String(p);
+        if (document.querySelector('.main-area')) document.querySelector('.main-area').style.transform = 'translateX(' + (p * w) + 'px)';
+        ov().style.opacity = String(p * 0.5);
       } else {
         const p = Math.min(Math.max(-dx / w, 0), 1);
-        if (mainArea) mainArea.style.transform = 'translateX(' + ((1 - p) * w) + 'px)';
+        if (document.querySelector('.main-area')) document.querySelector('.main-area').style.transform = 'translateX(' + ((1 - p) * w) + 'px)';
         ov().style.opacity = String(1 - p);
       }
     }, { passive: false });
