@@ -1117,3 +1117,43 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
 .feature-option:not(.active) .opt-check {
   display: none;
 }
+
+
+/* ==================== v5.0 手表端悬浮返回按钮 ==================== */
+.float-back-btn {
+  position: fixed;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 500;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+  transition: transform 0.15s, opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.float-back-btn:active {
+  transform: scale(0.92);
+}
+.float-back-btn svg {
+  width: 20px;
+  height: 20px;
+}
+/* 手表端默认位置：右下角 */
+html[data-device="watch"] .float-back-btn {
+  display: flex !important;
+  right: 12px;
+  bottom: 12px;
+}
+/* 桌面端和移动端隐藏悬浮按钮 */
+html[data-device="desktop"] .float-back-btn,
+html[data-device="mobile"] .float-back-btn {
+  display: none !important;
+}
