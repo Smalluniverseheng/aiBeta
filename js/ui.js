@@ -53,6 +53,26 @@ const UI = (() => {
     // 触发浮动按钮可见性更新
     window.dispatchEvent(new CustomEvent('pagechange', { detail: { page } }));
     closeSidebarMobile();
+
+    // 历史侧边栏只在对话页显示
+    const sidebar = $('#sidebar');
+    const isDesktop = window.DeviceInfo && DeviceInfo.type === 'desktop';
+    if (sidebar) {
+      if (page === 'chat') {
+        sidebar.classList.remove('page-hidden');
+      } else {
+        sidebar.classList.add('page-hidden');
+        if (!isDesktop) {
+          closeSidebarMobile();
+        } else {
+          sidebar.classList.add('collapsed');
+          const toggle = $('#sidebarToggle');
+          if (toggle) toggle.classList.add('collapsed');
+          Store.state.sidebarCollapsed = true;
+          Store.save();
+        }
+      }
+    }
   }
 
   /* ==================== 侧边栏 ==================== */
@@ -225,6 +245,19 @@ const UI = (() => {
     $('#sidebar').classList.remove('open');
     $('#sidebarOverlay').classList.remove('show');
   }
+
+  /* 手表端：点击主内容区关闭侧边栏并返回对话 */
+  (function bindWatchMainClick() {
+    const main = $('#mainContent') || $('.main-content') || document.querySelector('.chat-container');
+    if (!main || !(window.DeviceInfo && DeviceInfo.isWatch())) return;
+    main.addEventListener('click', (e) => {
+      const sb = $('#sidebar');
+      if (sb && sb.classList.contains('open')) {
+        closeSidebarMobile();
+        navigate('chat');
+      }
+    });
+  })();
 
   /* 手表端专用事件绑定 */
   (function bindWatchEvents() {
