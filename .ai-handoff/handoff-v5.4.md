@@ -1340,3 +1340,457 @@ VIDEO_PROVIDERS: {
 4. **国外厂商必须提示代理** — `needProxy: true` 的厂商在调用前自动检测代理状态，未开启时弹窗引导
 5. **懒加载是硬性要求** — novel.js / comic.js / paint.js / video.js 等模块绝对不能在 index.html 中直接引入
 6. **先做国内厂商** — 通义万相和可灵优先，Sora/Runway放到后面
+
+
+---
+
+## 十二、补充需求（2026-07-27 最终确认）
+
+### 12.1 会员分级体系
+
+#### 会员等级定义
+
+| 等级 | 名称 | 本地存储 | 云端存储 | 云端调用 | 价格 |
+|------|------|---------|---------|---------|------|
+| 0 | 普通用户 | ✅ | ❌ | ❌ | 免费 |
+| 1 | 进阶会员 | ✅ | ✅ | ✅ | 待定 |
+| 2 | 高级会员 | ✅ | ✅（更大容量） | ✅（更多额度） | 待定 |
+| 3 | 至尊会员 | ✅ | ✅（无限） | ✅（无限） | 待定 |
+
+#### 功能权限矩阵
+
+| 功能 | 普通用户 | 进阶+ |
+|------|---------|-------|
+| 小说阅读（本地书源） | ✅ | ✅ |
+| 小说书源云端同步 | ❌ | ✅ |
+| 阅读进度云端同步 | ❌ | ✅ |
+| 书签云端同步 | ❌ | ✅ |
+| 漫画阅读（本地书源） | ✅ | ✅ |
+| 漫画书源云端同步 | ❌ | ✅ |
+| AI绘画（本地生成） | ✅ | ✅ |
+| AI绘画历史云端同步 | ❌ | ✅ |
+| 图生视频（本地生成） | ✅ | ✅ |
+| 视频历史云端同步 | ❌ | ✅ |
+| 短视频浏览（本地/厂商API） | ✅ | ✅ |
+| 短视频收藏云端同步 | ❌ | ✅ |
+| 视频端浏览 | ✅ | ✅ |
+| 导航栏配置云端同步 | ❌ | ✅ |
+| 主题设置云端同步 | ❌ | ✅ |
+| 翻译历史云端同步 | ❌ | ✅ |
+| Token统计云端同步 | ❌ | ✅ |
+| 对话历史云端同步 | ❌ | ✅ |
+
+#### 本地 vs 云端存储实现
+
+```javascript
+// js/store.js 中区分本地和云端数据
+const Store = {
+  // 本地数据（所有用户）
+  local: {
+    chats: [],           // 对话历史
+    paintHistory: [],    // 绘画历史
+    videoHistory: [],    // 视频历史
+    novelSources: [],    // 书源列表
+    novelBookmarks: [],  // 小说书签
+    novelHistory: [],    // 阅读历史
+    comicSources: [],    // 漫画书源
+    comicBookmarks: [],  // 漫画书签
+    navBar: {},          // 导航栏配置
+    theme: {},           // 主题设置
+    translateHistory: [],
+    translateFavorites: [],
+    apiKeys: {},
+    settings: {}
+  },
+
+  // 云端数据（仅进阶+会员同步）
+  cloud: {
+    // 与 local 同结构，但存储在 Supabase
+    // 普通用户此对象为空，不触发同步
+  }
+};
+
+// 同步策略
+function syncToCloud() {
+  const userLevel = Store.state.userInfo?.level || 0;
+  if (userLevel < 1) {
+    console.log('普通用户，跳过云端同步');
+    return;
+  }
+  // 执行 Supabase 同步
+  SupabaseSync.push();
+}
+```
+
+#### 会员状态检测
+
+```javascript
+// 在需要云端功能的入口检测会员等级
+function requireCloudFeature(featureName) {
+  const level = Store.state.userInfo?.level || 0;
+  if (level < 1) {
+    Modal.confirm({
+      title: '需要进阶会员',
+      content: featureName + ' 功能需要进阶会员才能使用。是否了解会员权益？',
+      okText: '了解会员',
+      onOk: () => Pages.open('membership')
+    });
+    return false;
+  }
+  return true;
+}
+
+// 使用示例
+// 用户点击"同步书源到云端"时
+if (!requireCloudFeature('书源云端同步')) return;
+```
+
+---
+
+### 12.2 所有 API 用户自申请
+
+#### 原则
+
+**所有第三方 API（书源、视频生成、TTS、短视频厂商 API 等）均由用户自行申请 Key，平台不代理、不中转。**
+
+#### API Key 管理扩展
+
+在现有 API Key 管理页面（`renderKeyManagement`）中新增分类：
+
+```
+┌─────────────────────────────┐
+│  API Key 管理                │
+├─────────────────────────────┤
+│  AI 对话厂商                  │
+│  [OpenAI] [Anthropic] ...    │
+├─────────────────────────────┤
+│  AI 绘画厂商                  │
+│  [小米] [Anthropic] ...      │
+├─────────────────────────────┤
+│  视频生成厂商                 │
+│  [通义万相] [可灵] [Sora] ...│
+├─────────────────────────────┤
+│  朗读/TTS 厂商                │
+│  [小米] [百度] [讯飞] ...    │
+├─────────────────────────────┤
+│  书源 API（可选）             │
+│  [起点] [晋江] [番茄] ...    │
+├─────────────────────────────┤
+│  短视频厂商 API               │
+│  [B站] [抖音] ...            │
+└─────────────────────────────┘
+```
+
+#### 每个厂商的配置项
+
+```javascript
+// 以起点读书为例
+'qidian': {
+  name: '起点读书',
+  type: 'novel',
+  keySlug: 'qidian',
+  base: () => 'https://api.qidian.com',
+  headers: (key) => ({ 'Authorization': 'Bearer ' + key }),
+  docUrl: 'https://developer.qidian.com/docs', // 申请地址
+  required: false, // 是否必须
+  hint: '用于访问起点正版书源，不配置则无法搜索起点书籍'
+}
+```
+
+#### 未配置 Key 时的处理
+
+```javascript
+// 当用户尝试使用未配置 Key 的厂商时
+function checkApiKey(provider) {
+  const key = Store.state.apiKeys[provider.keySlug];
+  if (!key && provider.required !== false) {
+    Modal.confirm({
+      title: '需要 API Key',
+      content: provider.name + ' 需要配置 API Key 才能使用。是否前往配置？',
+      okText: '去配置',
+      onOk: () => Pages.open('apiKey', { focusProvider: provider.keySlug })
+    });
+    return false;
+  }
+  return true;
+}
+```
+
+---
+
+### 12.3 朗读厂商扩展列表
+
+#### 支持的 TTS 厂商（尽量多）
+
+| # | 厂商 | 优先级 | API 特点 | 申请地址 |
+|---|------|--------|---------|---------|
+| 1 | **浏览器 SpeechSynthesis** | P0 | 免费，无需 Key，本地调用 | 内置 |
+| 2 | **小米 MiMo TTS** | P0 | 国内，效果好 | 小米开放平台 |
+| 3 | **百度智能云 TTS** | P1 | 国内，音色多 | 百度智能云 |
+| 4 | **讯飞开放平台 TTS** | P1 | 国内，效果佳 | 讯飞开放平台 |
+| 5 | **阿里云 TTS** | P1 | 国内，稳定 | 阿里云 |
+| 6 | **腾讯云 TTS** | P1 | 国内，音色丰富 | 腾讯云 |
+| 7 | **华为云 TTS** | P2 | 国内 | 华为云 |
+| 8 | **火山引擎 TTS** | P2 | 字节跳动，效果好 | 火山引擎 |
+| 9 | **OpenAI TTS** | P2 | 海外，英文佳 | OpenAI |
+| 10 | **Azure TTS** | P2 | 微软，多语言 | Azure |
+| 11 | **Google Cloud TTS** | P2 | 海外，多语言 | Google Cloud |
+| 12 | **Amazon Polly** | P3 | 海外，稳定 | AWS |
+| 13 | **ElevenLabs** | P3 | 海外，效果顶级 | ElevenLabs |
+| 14 | **MiniMax TTS** | P3 | 国内，新厂商 | MiniMax |
+| 15 | **智谱 TTS** | P3 | 国内 | 智谱AI |
+
+#### 统一 TTS 接口
+
+```javascript
+// js/tts.js（新建）
+const TTS_ENGINES = {
+  browser: {
+    name: '浏览器朗读',
+    async speak(text, opts) {
+      return new Promise((resolve, reject) => {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = opts.speed;
+        u.pitch = opts.pitch;
+        u.volume = opts.volume;
+        const voices = speechSynthesis.getVoices();
+        const zh = voices.find(v => v.lang.startsWith('zh'));
+        if (zh) u.voice = zh;
+        u.onend = resolve;
+        u.onerror = reject;
+        speechSynthesis.speak(u);
+      });
+    }
+  },
+
+  xiaomi: {
+    name: '小米 MiMo',
+    needKey: true,
+    async speak(text, opts) {
+      const key = Store.state.apiKeys['xiaomi'];
+      if (!key) throw new Error('未配置小米 API Key');
+      const resp = await fetch('https://api.mimo.ai/v1/tts', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, speed: opts.speed, pitch: opts.pitch, voice: opts.voice })
+      });
+      const data = await resp.json();
+      const audio = new Audio(data.audio_url);
+      await audio.play();
+      return new Promise(resolve => { audio.onended = resolve; });
+    }
+  },
+
+  baidu: {
+    name: '百度 TTS',
+    needKey: true,
+    async speak(text, opts) {
+      // 百度 TTS 实现
+      const key = Store.state.apiKeys['baidu-tts'];
+      // ...
+    }
+  },
+
+  // 其他厂商类似...
+};
+
+// 统一调用入口
+async function ttsSpeak(text, opts) {
+  const engine = TTS_ENGINES[opts.engine] || TTS_ENGINES.browser;
+  if (engine.needKey && !checkApiKey(engine)) return;
+  return engine.speak(text, opts);
+}
+```
+
+#### TTS 设置页面
+
+```
+┌─────────────────────────────┐
+│  朗读设置                    │
+├─────────────────────────────┤
+│  引擎: [浏览器 ▼]            │
+│  语速: [1.0x]               │
+│  音调: [1.0]                 │
+│  音量: [100%]                │
+│  音色: [默认女声 ▼]          │
+├─────────────────────────────┤
+│  厂商配置                    │
+│  [小米] [百度] [讯飞] ...   │
+│  （点击配置对应 API Key）     │
+└─────────────────────────────┘
+```
+
+---
+
+### 12.4 用户自定义主题系统
+
+#### 主题数据结构
+
+```javascript
+// Store.state.theme
+const DEFAULT_THEME = {
+  // 预设主题
+  preset: 'light', // light / dark / sepia / eye-care / custom
+
+  // 自定义颜色（preset === 'custom' 时生效）
+  custom: {
+    bg: '#FFFFFF',           // 主背景
+    bgSoft: '#F5F5F5',      // 次级背景
+    bgElev: '#FFFFFF',      //  elevated 背景
+    text: '#1A1A2E',        // 主文字
+    text2: '#4A4A5E',       // 次级文字
+    text3: '#8A8A9E',       // 辅助文字
+    accent: '#6366F1',      // 强调色
+    border: '#E5E7EB',      // 边框色
+    danger: '#EF4444',      // 危险色
+    success: '#10B981',     // 成功色
+    warning: '#F59E0B',     // 警告色
+  },
+
+  // 背景图片（用户上传）
+  bgImage: null, // { url: 'blob:...', opacity: 0.1, blur: 0 }
+
+  // 字体设置
+  fontFamily: 'system', // system / serif / sans-serif / custom
+  fontSize: 14, // 基础字号 12-18
+};
+```
+
+#### 主题设置页面
+
+```
+┌─────────────────────────────┐
+│  主题设置                    │
+├─────────────────────────────┤
+│  预设主题                    │
+│  [☀️] [🌙] [📜] [👁️] [🎨]   │
+│  白天  夜间  羊皮  护眼  自定义│
+├─────────────────────────────┤
+│  自定义颜色（自定义主题时显示）│
+│  背景色:     [████ #FFFFFF] │
+│  文字色:     [████ #1A1A2E] │
+│  强调色:     [████ #6366F1] │
+│  ...                         │
+├─────────────────────────────┤
+│  背景图片                    │
+│  [上传图片] 或 [使用纯色]     │
+│  ┌─────────────┐            │
+│  │  预览区域    │            │
+│  └─────────────┘            │
+│  透明度: [██░░░░░░░░ 20%]   │
+│  模糊度: [░░░░░░░░░░ 0%]    │
+├─────────────────────────────┤
+│  字体设置                    │
+│  字体: [系统默认 ▼]          │
+│  字号: [14px ▼]              │
+└─────────────────────────────┘
+```
+
+#### 背景图片上传
+
+```javascript
+// 用户上传背景图片
+async function uploadBgImage(file) {
+  // 1. 压缩图片（最大 1920x1080，质量 0.8）
+  const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.8 });
+
+  // 2. 转为 Base64 或 Blob URL
+  const blobUrl = URL.createObjectURL(compressed);
+
+  // 3. 保存到 Store（普通用户本地存储，进阶+同步云端）
+  Store.state.theme.bgImage = {
+    url: blobUrl,
+    opacity: 0.2,
+    blur: 0
+  };
+  Store.save();
+
+  // 4. 应用背景
+  applyTheme();
+}
+
+// 应用主题
+function applyTheme() {
+  const theme = Store.state.theme;
+  const root = document.documentElement;
+
+  if (theme.preset === 'custom' && theme.custom) {
+    Object.entries(theme.custom).forEach(([key, val]) => {
+      root.style.setProperty(`--${key}`, val);
+    });
+  }
+
+  if (theme.bgImage?.url) {
+    root.style.setProperty('--bg-image', `url(${theme.bgImage.url})`);
+    root.style.setProperty('--bg-opacity', theme.bgImage.opacity);
+    root.style.setProperty('--bg-blur', `${theme.bgImage.blur}px`);
+  }
+}
+```
+
+#### CSS 变量更新
+
+```css
+/* 支持背景图片的 CSS */
+:root {
+  --bg-image: none;
+  --bg-opacity: 0;
+  --bg-blur: 0;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-image) center/cover no-repeat;
+  opacity: var(--bg-opacity);
+  filter: blur(var(--bg-blur));
+  z-index: -1;
+  pointer-events: none;
+}
+```
+
+---
+
+### 12.5 文件修改清单（最终完整版）
+
+| 优先级 | 文件 | 修改类型 | 说明 |
+|--------|------|---------|------|
+| P0 | `js/pages.js` | 修改 | 修复 bindSubpageEvents 中 trash/help 绑定 |
+| P1 | `js/ui.js` | 修改 | 消息编辑重发；导航栏动态渲染；主题应用 |
+| P1 | `js/chat.js` | 修改 | 新增 editAndResend |
+| P1 | `js/store.js` | 修改 | 新增 navBar / theme / userInfo.level / paintHistory / videoHistory / novelSources / comicSources / ttsSettings |
+| P1 | `js/supabase.js` | 修改 | SETTINGS_WHITELIST 追加 navBar / theme / novelSources / novelBookmarks / ttsSettings；会员等级检测 |
+| P1 | `js/pages.js` | 修改 | renderDiscover 重构；renderNavSettings；renderPaint / renderVideo / renderNovel / renderComic / renderShortVideo / renderVideoHub / renderThemeSettings |
+| P1 | `js/api.js` | 修改 | 新增 generateVideo / pollVideoTask / checkProxyRequired |
+| P1 | `js/models.js` | 修改 | 新增 type: 'video' 模型 |
+| P1 | `js/providers.js` | 修改 | 新增 VIDEO_PROVIDERS；APP_VERSION = '5.4' |
+| P1 | `js/lazy-loader.js` | 修改 | 扩展模块懒加载定义 |
+| P1 | `js/db.js` | 新建 | IndexedDB 封装 + 缓存策略 + LRU 清理 |
+| P1 | `js/novel.js` | 新建 | 书源解析 + 搜索 + 阅读器 + 朗读 |
+| P1 | `js/comic.js` | 新建 | 书源解析 + 图片加载器 + 阅读器 |
+| P1 | `js/tts.js` | 新建 | 统一 TTS 接口，支持 15+ 厂商 |
+| P1 | `js/shortvideo.js` | 新建 | 视频列表 + 滑动切换 + 播放控制 |
+| P1 | `js/videohub.js` | 新建 | 视频搜索 + 网格列表 + 播放器 |
+| P1 | `index.html` | 修改 | 添加 subPaint / subVideo / subNovel / subComic / subShortVideo / subVideoHub / subNavSettings / subThemeSettings DOM；引入 js/db.js / js/tts.js |
+| P1 | `css/layout.css` | 修改 | 编辑模式样式、抖动动画、主题背景图片支持 |
+| P1 | `css/pages.css` | 修改 | 绘画/视频/小说/漫画/短视频/视频端/主题设置页面样式 |
+| P1 | `css/novel.css` | 新建 | 小说阅读器样式 |
+| P1 | `css/comic.css` | 新建 | 漫画阅读器样式 |
+| P1 | `sw.js` | 修改 | VERSION = 'v5.4' |
+| P1 | `js/changelog.js` | 修改 | 追加 v5.4 条目 |
+
+---
+
+## 十三、最终最终留言
+
+1. **所有 API 本地调用** — 书源、视频、TTS 等全部浏览器直接请求，平台服务器不中转
+2. **会员分级严格执行** — 普通用户全部本地存储，进阶+才能云端同步
+3. **TTS 厂商尽量多** — 目标 15+ 厂商，统一接口封装
+4. **所有 API Key 用户自申请** — 平台不提供代理 Key
+5. **主题系统完整** — 预设 + 自定义颜色 + 上传背景图片 + 字体设置
+6. **懒加载硬性要求** — novel.js / comic.js / paint.js / video.js / tts.js 等模块点击后才加载
+7. **先做国内厂商** — 通义万相/可灵优先，Sora/Runway/ElevenLabs 放后面
+8. **内置书源 30 个** — 15 正版 + 15 聚合，全部写入 js/novel.js 默认数组
+9. **法律风险规避** — 免责声明 + 不存储内容 + 投诉机制 + DMCA 响应
+10. **版本号只用 x.y** — 5.4，禁止 5.4.1
