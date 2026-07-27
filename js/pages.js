@@ -1200,6 +1200,17 @@ const Pages = (() => {
     const cn = [], gl = [];
     Object.keys(PROVIDERS).forEach(p => (PROVIDERS[p].region === 'cn' ? cn : gl).push(p));
 
+    // v5.3: 自动匹配区域
+    const autoMatchHtml = '<div class="key-auto-match">' +
+      '<div class="key-auto-match-title">' + icon('zap', 16) + ' 自动匹配厂商</div>' +
+      '<div class="key-auto-match-desc">粘贴 API Key，系统自动向各厂商发送测试请求识别归属</div>' +
+      '<div class="key-auto-match-row">' +
+      '<input type="text" class="input" id="autoMatchInput" placeholder="sk-... 或任意格式 API Key" autocomplete="off">' +
+      '<button class="btn btn-primary" id="autoMatchBtn">' + icon('search', 14) + ' 自动匹配</button>' +
+      '</div>' +
+      '<div class="key-auto-match-status" id="autoMatchStatus"></div>' +
+      '</div>';
+
     const blockHtml = p => {
       const cfg = PROVIDERS[p];
       const k = Store.state.apiKeys;
@@ -1226,7 +1237,7 @@ const Pages = (() => {
         '<div class="key-provider-body">' + rows + '</div></div>';
     };
 
-    box.innerHTML =
+    box.innerHTML = autoMatchHtml +
       '<div class="settings-group-title" style="padding:12px 16px 6px">' + icon('key', 15) + ' 国内厂商</div>' +
       cn.map(blockHtml).join('') +
       '<div class="settings-group-title" style="padding:16px 16px 6px">' + icon('globe', 15) + ' 国外厂商</div>' +
@@ -1238,7 +1249,82 @@ const Pages = (() => {
       '<button class="key-eye" data-eye tabindex="-1">' + icon('eye', 16) + '</button></div>';
   }
 
-  function bindKeyEvents() {
+  
+
+  /* v5.3 自动匹配厂商：向各厂商发送测试请求识别 Key 归属 */
+  async function autoMatchKey() {
+    const input = document.getElementById('autoMatchInput');
+    const status = document.getElementById('autoMatchStatus');
+    const key = input.value.trim();
+    if (!key) return Toast.warning('请先粘贴 API Key');
+    if (status) status.innerHTML = '<span class="am-loading">' + icon('loader', 14) + ' 正在匹配…</span>';
+
+    const tests = [];
+    Object.entries(PROVIDERS).forEach(([name, cfg]) => {
+      if (cfg.dualKey) return; // 跳过双 Key 厂商
+      const slug = cfg.keySlug;
+      const base = cfg.base();
+      const hdr = cfg.headers ? cfg.headers(key) : { 'Authorization': 'Bearer ' + key };
+      let url, opts;
+
+      if (cfg.format === 'anthropic') {
+        url = base + '/v1/models';
+        opts = { method: 'GET', headers: hdr };
+      } else if (cfg.format === 'google') {
+        url = base + '/v1beta/models?key=' + encodeURIComponent(key);
+        opts = { method: 'GET' };
+      } else {
+        url = base + '/v1/models';
+        opts = { method: 'GET', headers: hdr };
+      }
+      tests.push({ name, slug, url, opts });
+    });
+
+    // 并行发送，带 5 秒超时
+    const results = await Promise.all(tests.map(async t => {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 5000);
+        const resp = await fetch(t.url, { ...t.opts, signal: ctrl.signal });
+        clearTimeout(timer);
+        if (resp.status === 200) {
+          const data = await resp.json().catch(() => null);
+          if (data && (data.data || data.models || data.object === 'list')) {
+            return { ...t, ok: true };
+          }
+        }
+        return { ...t, ok: false };
+      } catch (e) {
+        return { ...t, ok: false };
+      }
+    }));
+
+    const matched = results.filter(r => r.ok);
+    if (!matched.length) {
+      if (status) status.innerHTML = '<span class="am-fail">未识别到匹配的厂商，请检查 Key 是否有效</span>';
+      Toast.error('未匹配到任何厂商');
+      return;
+    }
+
+    matched.forEach(m => { Store.state.apiKeys[m.slug] = key; });
+    Store.save();
+    renderKeyManagement();
+
+    const names = matched.map(m => m.name).join('、');
+    if (status) status.innerHTML = '<span class="am-success">已匹配并保存：' + esc(names) + '</span>';
+    Toast.success('已匹配 ' + matched.length + ' 个厂商：' + names);
+  }
+function bindKeyEvents() {
+    // v5.3: 自动匹配按钮
+    const amBtn = document.getElementById('autoMatchBtn');
+    const amInput = document.getElementById('autoMatchInput');
+    if (amBtn) amBtn.addEventListener('click', autoMatchKey);
+    if (amInput) {
+      amInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') autoMatchKey();
+      });
+    }
+
     $('#keyManagement').addEventListener('click', e => {
       const head = e.target.closest('.key-provider-head');
       if (head) { head.closest('.key-provider-block').classList.toggle('open'); return; }
