@@ -353,3 +353,96 @@ const CACHE_NAME = `ai-cache-${VERSION}`
 ### 最后更新时间
 
 2026-07-27 — v5.2 发布
+
+
+---
+
+## 十一、管理后台（AI-admin）
+
+### 11.1 架构
+
+独立仓库 `Smalluniverseheng/AI-admin`，与 AI 平台共用 Supabase 数据库。
+
+```
+AI 平台 (aiBeta/5.2)          AI 管理后台 (AI-admin)
+     │                                │
+     └────────→ Supabase ←───────────┘
+                ├── profiles
+                ├── orders
+                ├── agent_commissions
+                └── configs
+```
+
+### 11.2 访问地址
+
+```
+https://smalluniverseheng.github.io/AI-admin/
+```
+
+### 11.3 功能模块
+
+| 模块 | 功能 |
+|------|------|
+| 仪表盘 | 总用户数、代理数、今日订单、今日收入 |
+| 用户管理 | 查看列表、调整角色、修改配额 |
+| 代理管理 | 审核代理、查看下级、分润统计 |
+| 订单管理 | 充值记录、套餐购买、订单状态 |
+| 系统设置 | 会员配额、代理分润比例 |
+
+### 11.4 账号等级体系
+
+| 等级 | 标识 | 月配额 | 日配额 | 月费 | 功能 |
+|------|------|--------|--------|------|------|
+| 游客 | guest | 50,000 | 2,000 | 免费 | 基础对话，10条历史，无云同步 |
+| 普通 | user | 200,000 | 10,000 | 免费 | 完整功能，50条历史 |
+| 进阶 | advanced | 1,000,000 | 50,000 | ¥29 | 优先响应，200条历史 |
+| VIP | vip | 5,000,000 | 200,000 | ¥99 | 专属客服，无限历史 |
+| 代理 | agent | 1,000,000 | 50,000 | 免费 | 代理面板，享受分润 |
+| 管理员 | admin | 无限 | 无限 | 免费 | 全部权限，管理后台 |
+
+---
+
+## 十二、数据库设计
+
+### 12.1 表结构
+
+| 表名 | 说明 | 关键字段 |
+|------|------|----------|
+| `membership_levels` | 会员等级配置 | level_key, token_quota, price_month, features |
+| `profiles` | 用户资料（扩展 auth.users） | role, token_quota, token_used, balance, agent_code, parent_agent_id |
+| `token_usage` | Token 用量记录（按天） | user_id, date, input_tokens, output_tokens, by_model |
+| `orders` | 订单（充值/升级/套餐） | order_no, type, amount, status, agent_id, commission |
+| `agent_commissions` | 代理分润记录 | agent_id, order_id, rate, amount, level, status |
+| `agent_relations` | 代理关系树 | ancestor_id, descendant_id, depth |
+| `invite_codes` | 邀请码 | code, created_by, max_uses, reward_type, reward_value |
+| `configs` | 系统配置 | key, value(JSONB) |
+| `audit_logs` | 操作日志 | user_id, action, target_type, old_value, new_value |
+
+### 12.2 自动触发器
+
+| 触发器 | 触发条件 | 动作 |
+|--------|----------|------|
+| `trg_token_usage` | INSERT token_usage | 更新 profiles 累计用量 |
+| `trg_process_order` | UPDATE orders status→paid | 增加余额 + 升级等级 + 计算分润 |
+| `reset_daily_quota()` | 每日定时 | 重置所有用户 daily_used |
+| `check_user_quota()` | 函数调用 | 检查用户是否有足够配额 |
+
+### 12.3 代理分润流程
+
+```
+用户充值/购买 → 订单状态变为 paid
+    ↓
+查找用户的 parent_agent_id
+    ↓
+一级分润：金额 × level1%（默认 20%）
+    ↓
+查找代理的 parent_agent_id
+    ↓
+二级分润：金额 × level2%（默认 5%）
+    ↓
+三级分润：金额 × level3%（默认 2%）
+```
+
+### 12.4 SQL 文件位置
+
+`AI-admin/database/schema.sql`
