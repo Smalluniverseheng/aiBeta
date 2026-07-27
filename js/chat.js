@@ -19,14 +19,6 @@ const Chat = (() => {
   let lastCreateTime = 0;
   function create(opts) {
     opts = opts || {};
-    // 清理历史中的空白会话（保留当前正在查看的）
-    const currentId = Store.state.currentChatId;
-    const blankIds = state.chats
-      .filter(c => c.id !== currentId && (!c.messages || c.messages.length === 0))
-      .map(c => c.id);
-    if (blankIds.length > 0) {
-      state.chats = state.chats.filter(c => !blankIds.includes(c.id));
-    }
     // 防抖：300ms 内重复点击忽略
     const now = Date.now();
     if (now - lastCreateTime < 300) return;
