@@ -536,22 +536,51 @@ const Pages = (() => {
       box.innerHTML = '<div class="empty-state">' + icon('zap', 44) + '<div class="empty-title">' + I18n.t('tk.empty') + '</div></div>';
       return;
     }
-    const grand = TokenStats.grand();
+    const period = Store.state.tokenPeriod || 'all';
     const sort = Store.state.tokenSort || 'total';
     const cell = (v, k) => '<div class="tk-cell"><b>' + esc(v) + '</b><span>' + I18n.t(k) + '</span></div>';
     let html =
       '<div class="tk-total">' +
-      cell(TokenStats.fmt(grand.total), 'tk.total') +
-      cell(TokenStats.fmt(grand.prompt), 'tk.input') +
-      cell(TokenStats.fmt(grand.completion), 'tk.output') +
-      cell(TokenStats.fmt(grand.count), 'tk.calls') +
+      cell(TokenStats.fmt(TokenStats.grand().total), 'tk.total') +
+      cell(TokenStats.fmt(TokenStats.grand().prompt), 'tk.input') +
+      cell(TokenStats.fmt(TokenStats.grand().completion), 'tk.output') +
+      cell(TokenStats.fmt(TokenStats.grand().count), 'tk.calls') +
+      '</div>' +
+      '<div class="seg-btns tk-period" style="margin:8px 0;">' +
+      '<button class="seg-btn' + (period === 'all' ? ' active' : '') + '" data-tkperiod="all">全部</button>' +
+      '<button class="seg-btn' + (period === 'day' ? ' active' : '') + '" data-tkperiod="day">今日</button>' +
+      '<button class="seg-btn' + (period === 'week' ? ' active' : '') + '" data-tkperiod="week">本周</button>' +
+      '<button class="seg-btn' + (period === 'month' ? ' active' : '') + '" data-tkperiod="month">本月</button>' +
       '</div>' +
       '<div class="seg-btns tk-sort">' +
       '<button class="seg-btn' + (sort === 'total' ? ' active' : '') + '" data-tksort="total">' + I18n.t('tk.sortTotal') + '</button>' +
       '<button class="seg-btn' + (sort === 'recent' ? ' active' : '') + '" data-tksort="recent">' + I18n.t('tk.sortRecent') + '</button>' +
       '<button class="seg-btn' + (sort === 'count' ? ' active' : '') + '" data-tksort="count">' + I18n.t('tk.sortCount') + '</button>' +
       '</div>';
-    const groups = TokenStats.byProvider();
+    // v5.3: 按周期聚合数据
+    let groups = TokenStats.byProvider();
+    let grand = TokenStats.grand();
+    if (period !== 'all' && typeof aggregateTokenStats === 'function') {
+      const agg = aggregateTokenStats(period);
+      if (agg && Object.keys(agg.byModel).length) {
+        const providerMap = {};
+        Object.entries(agg.byModel).forEach(([modelId, stat]) => {
+          const m = getModel(modelId);
+          const p = m ? m.provider : '其他';
+          if (!providerMap[p]) providerMap[p] = { provider: p, models: [], total: 0, prompt: 0, completion: 0, count: 0, lastTs: 0 };
+          providerMap[p].models.push({ name: m ? m.name : modelId, id: modelId, prompt: stat.input, completion: stat.output, total: stat.input + stat.output, count: stat.count, lastTs: Date.now() });
+          providerMap[p].total += stat.input + stat.output;
+          providerMap[p].prompt += stat.input;
+          providerMap[p].completion += stat.output;
+          providerMap[p].count += stat.count;
+        });
+        groups = Object.values(providerMap);
+        grand = { total: agg.totalInput + agg.totalOutput, prompt: agg.totalInput, completion: agg.totalOutput, count: Object.values(agg.byModel).reduce((a,v)=>a+v.count,0) };
+      } else {
+        groups = [];
+        grand = { total: 0, prompt: 0, completion: 0, count: 0 };
+      }
+    }
     if (!groups.length || !grand.count) {
       html += '<div class="empty-state">' + icon('zap', 44) + '<div class="empty-title">' + I18n.t('tk.empty') + '</div></div>';
     } else {
@@ -585,6 +614,13 @@ const Pages = (() => {
       const sortBtn = e.target.closest('[data-tksort]');
       if (sortBtn) {
         Store.state.tokenSort = sortBtn.dataset.tksort;
+        Store.save();
+        renderTokens();
+        return;
+      }
+      const periodBtn = e.target.closest('[data-tkperiod]');
+      if (periodBtn) {
+        Store.state.tokenPeriod = periodBtn.dataset.tkperiod;
         Store.save();
         renderTokens();
         return;
@@ -731,6 +767,21 @@ const Pages = (() => {
     trRunning = false;
     btn.disabled = false;
     btn.innerHTML = icon('translate', 15) + ' ' + I18n.t('tr.run');
+    // v5.3: 保存翻译历史
+    const history = Store.state.translateHistory || [];
+    const results = [];
+    document.querySelectorAll('.tr-result-card').forEach(card => {
+      const lang = card.dataset.lang;
+      const text = card.querySelector('.tr-result-text');
+      if (lang && text) results.push({ lang, text: text.textContent });
+    });
+    if (results.length) {
+      history.unshift({ src: text, targets: results, ts: Date.now() });
+      if (history.length > 50) history.length = 50;
+      Store.state.translateHistory = history;
+      Store.save();
+      renderTrHistory();
+    }
   }
 
   /* 朗读：浏览器本地（跟随全局引擎）/ MiMo 音色 / 克隆我的声音 */
@@ -747,7 +798,49 @@ const Pages = (() => {
     Voice.speak(text, key);
   }
 
+
+  /* v5.3 翻译历史记录渲染 */
+  function renderTrHistory() {
+    const box = document.getElementById('trHistory');
+    if (!box) return;
+    const history = Store.state.translateHistory || [];
+    if (!history.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="tr-history-title">最近翻译</div>' +
+      history.slice(0, 10).map((h, i) => 
+        '<div class="tr-history-item" data-idx="' + i + '">' +
+        '<div class="tr-history-text">' + esc(h.src.slice(0, 60)) + (h.src.length > 60 ? '…' : '') + '</div>' +
+        '<div class="tr-history-meta">' + fmtDate(h.ts) + ' · ' + h.targets.length + ' 语种</div>' +
+        '</div>').join('');
+  }
   function bindTranslateEvents() {
+    // v5.3: 历史记录点击复用
+    const histBox = document.getElementById('trHistory');
+    if (histBox) {
+      histBox.addEventListener('click', e => {
+        const item = e.target.closest('.tr-history-item');
+        if (!item) return;
+        const idx = +item.dataset.idx;
+        const h = (Store.state.translateHistory || [])[idx];
+        if (!h) return;
+        document.getElementById('trInput').value = h.src;
+        updateTrCount();
+      });
+    }
+    // v5.3: 收藏按钮
+    const favBtn = document.getElementById('trFavBtn');
+    if (favBtn) {
+      favBtn.addEventListener('click', () => {
+        const src = document.getElementById('trInput').value.trim();
+        if (!src) return Toast.warning('请先输入要翻译的内容');
+        const favs = Store.state.translateFavorites || [];
+        if (favs.find(f => f.src === src)) return Toast.info('已在收藏中');
+        favs.unshift({ src, ts: Date.now() });
+        if (favs.length > 30) favs.length = 30;
+        Store.state.translateFavorites = favs;
+        Store.save();
+        Toast.success('已收藏');
+      });
+    }
     $('#trSrc').addEventListener('change', e => {
       Store.state.trSrc = e.target.value;
       Store.save();
@@ -1107,6 +1200,17 @@ const Pages = (() => {
     const cn = [], gl = [];
     Object.keys(PROVIDERS).forEach(p => (PROVIDERS[p].region === 'cn' ? cn : gl).push(p));
 
+    // v5.3: 自动匹配区域
+    const autoMatchHtml = '<div class="key-auto-match">' +
+      '<div class="key-auto-match-title">' + icon('zap', 16) + ' 自动匹配厂商</div>' +
+      '<div class="key-auto-match-desc">粘贴 API Key，系统自动向各厂商发送测试请求识别归属</div>' +
+      '<div class="key-auto-match-row">' +
+      '<input type="text" class="input" id="autoMatchInput" placeholder="sk-... 或任意格式 API Key" autocomplete="off">' +
+      '<button class="btn btn-primary" id="autoMatchBtn">' + icon('search', 14) + ' 自动匹配</button>' +
+      '</div>' +
+      '<div class="key-auto-match-status" id="autoMatchStatus"></div>' +
+      '</div>';
+
     const blockHtml = p => {
       const cfg = PROVIDERS[p];
       const k = Store.state.apiKeys;
@@ -1133,7 +1237,7 @@ const Pages = (() => {
         '<div class="key-provider-body">' + rows + '</div></div>';
     };
 
-    box.innerHTML =
+    box.innerHTML = autoMatchHtml +
       '<div class="settings-group-title" style="padding:12px 16px 6px">' + icon('key', 15) + ' 国内厂商</div>' +
       cn.map(blockHtml).join('') +
       '<div class="settings-group-title" style="padding:16px 16px 6px">' + icon('globe', 15) + ' 国外厂商</div>' +
@@ -1145,7 +1249,82 @@ const Pages = (() => {
       '<button class="key-eye" data-eye tabindex="-1">' + icon('eye', 16) + '</button></div>';
   }
 
-  function bindKeyEvents() {
+  
+
+  /* v5.3 自动匹配厂商：向各厂商发送测试请求识别 Key 归属 */
+  async function autoMatchKey() {
+    const input = document.getElementById('autoMatchInput');
+    const status = document.getElementById('autoMatchStatus');
+    const key = input.value.trim();
+    if (!key) return Toast.warning('请先粘贴 API Key');
+    if (status) status.innerHTML = '<span class="am-loading">' + icon('loader', 14) + ' 正在匹配…</span>';
+
+    const tests = [];
+    Object.entries(PROVIDERS).forEach(([name, cfg]) => {
+      if (cfg.dualKey) return; // 跳过双 Key 厂商
+      const slug = cfg.keySlug;
+      const base = cfg.base();
+      const hdr = cfg.headers ? cfg.headers(key) : { 'Authorization': 'Bearer ' + key };
+      let url, opts;
+
+      if (cfg.format === 'anthropic') {
+        url = base + '/v1/models';
+        opts = { method: 'GET', headers: hdr };
+      } else if (cfg.format === 'google') {
+        url = base + '/v1beta/models?key=' + encodeURIComponent(key);
+        opts = { method: 'GET' };
+      } else {
+        url = base + '/v1/models';
+        opts = { method: 'GET', headers: hdr };
+      }
+      tests.push({ name, slug, url, opts });
+    });
+
+    // 并行发送，带 5 秒超时
+    const results = await Promise.all(tests.map(async t => {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 5000);
+        const resp = await fetch(t.url, { ...t.opts, signal: ctrl.signal });
+        clearTimeout(timer);
+        if (resp.status === 200) {
+          const data = await resp.json().catch(() => null);
+          if (data && (data.data || data.models || data.object === 'list')) {
+            return { ...t, ok: true };
+          }
+        }
+        return { ...t, ok: false };
+      } catch (e) {
+        return { ...t, ok: false };
+      }
+    }));
+
+    const matched = results.filter(r => r.ok);
+    if (!matched.length) {
+      if (status) status.innerHTML = '<span class="am-fail">未识别到匹配的厂商，请检查 Key 是否有效</span>';
+      Toast.error('未匹配到任何厂商');
+      return;
+    }
+
+    matched.forEach(m => { Store.state.apiKeys[m.slug] = key; });
+    Store.save();
+    renderKeyManagement();
+
+    const names = matched.map(m => m.name).join('、');
+    if (status) status.innerHTML = '<span class="am-success">已匹配并保存：' + esc(names) + '</span>';
+    Toast.success('已匹配 ' + matched.length + ' 个厂商：' + names);
+  }
+function bindKeyEvents() {
+    // v5.3: 自动匹配按钮
+    const amBtn = document.getElementById('autoMatchBtn');
+    const amInput = document.getElementById('autoMatchInput');
+    if (amBtn) amBtn.addEventListener('click', autoMatchKey);
+    if (amInput) {
+      amInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') autoMatchKey();
+      });
+    }
+
     $('#keyManagement').addEventListener('click', e => {
       const head = e.target.closest('.key-provider-head');
       if (head) { head.closest('.key-provider-block').classList.toggle('open'); return; }
@@ -2324,9 +2503,13 @@ const Pages = (() => {
     bindSyncEvents();
     bindToolEvents();
     bindTokenEvents();
+    // v5.3: 渲染翻译历史
+    renderTrHistory();
+    renderTrHistory();
     bindTranslateEvents();
     bindPluginLibEvents();
     bindSkillEvents();
+    bindSubpageEvents();
     renderDiscoverTools();
     // 语言切换时重渲染动态内容
     document.addEventListener('langchange', () => {
@@ -2347,33 +2530,80 @@ const Pages = (() => {
     });
   }
 
-  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo };
-})();
+  function renderProxySection() {
+    const box = document.getElementById('subProxyBody');
+    if (!box) { console.warn('[Proxy] subProxyBody element not found'); return; }
+    const mode = (Store.state && Store.state.proxyMode) || 'local';
+    box.innerHTML = 
+      '<div class="settings-group-title">代理模式</div>' +
+      '<div class="proxy-option' + (mode === 'local' ? ' active' : '') + '" data-mode="local" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;cursor:pointer;background:' + (mode === 'local' ? '#f0fdf4' : '#fff') + ';">' +
+      '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">📱 本地直连</div>' +
+      '<div style="font-size:13px;color:#666;">API Key 保存在本机浏览器中，直接请求厂商服务器。适合个人使用，响应更快。</div>' +
+      '</div>' +
+      '<div class="proxy-option' + (mode === 'server' ? ' active' : '') + '" data-mode="server" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;cursor:pointer;background:' + (mode === 'server' ? '#eff6ff' : '#fff') + ';">' +
+      '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">☁️ 服务器代理</div>' +
+      '<div style="font-size:13px;color:#666;">API Key 保存在云端 Worker，通过服务器转发请求。适合多设备同步，Key 不暴露前端。</div>' +
+      '</div>' +
+      '<div style="padding:12px 16px;font-size:12px;color:#999;margin-top:8px;">切换后下次对话生效</div>';
 
-
-function renderProxySection() {
-  const box = document.getElementById('subProxyBody');
-  if (!box) { console.warn('[Proxy] subProxyBody element not found'); return; }
-  const mode = (Store.state && Store.state.proxyMode) || 'local';
-  box.innerHTML = 
-    '<div class="settings-group-title">代理模式</div>' +
-    '<div class="proxy-option' + (mode === 'local' ? ' active' : '') + '" data-mode="local" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;cursor:pointer;background:' + (mode === 'local' ? '#f0fdf4' : '#fff') + ';">' +
-    '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">📱 本地直连</div>' +
-    '<div style="font-size:13px;color:#666;">API Key 保存在本机浏览器中，直接请求厂商服务器。适合个人使用，响应更快。</div>' +
-    '</div>' +
-    '<div class="proxy-option' + (mode === 'server' ? ' active' : '') + '" data-mode="server" style="padding:16px;border:1px solid #e5e7eb;border-radius:12px;cursor:pointer;background:' + (mode === 'server' ? '#eff6ff' : '#fff') + ';">' +
-    '<div style="font-weight:600;font-size:15px;margin-bottom:4px;">☁️ 服务器代理</div>' +
-    '<div style="font-size:13px;color:#666;">API Key 保存在云端 Worker，通过服务器转发请求。适合多设备同步，Key 不暴露前端。</div>' +
-    '</div>' +
-    '<div style="padding:12px 16px;font-size:12px;color:#999;margin-top:8px;">切换后下次对话生效</div>';
-
-  box.querySelectorAll('.proxy-option').forEach(el => {
-    el.addEventListener('click', () => {
-      const newMode = el.dataset.mode;
-      Store.patch({proxyMode: newMode});
-      renderProxySection();
-      renderRowDescs();
-      if (typeof showToast === 'function') showToast(newMode === 'server' ? '已切换至服务器代理' : '已切换至本地直连');
+    box.querySelectorAll('.proxy-option').forEach(el => {
+      el.addEventListener('click', () => {
+        const newMode = el.dataset.mode;
+        Store.patch({proxyMode: newMode});
+        renderProxySection();
+        renderRowDescs();
+        if (typeof showToast === 'function') showToast(newMode === 'server' ? '已切换至服务器代理' : '已切换至本地直连');
+      });
     });
-  });
-}
+  }
+
+  function renderNavSettings() {
+    const devices = [
+      { key: 'desktop', label: '桌面端', icon: 'monitor' },
+      { key: 'mobile', label: '移动端', icon: 'smartphone' },
+      { key: 'watch', label: '手表端', icon: 'watch' }
+    ];
+    const modes = [
+      { key: 'navbar', label: '导航栏' },
+      { key: 'float', label: '悬浮按钮' },
+      { key: 'both', label: '两者' },
+      { key: 'none', label: '关闭' }
+    ];
+
+    devices.forEach(dev => {
+      const container = $('#nav' + dev.key.charAt(0).toUpperCase() + dev.key.slice(1) + 'Opts');
+      if (!container) return;
+      const current = (Store.state.navSettings || {})[dev.key] || (dev.key === 'watch' ? 'float' : 'navbar');
+      container.innerHTML = modes.map(m => {
+        const active = m.key === current;
+        return '<div class="settings-row clickable nav-opt-row" data-device="' + dev.key + '" data-mode="' + m.key + '" style="' + (active ? 'background:var(--accent-10);color:var(--accent);font-weight:500' : '') + '">' +
+          '<span class="row-label"><span class="row-title">' + m.label + '</span></span>' +
+          (active ? '<span data-icon="check" style="color:var(--accent)"></span>' : '') +
+          '</div>';
+      }).join('');
+    });
+
+    // 事件委托：在容器上绑定一次，避免重复渲染导致内存泄漏
+    devices.forEach(dev => {
+      const container = $('#nav' + dev.key.charAt(0).toUpperCase() + dev.key.slice(1) + 'Opts');
+      if (!container || container.dataset.navBound) return;
+      container.dataset.navBound = '1';
+      container.addEventListener('click', e => {
+        const row = e.target.closest('.nav-opt-row');
+        if (!row) return;
+        const device = row.dataset.device;
+        const mode = row.dataset.mode;
+        const ns = Object.assign({}, Store.state.navSettings || {});
+        ns[device] = mode;
+        Store.patch({ navSettings: ns });
+        renderNavSettings();
+        renderRowDescs();
+        window.dispatchEvent(new CustomEvent('pagechange', { detail: { page: Store.state.currentPage } }));
+      });
+    });
+  }
+
+  
+
+  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings };
+})();
