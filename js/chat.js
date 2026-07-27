@@ -1,13 +1,5 @@
 /* ==================== CHAT · 对话编排（单模型/多模型/辩论/协同） ==================== */
 const Chat = (() => {
-  // 初始化：清理历史记录中已有的空白对话（没有任何消息）
-  (function cleanupEmptyChats() {
-    const before = Store.state.chats.length;
-    Store.state.chats = Store.state.chats.filter(c => c.messages && c.messages.length > 0);
-    const removed = before - Store.state.chats.length;
-    if (removed > 0) { Store.save(); console.log("[Chat] 清理了", removed, "个空白对话"); }
-  })();
-
   let sending = false;
   let stopFlag = false;
 
@@ -39,6 +31,16 @@ const Chat = (() => {
     const now = Date.now();
     if (now - lastCreateTime < 300) return;
     lastCreateTime = now;
+
+    // 清理历史空白会话（保留当前正在查看的）
+    const currentId = Store.state.currentChatId;
+    const before = Store.state.chats.length;
+    Store.state.chats = Store.state.chats.filter(c =>
+      c.id === currentId || (c.messages && c.messages.length > 0)
+    );
+    const removed = before - Store.state.chats.length;
+    if (removed > 0) Store.save();
+
     // 如果当前对话为空，直接复用，不创建新对话
     const current = getCurrentChat();
     if (current && (!current.messages || current.messages.length === 0)) {
