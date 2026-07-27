@@ -1149,12 +1149,7 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
   box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
 }
 
-.float-back-btn.dragging {
-  cursor: grabbing;
-  transition: none;
-  opacity: 0.9;
-  transform: scale(1.05);
-}
+
 .float-back-btn:active {
   transform: scale(0.92);
 }
