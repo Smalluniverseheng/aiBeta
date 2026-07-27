@@ -405,6 +405,6 @@
 @media (min-width: 769px) {
   #sidebar.page-hidden {
     margin-left: calc(var(--sidebar-w) * -1);
-    display: flex !important;
+    /* 桌面端非对话页：折叠到左侧，不覆盖 display 让隐藏生效 */
   }
 }
