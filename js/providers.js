@@ -261,7 +261,7 @@ function getKeyForModel(model) {
 }
 
 /* 应用信息（更新日志数据在 js/changelog.js，添加式维护） */
-const APP_VERSION = '5.2';
+const APP_VERSION = '5.3';
 
 const MODE_META = {
   single: { icon: 'message', label: '单模型', desc: '与单个 AI 对话' },
