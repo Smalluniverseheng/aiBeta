@@ -65,19 +65,20 @@
         document.documentElement.dataset.floatVisible = showFloat ? 'true' : 'false';
       }
 
-      // 导航栏控制（只在非对话页生效，避免与 ui.js navigate() 冲突）
-      if (!isChat) {
-        const bottomNav = document.querySelector('.bottom-nav');
-        if (bottomNav) {
+      // 底部导航栏控制（由 app.js 统一管理，ui.js 不再重复控制）
+      const bottomNav = document.querySelector('.bottom-nav');
+      if (bottomNav) {
+        if (isChat) {
+          // 对话页：始终显示底部导航栏（与 v5.0 行为一致）
+          bottomNav.style.display = '';
+        } else {
           const showNav = mode === 'navbar' || mode === 'both';
           bottomNav.style.display = showNav ? '' : 'none';
         }
-        const topNav = $('#topbar');
-        if (topNav) {
-          const showNav = mode === 'navbar' || mode === 'both';
-          topNav.style.display = showNav ? '' : 'none';
-        }
       }
+
+      // 顶部导航栏：完全交给 ui.js navigate() 控制，app.js 不干预
+      // 避免 style.display 与 classList.toggle('mobile-hidden') 冲突
     }
 
     // 点击返回对话（关闭子页面 + 切换页面）
