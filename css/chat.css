@@ -1141,6 +1141,14 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
   right: 16px;
   bottom: 80px;
 }
+
+.float-back-btn.dragging {
+  transform: scale(1.15);
+  opacity: 0.85;
+  cursor: grabbing;
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
+}
+
 .float-back-btn.dragging {
   cursor: grabbing;
   transition: none;
