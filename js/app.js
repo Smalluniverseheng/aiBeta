@@ -75,7 +75,7 @@
 
     // 点击返回对话（关闭子页面 + 切换页面）
     btn.addEventListener('click', (e) => {
-      if (moved) { moved = false; return; }
+      if (moved) return;
       // 关闭所有子页面
       $$('.subpage').forEach(s => s.classList.remove('show'));
       UI.navigate('chat');
