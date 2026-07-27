@@ -420,6 +420,7 @@ const Chat = (() => {
             sseWaitSeconds = 0;
             msg.content = full; 
             UI.setMsgContent(msg.id, full); 
+            if (typeof renderTokenUsageBar === 'function') renderTokenUsageBar(chat.id);
           } 
         },
         onThinking: (t, fullT) => { 
@@ -440,15 +441,17 @@ const Chat = (() => {
       autoSpeak(msg.content, msg.id);
     if (sseTimeoutTimer) { clearInterval(sseTimeoutTimer); sseTimeoutTimer = null; }
     } catch (e) {
-      if (stopFlag || e.name === 'AbortError') {
+      if (stopFlag || e.name === 'AbortError' || (e.message && e.message.includes('超时'))) {
         msg.content = msg.content || '';
         settleToolCalls(msg);
         UI.finishMsg(msg.id, msg.content);
+        if (typeof renderTokenUsageBar === 'function') renderTokenUsageBar(chat.id);
       } else {
         msg.error = e.message;
         msg.content = '';
         settleToolCalls(msg);
         UI.setMsgError(msg.id, e.message);
+        if (typeof renderTokenUsageBar === 'function') renderTokenUsageBar(chat.id);
       }
     }
     chat.updatedAt = Date.now();
