@@ -219,6 +219,8 @@
           <div class="chat-container" id="chatContainer"></div>
         </div>
 
+        <!-- v5.3: Token 用量底部栏 -->
+        <div class="token-usage-bar" id="tokenUsageBar" style="display:none"></div>
         <!-- 输入区 -->
         <div class="input-area">
           <div class="input-wrap">
@@ -645,6 +647,12 @@
         <input type="file" id="trSampleFile" accept="audio/mpeg,audio/mp3,audio/wav,audio/*" class="sr-only">
         <!-- 结果区（每个目标语言一张卡片） -->
         <div id="trResults"></div>
+        <!-- v5.3: 翻译历史记录 -->
+        <div id="trHistory" class="tr-history"></div>
+        <!-- v5.3: 收藏按钮 -->
+        <button class="btn btn-secondary btn-sm" id="trFavBtn" style="margin-top:10px;width:100%">
+          <span data-icon="star"></span> 收藏当前翻译
+        </button>
       </div>
     </div>
 
