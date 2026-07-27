@@ -1794,3 +1794,262 @@ body::before {
 8. **内置书源 30 个** — 15 正版 + 15 聚合，全部写入 js/novel.js 默认数组
 9. **法律风险规避** — 免责声明 + 不存储内容 + 投诉机制 + DMCA 响应
 10. **版本号只用 x.y** — 5.4，禁止 5.4.1
+
+
+---
+
+## 十四、API Key 管理整合到"我的"页面（2026-07-28 追加）
+
+### 14.1 需求
+
+所有在线 API Key 配置（AI对话、AI绘画、视频生成、TTS、书源、短视频等）统一放到 **"我的"页面** 中的 **"API管理配置"** 区块。
+
+- 默认折叠（只显示标题和展开箭头）
+- 点击标题或箭头后展开，显示所有厂商配置项
+- 保留 v5.3 的 **自动匹配** 功能（粘贴 Key 自动识别厂商）
+- 支持按分类折叠/展开（AI对话 / 绘画 / 视频 / TTS / 书源 / 短视频）
+
+### 14.2 "我的"页面结构更新
+
+```
+┌─────────────────────────────┐
+│  我的                        │
+├─────────────────────────────┤
+│  用户信息...                  │
+├─────────────────────────────┤
+│  API 管理配置  [▼]           │  ← 默认折叠
+│  ┌─────────────────────────┐ │
+│  │ [自动匹配] 粘贴Key自动识别│ │  ← 展开后显示
+│  │                         │ │
+│  │ AI 对话厂商              │ │
+│  │ [OpenAI]    [已配置 ▼]   │ │
+│  │ [Anthropic] [未配置 ▼]   │ │
+│  │ ...                     │ │
+│  │                         │ │
+│  │ AI 绘画厂商              │ │
+│  │ [小米]      [已配置 ▼]   │ │
+│  │ ...                     │ │
+│  │                         │ │
+│  │ 视频生成厂商             │ │
+│  │ [通义万相]  [未配置 ▼]   │ │
+│  │ [可灵]      [未配置 ▼]   │ │
+│  │ ...                     │ │
+│  │                         │ │
+│  │ 朗读 TTS 厂商            │ │
+│  │ [小米]      [已配置 ▼]   │ │
+│  │ [百度]      [未配置 ▼]   │ │
+│  │ ...                     │ │
+│  │                         │ │
+│  │ 书源 API（可选）         │ │
+│  │ [起点]      [未配置 ▼]   │ │
+│  │ ...                     │ │
+│  │                         │ │
+│  │ 短视频厂商 API           │ │
+│  │ [B站]       [未配置 ▼]   │ │
+│  │ ...                     │ │
+│  └─────────────────────────┘ │
+├─────────────────────────────┤
+│  插件与设置                  │
+│  [导航设置] [数据同步] ...   │
+├─────────────────────────────┤
+│  [关于平台] [退出登录]       │
+└─────────────────────────────┘
+```
+
+### 14.3 折叠/展开交互
+
+```javascript
+// 默认折叠状态
+const API_MGMT_COLLAPSED = true;
+
+// 点击标题切换折叠
+function toggleApiMgmt() {
+  const box = document.getElementById('apiMgmtBody');
+  const arrow = document.getElementById('apiMgmtArrow');
+  const isOpen = box.classList.toggle('open');
+  arrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+
+  // 保存用户偏好
+  Store.state.apiMgmtOpen = isOpen;
+  Store.save();
+}
+
+// 分类折叠（二级折叠）
+function toggleApiCategory(catId) {
+  const body = document.getElementById('apiCat_' + catId);
+  const arrow = document.getElementById('apiCatArrow_' + catId);
+  const isOpen = body.classList.toggle('open');
+  arrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+```
+
+### 14.4 CSS 样式
+
+```css
+.api-mgmt-section {
+  margin: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.api-mgmt-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--bg-soft);
+  cursor: pointer;
+  transition: background var(--dur);
+}
+.api-mgmt-header:hover { background: var(--bg-hover); }
+
+.api-mgmt-header .title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.api-mgmt-header .arrow {
+  transition: transform var(--dur);
+  color: var(--text-3);
+}
+
+.api-mgmt-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s var(--ease);
+}
+.api-mgmt-body.open {
+  max-height: 2000px; /* 足够大的值 */
+}
+
+.api-cat-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--bg-elev);
+  cursor: pointer;
+}
+
+.api-cat-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s var(--ease);
+}
+.api-cat-body.open {
+  max-height: 800px;
+}
+```
+
+### 14.5 自动匹配保留
+
+v5.3 的 `autoMatchKey()` 功能保留，放在 API 管理配置的顶部：
+
+```
+┌─────────────────────────────┐
+│  API 管理配置  [▼]           │
+├─────────────────────────────┤
+│  [自动匹配]                  │
+│  ┌────────────────────────┐ │
+│  │ [粘贴 API Key...    ]  │ │
+│  │ [🔍 自动匹配]          │ │
+│  │ 已匹配: OpenAI、百度     │ │
+│  └────────────────────────┘ │
+│  ...                         │
+└─────────────────────────────┘
+```
+
+### 14.6 厂商配置项统一数据结构
+
+```javascript
+// js/providers.js 中统一所有需要 API Key 的厂商
+const API_KEY_PROVIDERS = {
+  // AI 对话
+  chat: [
+    { key: 'openai', name: 'OpenAI', type: 'chat', docUrl: 'https://platform.openai.com/api-keys' },
+    { key: 'anthropic', name: 'Anthropic', type: 'chat', docUrl: 'https://console.anthropic.com/settings/keys' },
+    { key: 'google', name: 'Google', type: 'chat', docUrl: 'https://aistudio.google.com/app/apikey' },
+    { key: 'deepseek', name: 'DeepSeek', type: 'chat', docUrl: 'https://platform.deepseek.com/api_keys' },
+    { key: 'aliyun', name: '通义千问', type: 'chat', docUrl: 'https://bailian.console.aliyun.com/' },
+    { key: 'kimi', name: 'Kimi', type: 'chat', docUrl: 'https://platform.moonshot.cn/' },
+    { key: 'zhipu', name: '智谱AI', type: 'chat', docUrl: 'https://open.bigmodel.cn/usercenter/apikeys' },
+    { key: 'baichuan', name: '百川智能', type: 'chat', docUrl: 'https://platform.baichuan-ai.com/' },
+    { key: 'hunyuan', name: '腾讯混元', type: 'chat', docUrl: 'https://console.cloud.tencent.com/hunyuan' },
+    { key: 'doubao', name: '豆包/火山', type: 'chat', docUrl: 'https://console.volcengine.com/ark/' },
+    { key: 'minimax', name: 'MiniMax', type: 'chat', docUrl: 'https://platform.minimaxi.com/' },
+    { key: 'mimo', name: '小米 MiMo', type: 'chat', docUrl: 'https://platform.mi.com/' },
+    { key: 'grok', name: 'xAI Grok', type: 'chat', docUrl: 'https://x.ai/api' },
+    { key: 'mistral', name: 'Mistral', type: 'chat', docUrl: 'https://console.mistral.ai/' },
+    { key: 'cohere', name: 'Cohere', type: 'chat', docUrl: 'https://dashboard.cohere.com/' },
+  ],
+
+  // AI 绘画
+  paint: [
+    { key: 'mimo-paint', name: '小米 MiMo', type: 'paint' },
+    { key: 'anthropic-paint', name: 'Anthropic', type: 'paint' },
+    { key: 'zhipu-paint', name: '智谱AI', type: 'paint' },
+  ],
+
+  // 视频生成
+  video: [
+    { key: 'tongyi-video', name: '通义万相视频', type: 'video', needProxy: false },
+    { key: 'kling', name: '可灵', type: 'video', needProxy: false },
+    { key: 'openai-sora', name: 'OpenAI Sora', type: 'video', needProxy: true },
+    { key: 'runway', name: 'Runway', type: 'video', needProxy: true },
+  ],
+
+  // 朗读 TTS
+  tts: [
+    { key: 'xiaomi-tts', name: '小米 MiMo', type: 'tts' },
+    { key: 'baidu-tts', name: '百度 TTS', type: 'tts' },
+    { key: 'xunfei-tts', name: '讯飞 TTS', type: 'tts' },
+    { key: 'aliyun-tts', name: '阿里云 TTS', type: 'tts' },
+    { key: 'tencent-tts', name: '腾讯云 TTS', type: 'tts' },
+    { key: 'huawei-tts', name: '华为云 TTS', type: 'tts' },
+    { key: 'volcengine-tts', name: '火山引擎 TTS', type: 'tts' },
+    { key: 'openai-tts', name: 'OpenAI TTS', type: 'tts', needProxy: true },
+    { key: 'azure-tts', name: 'Azure TTS', type: 'tts', needProxy: true },
+    { key: 'google-tts', name: 'Google TTS', type: 'tts', needProxy: true },
+    { key: 'amazon-tts', name: 'Amazon Polly', type: 'tts', needProxy: true },
+    { key: 'elevenlabs', name: 'ElevenLabs', type: 'tts', needProxy: true },
+    { key: 'minimax-tts', name: 'MiniMax TTS', type: 'tts' },
+    { key: 'zhipu-tts', name: '智谱 TTS', type: 'tts' },
+  ],
+
+  // 书源（可选）
+  novel: [
+    { key: 'qidian', name: '起点读书', type: 'novel', optional: true },
+    { key: 'jinjiang', name: '晋江文学城', type: 'novel', optional: true },
+    { key: 'fanqie', name: '番茄小说', type: 'novel', optional: true },
+  ],
+
+  // 短视频（可选）
+  shortVideo: [
+    { key: 'bilibili', name: 'B站', type: 'shortVideo', optional: true },
+  ]
+};
+```
+
+### 14.7 文件修改
+
+| 文件 | 修改 |
+|------|------|
+| `js/pages.js` | `renderProfile()` 中添加 API 管理配置折叠区块；`renderKeyManagement()` 改为在"我的"页面内调用 |
+| `js/providers.js` | 新增 `API_KEY_PROVIDERS` 统一数据结构 |
+| `css/pages.css` | 添加折叠/展开样式 |
+| `index.html` | 移除独立的 API Key 管理页面入口（如果存在），统一整合到"我的"页面 |
+
+---
+
+## 十五、最终最终最终留言
+
+1. **API Key 管理必须在"我的"页面内** — 不要单独的页面或弹窗
+2. **默认折叠** — 用户点击后才展开，保持"我的"页面简洁
+3. **自动匹配保留** — 放在 API 管理配置区块的顶部
+4. **分类折叠** — AI对话 / 绘画 / 视频 / TTS / 书源 / 短视频 各自可折叠
+5. **所有 API Key 用户自申请** — 每个厂商显示"去申请"链接
+6. **版本号只用 x.y** — 5.4，禁止 5.4.1
