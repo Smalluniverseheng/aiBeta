@@ -2053,3 +2053,188 @@ const API_KEY_PROVIDERS = {
 4. **分类折叠** — AI对话 / 绘画 / 视频 / TTS / 书源 / 短视频 各自可折叠
 5. **所有 API Key 用户自申请** — 每个厂商显示"去申请"链接
 6. **版本号只用 x.y** — 5.4，禁止 5.4.1
+
+
+---
+
+## 十六、5.4 开发优先级调整（2026-07-28 最终确认）
+
+### 16.1 不做的事项
+
+| 事项 | 原因 | 移到版本 |
+|------|------|---------|
+| 回收站打不开 | 修复难度大，不影响核心功能 | 5.5 或更后 |
+| 帮助中心打不开 | 修复难度大，不影响核心功能 | 5.5 或更后 |
+
+### 16.2 5.4 开发顺序（严格按此顺序）
+
+```
+Phase 1: 小说（核心功能，必须完整实现）
+  1.1 书源系统（30个内置书源 + 用户自定义 + 书源市场）
+  1.2 小说搜索（多书源聚合搜索）
+  1.3 小说阅读器（覆盖/仿真/滚动翻页 + 设置 + 手势）
+  1.4 朗读功能（浏览器TTS优先，小米TTS次之）
+  1.5 书架/历史/书签
+
+Phase 2: UI 占位（只做界面，不填充功能）
+  2.1 漫画页面 UI（阅读器框架、书源列表框架）
+  2.2 AI绘画独立页面 UI（输入区、画廊框架）
+  2.3 图生视频页面 UI（上传区、任务列表框架）
+  2.4 短视频页面 UI（播放器框架、标签框架）
+  2.5 视频端页面 UI（网格列表、播放器框架）
+  2.6 导航栏自定义 UI（编辑模式、拖拽排序框架）
+
+Phase 3: 主题系统（完整实现）
+  3.1 预设主题（白天/夜间/羊皮/护眼）
+  3.2 自定义颜色
+  3.3 上传背景图片（透明度/模糊度）
+  3.4 字体设置
+
+Phase 4: API管理整合（完整实现）
+  4.1 "我的"页面中添加 API管理配置折叠区块
+  4.2 自动匹配功能迁移
+  4.3 分类折叠（AI对话/绘画/视频/TTS/书源/短视频）
+
+Phase 5: 性能优化（完整实现）
+  5.1 虚拟滚动
+  5.2 图片懒加载
+  5.3 IndexedDB缓存
+```
+
+### 16.3 UI 占位规范
+
+**Phase 2 中的 UI 占位页面，必须遵循以下规范：**
+
+1. **每个页面必须有完整的 DOM 结构和 CSS 样式**
+2. **功能区域用占位符显示"即将上线"或"开发中"**
+3. **按钮和交互元素存在但点击后提示"功能开发中"**
+4. **数据用 mock 数据填充，确保 UI 看起来完整**
+5. **路由和页面切换必须正常工作**
+
+**示例：漫画页面 UI 占位**
+
+```javascript
+function renderComic() {
+  const box = $('#comicBody');
+  box.innerHTML =
+    '<div class="comic-header">' +
+    '  <h2>漫画</h2>' +
+    '  <button class="btn btn-sm" id="comicAddSource">添加书源</button>' +
+    '</div>' +
+    '<div class="comic-source-list">' +
+    '  <div class="empty-state">' +
+    '    <span data-icon="book-open" style="width:48px;height:48px;color:var(--text-3)"></span>' +
+    '    <div class="empty-title">漫画功能即将上线</div>' +
+    '    <div class="empty-desc">我们正在接入各大漫画平台，敬请期待</div>' +
+    '  </div>' +
+    '</div>' +
+    '<div class="comic-search" style="display:none">' +
+    '  <input type="text" class="input" placeholder="搜索漫画..." disabled>' +
+    '  <button class="btn btn-primary" disabled>搜索</button>' +
+    '</div>' +
+    '<div class="comic-reader" style="display:none">' +
+    '  <div class="reader-placeholder">' +
+    '    <span data-icon="image" style="width:64px;height:64px"></span>' +
+    '    <p>漫画阅读器开发中</p>' +
+    '  </div>' +
+    '</div>';
+
+  // 绑定事件：点击后提示开发中
+  $('#comicAddSource').addEventListener('click', () => {
+    Toast.info('漫画书源功能开发中，将在后续版本上线');
+  });
+}
+```
+
+### 16.4 小说功能详细实现要求
+
+**小说必须是 5.4 唯一完整实现的功能，其他都是 UI 占位。**
+
+#### 小说功能清单
+
+| 功能 | 必须实现 | 说明 |
+|------|---------|------|
+| 30个内置书源 | ✅ | 15正版+15聚合，写入 js/novel.js |
+| 书源解析引擎 | ✅ | CSS选择器规则解析 |
+| 多书源聚合搜索 | ✅ | 同时搜索多个书源，结果合并去重 |
+| 书架 | ✅ | 本地存储，显示封面/书名/作者/阅读进度 |
+| 阅读器-覆盖翻页 | ✅ | 默认模式 |
+| 阅读器-仿真翻页 | ✅ | CSS 3D transform |
+| 阅读器-滚动模式 | ✅ | 上下连续滚动 |
+| 阅读器设置 | ✅ | 字体/字号/行高/主题/翻页模式 |
+| 阅读器手势 | ✅ | 点击翻页/中间菜单/长按选择 |
+| 朗读-浏览器TTS | ✅ | 优先实现，免费 |
+| 朗读-小米TTS | ✅ | 次优先，需Key |
+| 书签 | ✅ | 本地存储 |
+| 阅读历史 | ✅ | 本地存储，记录阅读进度 |
+| 书源市场 | ✅ | 服务器维护书源列表（如后端未ready，先用静态JSON） |
+| 用户自定义书源 | ✅ | JSON编辑器+验证 |
+| 书源编辑器 | ✅ | 可视化编辑规则 |
+| 缓存策略 | ✅ | IndexedDB缓存章节内容 |
+
+#### 小说文件清单
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| `js/novel.js` | 新建 | 书源解析、搜索、阅读器、朗读、缓存 |
+| `css/novel.css` | 新建 | 阅读器样式、翻页动画、主题 |
+| `js/tts.js` | 新建 | 统一TTS接口（浏览器+小米） |
+| `index.html` | 修改 | 添加 subNovel DOM |
+| `js/pages.js` | 修改 | renderNovel() + bindNovelEvents() |
+| `js/store.js` | 修改 | novelSources / novelBookmarks / novelHistory / ttsSettings |
+| `js/lazy-loader.js` | 修改 | 添加 novel 模块懒加载 |
+
+### 16.5 其他 UI 占位页面清单
+
+| 页面 | 需要做的 UI | 不需要做的功能 |
+|------|-----------|--------------|
+| 漫画 | 书源列表框架、搜索框、阅读器框架、设置面板 | 书源解析、图片加载、翻页逻辑 |
+| AI绘画 | 输入区、参数面板、画廊网格、历史列表 | 图片生成API调用、下载 |
+| 图生视频 | 上传区、提示词输入、参数面板、任务列表 | 视频生成API、轮询、播放 |
+| 短视频 | 竖屏播放器框架、点赞/收藏按钮、标签切换 | 视频获取、滑动切换、播放控制 |
+| 视频端 | 搜索栏、分类标签、网格列表、播放器弹窗 | 视频搜索、分类、播放 |
+| 导航栏自定义 | 编辑模式UI、拖拽排序UI、抽屉UI | 拖拽逻辑、数据持久化 |
+
+### 16.6 文件修改清单（调整版）
+
+| 优先级 | 文件 | 修改类型 | 说明 |
+|--------|------|---------|------|
+| P0 | `js/novel.js` | 新建 | 小说完整功能（书源/搜索/阅读器/朗读/缓存） |
+| P0 | `css/novel.css` | 新建 | 阅读器完整样式 |
+| P0 | `js/tts.js` | 新建 | 统一TTS接口（浏览器+小米） |
+| P0 | `index.html` | 修改 | 添加 subNovel DOM |
+| P0 | `js/pages.js` | 修改 | renderNovel() 完整实现 |
+| P0 | `js/store.js` | 修改 | novelSources / novelBookmarks / novelHistory / ttsSettings |
+| P0 | `js/lazy-loader.js` | 修改 | 添加 novel 模块懒加载 |
+| P1 | `index.html` | 修改 | 添加 subComic / subPaint / subVideo / subShortVideo / subVideoHub / subNavSettings DOM（UI占位） |
+| P1 | `js/pages.js` | 修改 | renderComic() / renderPaint() / renderVideo() / renderShortVideo() / renderVideoHub() / renderNavSettings()（UI占位） |
+| P1 | `css/pages.css` | 修改 | 漫画/绘画/视频/短视频/视频端/导航设置 UI占位样式 |
+| P1 | `css/comic.css` | 新建 | 漫画阅读器占位样式 |
+| P2 | `js/pages.js` | 修改 | renderProfile() 添加 API管理配置折叠区块 |
+| P2 | `js/providers.js` | 修改 | 新增 API_KEY_PROVIDERS 统一数据结构 |
+| P2 | `css/pages.css` | 修改 | API管理配置折叠样式 |
+| P3 | `js/ui.js` | 修改 | 主题应用逻辑（applyTheme） |
+| P3 | `js/store.js` | 修改 | theme 数据结构 |
+| P3 | `css/layout.css` | 修改 | CSS变量主题支持、背景图片支持 |
+| P3 | `index.html` | 修改 | 添加 subThemeSettings DOM |
+| P3 | `js/pages.js` | 修改 | renderThemeSettings() 完整实现 |
+| P4 | `js/ui.js` | 修改 | 虚拟滚动逻辑 |
+| P4 | `js/db.js` | 新建 | IndexedDB封装 |
+| P4 | `index.html` | 修改 | 引入 js/db.js |
+| P5 | `js/providers.js` | 修改 | APP_VERSION = '5.4' |
+| P5 | `sw.js` | 修改 | VERSION = 'v5.4' |
+| P5 | `js/changelog.js` | 修改 | 追加 v5.4 条目 |
+
+---
+
+## 十七、最终最终最终最终留言
+
+1. **5.4 只做小说完整功能** — 其他（漫画/绘画/视频/短视频/视频端/导航栏）只做 UI 占位
+2. **UI 占位规范** — 完整DOM+CSS+mock数据，按钮点击提示"开发中"
+3. **小说必须完整** — 30书源、搜索、阅读器（3种翻页）、朗读（浏览器+小米）、书签、历史、缓存
+4. **回收站/帮助中心 bug 不修** — 移到 5.5
+5. **主题系统完整实现** — 预设+自定义颜色+上传背景图片+字体
+6. **API管理整合到"我的"** — 折叠区块，自动匹配保留
+7. **所有 API 本地调用** — 平台服务器不中转
+8. **会员分级** — 普通用户本地存储，进阶+云端同步
+9. **版本号只用 x.y** — 5.4，禁止 5.4.1
