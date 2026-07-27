@@ -2390,6 +2390,7 @@ const Pages = (() => {
     bindTokenEvents();
     // v5.3: 渲染翻译历史
     renderTrHistory();
+    renderTrHistory();
     bindTranslateEvents();
     bindPluginLibEvents();
     bindSkillEvents();
