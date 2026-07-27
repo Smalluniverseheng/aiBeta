@@ -589,6 +589,13 @@ const Pages = (() => {
         renderTokens();
         return;
       }
+      const periodBtn = e.target.closest('[data-tkperiod]');
+      if (periodBtn) {
+        Store.state.tokenPeriod = periodBtn.dataset.tkperiod;
+        Store.save();
+        renderTokens();
+        return;
+      }
       if (e.target.closest('#tkClear')) {
         confirmDialog(I18n.t('tk.clear'), I18n.t('tk.clearQ'), true).then(ok => {
           if (!ok) return;
@@ -731,6 +738,21 @@ const Pages = (() => {
     trRunning = false;
     btn.disabled = false;
     btn.innerHTML = icon('translate', 15) + ' ' + I18n.t('tr.run');
+    // v5.3: 保存翻译历史
+    const history = Store.state.translateHistory || [];
+    const results = [];
+    document.querySelectorAll('.tr-result-card').forEach(card => {
+      const lang = card.dataset.lang;
+      const text = card.querySelector('.tr-result-text');
+      if (lang && text) results.push({ lang, text: text.textContent });
+    });
+    if (results.length) {
+      history.unshift({ src: text, targets: results, ts: Date.now() });
+      if (history.length > 50) history.length = 50;
+      Store.state.translateHistory = history;
+      Store.save();
+      renderTrHistory();
+    }
   }
 
   /* 朗读：浏览器本地（跟随全局引擎）/ MiMo 音色 / 克隆我的声音 */
@@ -747,7 +769,49 @@ const Pages = (() => {
     Voice.speak(text, key);
   }
 
+
+  /* v5.3 翻译历史记录渲染 */
+  function renderTrHistory() {
+    const box = document.getElementById('trHistory');
+    if (!box) return;
+    const history = Store.state.translateHistory || [];
+    if (!history.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="tr-history-title">最近翻译</div>' +
+      history.slice(0, 10).map((h, i) => 
+        '<div class="tr-history-item" data-idx="' + i + '">' +
+        '<div class="tr-history-text">' + esc(h.src.slice(0, 60)) + (h.src.length > 60 ? '…' : '') + '</div>' +
+        '<div class="tr-history-meta">' + fmtDate(h.ts) + ' · ' + h.targets.length + ' 语种</div>' +
+        '</div>').join('');
+  }
   function bindTranslateEvents() {
+    // v5.3: 历史记录点击复用
+    const histBox = document.getElementById('trHistory');
+    if (histBox) {
+      histBox.addEventListener('click', e => {
+        const item = e.target.closest('.tr-history-item');
+        if (!item) return;
+        const idx = +item.dataset.idx;
+        const h = (Store.state.translateHistory || [])[idx];
+        if (!h) return;
+        document.getElementById('trInput').value = h.src;
+        updateTrCount();
+      });
+    }
+    // v5.3: 收藏按钮
+    const favBtn = document.getElementById('trFavBtn');
+    if (favBtn) {
+      favBtn.addEventListener('click', () => {
+        const src = document.getElementById('trInput').value.trim();
+        if (!src) return Toast.warning('请先输入要翻译的内容');
+        const favs = Store.state.translateFavorites || [];
+        if (favs.find(f => f.src === src)) return Toast.info('已在收藏中');
+        favs.unshift({ src, ts: Date.now() });
+        if (favs.length > 30) favs.length = 30;
+        Store.state.translateFavorites = favs;
+        Store.save();
+        Toast.success('已收藏');
+      });
+    }
     $('#trSrc').addEventListener('change', e => {
       Store.state.trSrc = e.target.value;
       Store.save();
@@ -2324,6 +2388,8 @@ const Pages = (() => {
     bindSyncEvents();
     bindToolEvents();
     bindTokenEvents();
+    // v5.3: 渲染翻译历史
+    renderTrHistory();
     bindTranslateEvents();
     bindPluginLibEvents();
     bindSkillEvents();
