@@ -397,3 +397,14 @@
   .page-inner { max-width: 1240px; }
   .multi-grid { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
 }
+
+/* v5.1: 历史侧边栏只在对话页显示 */
+#sidebar.page-hidden {
+  display: none !important;
+}
+@media (min-width: 769px) {
+  #sidebar.page-hidden {
+    margin-left: calc(var(--sidebar-w) * -1);
+    display: flex !important;
+  }
+}
