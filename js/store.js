@@ -31,6 +31,11 @@ const Store = (() => {
     voiceSettings: { enabled: true, voiceURI: '', rate: 1, ttsEngine: 'browser', ttsVoice: 'mimo_default', asrEngine: 'browser' },
     webSearch: { enabled: false, tavilyKey: '' },
     thinkingOn: true,       // 深度思考开关（支持的模型生效）
+    thinkingAutoCollapse: true,  // 思考完成后自动折叠
+    msgAutoCollapse: true,       // 长消息自动折叠
+    tokenWarnThreshold: 0.8,     // Token 用量警告阈值（80%）
+    translateHistory: [],        // 翻译历史记录
+    translateFavorites: [],      // 翻译收藏
     presetExtra: {},        // 预设角色追加提示词 { presetId: text }
     customPresets: [],      // 用户自建角色 [{id,name,icon,grad,desc,system,custom:true}]
     rankTab: 'overall',     // 模型排行榜页签 overall|coding
