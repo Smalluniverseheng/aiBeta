@@ -252,7 +252,7 @@ const Chat = (() => {
       const msgEl = document.querySelector('#chatContainer [data-id="' + currentMsgId + '"]');
       if (msgEl) {
         const body = msgEl.querySelector('.msg-body');
-        if (body) {
+        if (body && !body.querySelector('.stop-hint')) {
           const hint = document.createElement('div');
           hint.className = 'stop-hint';
           hint.innerHTML = '<span class="icon">' + icon('pause', 16) + '</span><span>已停止生成</span>' +
