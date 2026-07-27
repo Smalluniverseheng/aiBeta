@@ -474,7 +474,10 @@ const SB = (() => {
         const q = await client.from('messages').select('id,local_id').eq('conversation_id', cid);
         if (q.error) throw q.error;
         (q.data || []).forEach(r => { if (r.local_id) exist[r.local_id] = r.id; });
-        const rows = c.messages.map(m => msgToRow(m, cid, exist[m.id]));
+        const rows = c.messages.map(m => {
+        if (!m.id) m.id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+        return msgToRow(m, cid, exist[m.id]);
+      });
         for (let i = 0; i < rows.length; i += 100) {
           const r = await client.from('messages').upsert(rows.slice(i, i + 100));
           if (r.error) throw r.error;
