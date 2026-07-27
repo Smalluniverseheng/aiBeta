@@ -67,7 +67,7 @@
 
       // 导航栏控制（只在非对话页生效，避免与 ui.js navigate() 冲突）
       if (!isChat) {
-        const bottomNav = $('#bottomNav');
+        const bottomNav = document.querySelector('.bottom-nav');
         if (bottomNav) {
           const showNav = mode === 'navbar' || mode === 'both';
           bottomNav.style.display = showNav ? '' : 'none';
