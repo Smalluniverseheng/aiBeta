@@ -1141,12 +1141,15 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
   right: 16px;
   bottom: 80px;
 }
+
 .float-back-btn.dragging {
+  transform: scale(1.15);
+  opacity: 0.85;
   cursor: grabbing;
-  transition: none;
-  opacity: 0.9;
-  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
 }
+
+
 .float-back-btn:active {
   transform: scale(0.92);
 }
@@ -1165,3 +1168,216 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
 html[data-float-visible="true"] .float-back-btn {
   display: flex !important;
 }
+
+
+/* ==================== v5.3 思考面板优化 ==================== */
+.thinking-box {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-soft);
+  border-left: 3px solid #3B82F6;
+  margin: 6px 0 10px;
+}
+.thinking-box.live {
+  border-color: var(--accent);
+  animation: thinkBreath 1.6s infinite;
+}
+@keyframes thinkBreath {
+  0%, 100% { box-shadow: inset 2.5px 0 0 var(--accent); }
+  50% { box-shadow: inset 2.5px 0 0 var(--accent-3); }
+}
+.thinking-toggle {
+  width: 100%;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--bg-soft);
+  transition: background var(--dur);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.thinking-toggle:hover { background: var(--bg-hover); }
+.thinking-toggle .thinking-brain { display: inline-flex; }
+.thinking-toggle .thinking-brain .icon { color: var(--accent); }
+.thinking-box.live .thinking-brain .icon { animation: pulse 1.4s infinite; }
+.thinking-toggle .thinking-label { flex: 1; text-align: left; }
+.thinking-toggle .thinking-copy {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  transition: background var(--dur), color var(--dur);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+.thinking-copy:hover { background: var(--bg-hover); color: var(--text); }
+.thinking-copy.copied { color: var(--success); }
+.thinking-copy .icon { width: 12px; height: 12px; color: inherit; }
+.thinking-toggle .chevron { margin-left: 4px; transition: transform var(--dur); display: inline-flex; }
+.thinking-box.open .thinking-toggle .chevron { transform: rotate(180deg); }
+.thinking-content {
+  display: none;
+  padding: 10px 14px 14px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  font-family: var(--mono);
+  background: #F3F4F6;
+  border-top: 1px dashed var(--border);
+  max-height: 600px;
+  overflow-y: auto;
+}
+[data-theme="dark"] .thinking-content { background: #1A1B26; }
+.thinking-box.open .thinking-content { display: block; }
+
+/* 多轮思考 */
+.thinking-round { margin-bottom: 10px; }
+.thinking-round:last-child { margin-bottom: 0; }
+.thinking-round-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.thinking-round-time {
+  margin-left: auto;
+  font-size: 11px; color: var(--text-3);
+  font-weight: 500;
+}
+
+/* ==================== v5.3 消息气泡优化 ==================== */
+.msg.system {
+  justify-content: center;
+  margin: 8px 0;
+}
+.msg.system .msg-content {
+  background: var(--bg-soft);
+  color: var(--text-3);
+  font-size: 12.5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-align: center;
+  max-width: 80%;
+  box-shadow: none;
+}
+.msg.assistant .msg-content-slot .md {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 14px 5px;
+  padding: 12px 16px;
+}
+
+/* ==================== v5.3 长消息自动折叠 ==================== */
+.msg-content-slot .md.collapsed {
+  max-height: 800px;
+  overflow: hidden;
+  position: relative;
+}
+.msg-content-slot .md.collapsed::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--bg-elev));
+  pointer-events: none;
+}
+.msg-expand-btn {
+  display: none;
+  width: 100%;
+  padding: 8px 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--dur);
+  text-align: center;
+}
+.msg-expand-btn:hover { background: var(--bg-hover); }
+.md.collapsed + .msg-expand-btn,
+.md.collapsed ~ .msg-expand-btn { display: block; }
+
+/* ==================== v5.3 代码块复制优化 ==================== */
+.code-block { position: relative; }
+.code-block-head { position: relative; z-index: 2; }
+.code-copy {
+  opacity: 0;
+  transition: opacity .2s, background .2s;
+}
+.code-block:hover .code-copy { opacity: 1; }
+.code-copy.copied {
+  opacity: 1 !important;
+  color: #34D399;
+}
+.code-copy .icon { width: 13px; height: 13px; }
+
+/* ==================== v5.3 SSE熔断提示 ==================== */
+.sse-timeout-toast {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  text-align: center;
+  min-width: 260px;
+  animation: popIn .3s var(--ease);
+}
+.sse-timeout-toast .icon { width: 40px; height: 40px; color: var(--warning); margin-bottom: 10px; }
+.sse-timeout-toast h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.sse-timeout-toast p { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
+.sse-timeout-toast .btn { min-width: 100px; }
+
+/* ==================== v5.3 Token用量底部栏 ==================== */
+.token-usage-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 6px 14px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+}
+.token-usage-bar .tu-item { display: flex; align-items: center; gap: 4px; }
+.token-usage-bar .tu-val { font-weight: 700; color: var(--text-2); }
+.token-usage-bar .tu-val.warn { color: var(--warning); }
+.token-usage-bar .tu-val.danger { color: var(--danger); }
+.token-usage-bar .tu-cost { margin-left: auto; font-weight: 600; color: var(--accent); }
+
+/* ==================== v5.3 停止生成提示 ==================== */
+.stop-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--warning-soft);
+  border: 1px solid rgba(245,158,11,.25);
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: var(--warning);
+  margin: 6px 0;
+}
+.stop-hint .icon { width: 16px; height: 16px; flex-shrink: 0; }
+.stop-hint .btn-link {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+.stop-hint .btn-link:hover { text-decoration: underline; }
