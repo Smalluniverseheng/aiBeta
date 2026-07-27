@@ -53,6 +53,26 @@ const UI = (() => {
     // 触发浮动按钮可见性更新
     window.dispatchEvent(new CustomEvent('pagechange', { detail: { page } }));
     closeSidebarMobile();
+
+    // 历史侧边栏只在对话页显示
+    const sidebar = $('#sidebar');
+    const isDesktop = window.DeviceInfo && DeviceInfo.type === 'desktop';
+    if (sidebar) {
+      if (page === 'chat') {
+        sidebar.classList.remove('page-hidden');
+      } else {
+        sidebar.classList.add('page-hidden');
+        if (!isDesktop) {
+          closeSidebarMobile();
+        } else {
+          sidebar.classList.add('collapsed');
+          const toggle = $('#sidebarToggle');
+          if (toggle) toggle.classList.add('collapsed');
+          Store.state.sidebarCollapsed = true;
+          Store.save();
+        }
+      }
+    }
   }
 
   /* ==================== 侧边栏 ==================== */
@@ -107,6 +127,21 @@ const UI = (() => {
     let longPressTimer = null;
     let longPressTarget = null;
     let isLongPress = false;
+
+    // 手表端：点击主内容区（侧边栏右侧空白）关闭侧边栏返回对话
+    if (window.DeviceInfo && DeviceInfo.isWatch()) {
+      const mainArea = document.querySelector('.main-area');
+      if (mainArea) {
+        mainArea.addEventListener('click', (e) => {
+          const sidebar = $('#sidebar');
+          if (sidebar && sidebar.classList.contains('show')) {
+            if (!e.target.closest('#sidebar')) {
+              closeSidebarMobile();
+            }
+          }
+        });
+      }
+    }
 
     // 手表端：touch 事件（长按菜单 + 点击切换）
     sidebarList.addEventListener('touchstart', e => {
@@ -210,6 +245,78 @@ const UI = (() => {
     $('#sidebar').classList.remove('open');
     $('#sidebarOverlay').classList.remove('show');
   }
+
+  /* 手表端：点击主内容区关闭侧边栏并返回对话 */
+  (function bindWatchMainClick() {
+    const main = document.querySelector('.chat-container');
+    if (!main || !(window.DeviceInfo && DeviceInfo.isWatch())) return;
+    main.addEventListener('click', (e) => {
+      const sb = $('#sidebar');
+      if (sb && sb.classList.contains('open')) {
+        closeSidebarMobile();
+        navigate('chat');
+      }
+    });
+  })();
+
+  /* ---------- 对话页左右滑动手势：展开/收起侧边栏 ---------- */
+  (function bindChatSwipeGesture() {
+    const main = document.querySelector('.chat-container');
+    if (!main) return;
+
+    let startX = 0, startY = 0, tracking = false;
+    const SWIPE_THRESHOLD = 60;      // 水平滑动触发阈值
+    const EDGE_ZONE = 24;            // 边缘触发区域（px）
+
+    main.addEventListener('touchstart', (e) => {
+      if (Store.state.currentPage !== 'chat') return;
+      // 桌面端不启用（侧边栏固定显示）
+      if (window.DeviceInfo && DeviceInfo.type === 'desktop') return;
+
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      const sb = $('#sidebar');
+      const isOpen = sb && sb.classList.contains('open');
+
+      // 从左边缘开始 或 侧边栏已展开时任意位置开始
+      if (startX < EDGE_ZONE || isOpen) {
+        tracking = true;
+      }
+    }, { passive: true });
+
+    main.addEventListener('touchmove', (e) => {
+      if (!tracking) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      // 垂直分量大于水平分量时取消跟踪
+      if (Math.abs(dy) > Math.abs(dx) * 1.2) {
+        tracking = false;
+        return;
+      }
+    }, { passive: true });
+
+    main.addEventListener('touchend', (e) => {
+      if (!tracking) return;
+      tracking = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const sb = $('#sidebar');
+      if (!sb) return;
+      const isOpen = sb.classList.contains('open');
+
+      if (!isOpen && dx > SWIPE_THRESHOLD && startX < EDGE_ZONE) {
+        // 从左边缘向右滑动：展开侧边栏
+        sb.classList.add('open');
+        const overlay = $('#sidebarOverlay');
+        if (overlay) overlay.classList.add('show');
+      } else if (isOpen && dx < -SWIPE_THRESHOLD) {
+        // 从右向左滑动：收起侧边栏
+        closeSidebarMobile();
+      }
+    }, { passive: true });
+  })();
 
   /* 手表端专用事件绑定 */
   (function bindWatchEvents() {
@@ -522,7 +629,8 @@ const UI = (() => {
       const av = userAvatarHtml();
       return '<div class="msg user" data-id="' + m.id + '">' +
         '<div class="msg-avatar">' + av + '</div>' +
-        '<div class="msg-body"><div class="msg-head"><span class="msg-author">' + esc(Store.state.userInfo && Store.state.userInfo.name || '我') + '</span><span class="msg-time">' + fmtTime(m.ts) + '</span></div>' +
+        '<div class="msg-body">' +
+        '<div class="msg-head"><span class="msg-author">' + esc((Store.state.userInfo && Store.state.userInfo.name) || '我') + '</span><span class="msg-time">' + fmtTime(m.ts) + '</span></div>' +
         (m.image ? '<img class="msg-image" src="' + m.image + '" alt="图片">' : '') +
         '<div class="msg-content">' + esc(m.content) + '</div>' +
         '<div class="msg-actions">' +
@@ -530,6 +638,10 @@ const UI = (() => {
         '<button class="msg-action" data-act="edit" title="编辑重发">' + icon('edit', 14) + '</button>' +
         '<button class="msg-action danger" data-act="del" title="删除">' + icon('trash', 14) + '</button>' +
         '</div></div></div>';
+    }
+    if (m.role === 'system') {
+      return '<div class="msg system" data-id="' + m.id + '">' +
+        '<div class="msg-content">' + esc(m.content) + '</div></div>';
     }
     // assistant
     const model = getModel(m.modelId);
@@ -576,11 +688,13 @@ const UI = (() => {
       }).join('') + '</div></div></div>';
   }
 
-  function thinkingHtml(text, live) {
-    return '<div class="thinking-box' + (live ? ' live' : '') + '">' +
+  function thinkingHtml(text, live, roundIndex, roundTime) {
+    roundIndex = roundIndex || 1;
+    const label = live ? '思考中…' : ('思考 ' + roundIndex + (roundTime ? ' · ' + roundTime + 'ms' : ''));
+    return '<div class="thinking-box' + (live ? ' live' : '') + '" data-round="' + roundIndex + '">' +
       '<button class="thinking-toggle">' +
       '<span class="thinking-brain">' + icon('brain', 14) + '</span>' +
-      '<span class="thinking-label">' + (live ? '思考中…' : '思考已完成') + '</span>' +
+      '<span class="thinking-label">' + label + '</span>' +
       '<span class="thinking-copy" title="复制思考内容">' + icon('copy', 12) + '<span>复制</span></span>' +
       '<span class="chevron">' + icon('chevronDown', 13) + '</span></button>' +
       '<div class="thinking-content">' + esc(text) + '</div></div>';
@@ -603,7 +717,7 @@ const UI = (() => {
         copyText(content ? content.textContent : '').then(() => {
           copyBtn.classList.add('copied');
           copyBtn.innerHTML = icon('check', 12) + '<span>已复制</span>';
-          setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = icon('copy', 12) + '<span>复制</span>'; }, 1600);
+          setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = icon('copy', 12) + '<span>复制</span>'; }, 2000);
         }).catch(() => {});
       });
     }
@@ -777,6 +891,42 @@ const UI = (() => {
       img.addEventListener('click', () => openLightbox(img.src));
     });
     scanGhWrite(root);
+    /* v5.3 长消息自动折叠 */
+    if (Store.state.msgAutoCollapse !== false) {
+      $$('.msg.assistant .msg-content-slot', root).forEach(slot => {
+        const content = slot.querySelector('.md') || slot;
+        if (content.scrollHeight > 800) {
+          content.classList.add('collapsed');
+          const btn = document.createElement('button');
+          btn.className = 'msg-expand-btn';
+          btn.innerHTML = '展开全文 ' + icon('chevronDown', 12);
+          btn.addEventListener('click', () => {
+            content.classList.remove('collapsed');
+            btn.style.display = 'none';
+          });
+          slot.parentNode.insertBefore(btn, slot.nextSibling);
+        }
+      });
+    }
+    /* v5.3 代码块复制优化 */
+    $$('.code-block', root).forEach(block => {
+      const copyBtn = block.querySelector('.code-copy');
+      if (!copyBtn || copyBtn.dataset.v53bound) return;
+      copyBtn.dataset.v53bound = '1';
+      copyBtn.addEventListener('click', () => {
+        const pre = block.querySelector('pre');
+        const code = pre ? pre.textContent : '';
+        copyText(code).then(() => {
+          copyBtn.classList.add('copied');
+          const original = copyBtn.innerHTML;
+          copyBtn.innerHTML = icon('check', 12) + '<span>已复制</span>';
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = original;
+          }, 2000);
+        });
+      });
+    });
   }
 
   /* ==================== github-write 指令卡片 ====================
@@ -936,15 +1086,42 @@ const UI = (() => {
     if (slot) scheduleRender[id](slot, text);
   }
 
-  function setMsgThinking(id, text) {
-    const slot = $('#chatContainer [data-id="' + id + '"] .thinking-slot');
-    if (!slot) return;
-    const existing = $('.thinking-box', slot);
-    if (existing) {
-      $('.thinking-content', existing).textContent = text;
+  function setMsgThinking(id, text, live, roundIndex) {
+    const msgEl = $('#chatContainer [data-id="' + id + '"]');
+    if (!msgEl) return;
+    let slot = msgEl.querySelector('.thinking-slot');
+    if (!slot) {
+      slot = document.createElement('div');
+      slot.className = 'thinking-slot';
+      const body = msgEl.querySelector('.msg-body');
+      if (body) {
+        const contentSlot = body.querySelector('.msg-content-slot');
+        if (contentSlot) body.insertBefore(slot, contentSlot);
+        else body.appendChild(slot);
+      }
+    }
+    let box = slot.querySelector('.thinking-box[data-round="' + (roundIndex || 1) + '"]');
+    if (!box) {
+      box = document.createElement('div');
+      box.innerHTML = thinkingHtml(text, live !== false, roundIndex || 1);
+      box = box.firstElementChild;
+      slot.appendChild(box);
+      bindThinking(box.querySelector('.thinking-toggle'));
+      if (live === false && Store.state.thinkingAutoCollapse !== false) {
+        box.classList.remove('open');
+      } else {
+        box.classList.add('open');
+      }
     } else {
-      slot.innerHTML = thinkingHtml(text, true);
-      bindThinking($('.thinking-toggle', slot));
+      const content = box.querySelector('.thinking-content');
+      if (content) content.textContent = text;
+      if (live) box.classList.add('live');
+      else {
+        box.classList.remove('live');
+        if (Store.state.thinkingAutoCollapse !== false) box.classList.remove('open');
+        const label = box.querySelector('.thinking-label');
+        if (label) label.textContent = '思考 ' + (roundIndex || 1) + ' · 已完成';
+      }
     }
     scrollToBottom();
   }
@@ -1588,7 +1765,13 @@ const UI = (() => {
       const dy = e.touches[0].clientY - startY;
       if (!decided) {
         if (Math.abs(dx) < DECIDE && Math.abs(dy) < DECIDE) return;
-        if (Math.abs(dy) > Math.abs(dx) * 1.5) { tracking = false; return; }
+        // 在侧边栏列表内滑动时：垂直优先，提高水平阈值防止误触关闭
+        const inSidebarList = e.target.closest && e.target.closest('#sidebarList');
+        if (inSidebarList && sb().classList.contains('show')) {
+          if (Math.abs(dy) > Math.abs(dx)) { tracking = false; return; }
+        } else {
+          if (Math.abs(dy) > Math.abs(dx) * 1.5) { tracking = false; return; }
+        }
         decided = true;
         const sidebarOpen = sb().classList.contains('show');
         // 右滑打开，左滑关闭
