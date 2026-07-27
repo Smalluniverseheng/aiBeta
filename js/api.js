@@ -213,6 +213,7 @@ const API = (() => {
     return { content: full, thinking: fullThink, toolCalls: toolCallsAcc, usage };
     } finally {
       if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+      if (sseCheckTimer) { clearInterval(sseCheckTimer); }
     }
   }
 
