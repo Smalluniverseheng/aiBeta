@@ -131,3 +131,92 @@ const TokenStats = (() => {
 
   return { estimate, record, byProvider, grand, fmt, reset };
 })();
+
+
+/* ==================== v5.3 Token 用量实时统计与成本计算 ==================== */
+
+/* 计算当前对话的 Token 用量 */
+function calcChatTokens(chat) {
+  if (!chat || !chat.messages) return { input: 0, output: 0, total: 0, cost: 0 };
+  let input = 0, output = 0;
+  chat.messages.forEach(m => {
+    if (m.usage) {
+      input += m.usage.prompt || 0;
+      output += m.usage.completion || 0;
+    }
+  });
+  const total = input + output;
+  // 成本计算
+  let cost = 0;
+  if (chat.modelId && typeof getModelPricing === 'function') {
+    const p = getModelPricing(chat.modelId);
+    if (p) {
+      cost = (input * (p.input || 0) + output * (p.output || 0)) / 1e6;
+    }
+  }
+  return { input, output, total, cost };
+}
+
+/* 渲染对话页底部 Token 用量栏 */
+function renderTokenUsageBar(chatId) {
+  const chat = (Store.state.chats || []).find(c => c.id === chatId);
+  const bar = document.getElementById('tokenUsageBar');
+  if (!bar) return;
+  if (!chat || !chat.messages || !chat.messages.length) {
+    bar.style.display = 'none';
+    return;
+  }
+  const stats = calcChatTokens(chat);
+  const model = chat.modelId ? getModel(chat.modelId) : null;
+  const p = model && typeof getModelPricing === 'function' ? getModelPricing(chat.modelId) : null;
+
+  // 警告颜色
+  let warnClass = '';
+  if (Store.state.tokenWarnThreshold) {
+    const ratio = stats.total / (model && model.ctx ? model.ctx * 1000 : 128000);
+    if (ratio >= Store.state.tokenWarnThreshold) warnClass = ' danger';
+    else if (ratio >= Store.state.tokenWarnThreshold * 0.7) warnClass = ' warn';
+  }
+
+  let costStr = '';
+  if (stats.cost > 0) {
+    costStr = '<span class="tu-cost">$' + stats.cost.toFixed(4) + '</span>';
+  }
+
+  bar.style.display = 'flex';
+  bar.innerHTML = 
+    '<span class="tu-item">输入: <span class="tu-val' + warnClass + '">' + stats.input + '</span></span>' +
+    '<span class="tu-item">输出: <span class="tu-val' + warnClass + '">' + stats.output + '</span></span>' +
+    '<span class="tu-item">总计: <span class="tu-val' + warnClass + '">' + stats.total + '</span></span>' +
+    costStr;
+}
+
+/* 按天/周/月聚合 Token 统计 */
+function aggregateTokenStats(period) {
+  const stats = Store.state.tokenStats || { byModel: {}, updatedAt: 0 };
+  const now = Date.now();
+  let cutoff = 0;
+  if (period === 'day') cutoff = now - 86400000;
+  else if (period === 'week') cutoff = now - 604800000;
+  else if (period === 'month') cutoff = now - 2592000000;
+
+  const result = { byModel: {}, totalInput: 0, totalOutput: 0, totalCost: 0 };
+  Object.entries(stats.byModel || {}).forEach(([modelId, records]) => {
+    if (!Array.isArray(records)) return;
+    const filtered = records.filter(r => r.ts >= cutoff);
+    if (!filtered.length) return;
+    const modelInput = filtered.reduce((a, r) => a + (r.prompt || 0), 0);
+    const modelOutput = filtered.reduce((a, r) => a + (r.completion || 0), 0);
+    const p = typeof getModelPricing === 'function' ? getModelPricing(modelId) : null;
+    const modelCost = p ? (modelInput * p.input + modelOutput * p.output) / 1e6 : 0;
+    result.byModel[modelId] = { input: modelInput, output: modelOutput, cost: modelCost, count: filtered.length };
+    result.totalInput += modelInput;
+    result.totalOutput += modelOutput;
+    result.totalCost += modelCost;
+  });
+  return result;
+}
+
+window.calcChatTokens = calcChatTokens;
+window.renderTokenUsageBar = renderTokenUsageBar;
+window.aggregateTokenStats = aggregateTokenStats;
