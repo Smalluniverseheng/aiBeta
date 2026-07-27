@@ -585,3 +585,509 @@ container.addEventListener('click', e => {
 **当前时间**: 2026-07-27
 **上一个 AI 完成**: v5.3（已合并到 aiBeta/main）
 **你的任务**: v5.4（基于 aiBeta/5.4 分支开发）
+
+
+---
+
+## 八、补充需求（2026-07-27 追加）
+
+### 8.1 懒加载/按需加载架构
+
+**目标**：防止网页初始加载过大，小说、漫画、AI绘画、视频等模块点击后才下载加载。
+
+**方案**：
+
+```javascript
+// js/lazy-loader.js（已存在，需要扩展）
+const LazyModules = {
+  // 模块定义：点击对应入口后才加载
+  novel:      { js: ['js/novel.js'],      css: ['css/novel.css'],      size: '~80KB' },
+  comic:      { js: ['js/comic.js'],      css: ['css/comic.css'],      size: '~60KB' },
+  paint:      { js: ['js/paint.js'],      css: ['css/paint.css'],      size: '~40KB' },
+  video:      { js: ['js/video.js'],      css: ['css/video.css'],      size: '~50KB' },
+  shortVideo: { js: ['js/shortvideo.js'], css: ['css/shortvideo.css'], size: '~70KB' },
+  videoHub:   { js: ['js/videohub.js'],   css: ['css/videohub.css'],   size: '~45KB' },
+};
+
+async function loadModule(name) {
+  if (window.__loadedModules?.[name]) return;
+  const mod = LazyModules[name];
+  if (!mod) return;
+
+  // 并行加载 CSS
+  mod.css.forEach(href => {
+    if (!document.querySelector(`link[href="${href}"]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      document.head.appendChild(link);
+    }
+  });
+
+  // 串行加载 JS（有依赖关系时）
+  for (const src of mod.js) {
+    await new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  window.__loadedModules = window.__loadedModules || {};
+  window.__loadedModules[name] = true;
+}
+```
+
+**入口触发**：
+```javascript
+// 点击"小说"入口时
+navItem.addEventListener('click', async () => {
+  await loadModule('novel');
+  Pages.open('novel');
+});
+```
+
+**预加载策略**（可选）：
+- 用户打开"其他"页面时，预加载所有模块的 CSS（只加载 CSS，不加载 JS）
+- 鼠标 hover 模块入口 500ms 后预加载该模块
+
+---
+
+### 8.2 书源系统详细设计
+
+#### 8.2.1 书源格式（参考开源阅读，简化版）
+
+```json
+{
+  "name": "笔趣阁",
+  "url": "https://www.biquge.com",
+  "type": "novel",
+
+  "search": {
+    "url": "/search.php?q={{keyword}}",
+    "list": "div.result-item",
+    "name": "h3 > a",
+    "author": ".author",
+    "cover": "img@src",
+    "detailUrl": "h3 > a@href"
+  },
+
+  "detail": {
+    "name": "h1",
+    "author": "#author",
+    "cover": "#cover img@src",
+    "intro": "#intro",
+    "chapterList": "#list dl dd a",
+    "chapterName": "text",
+    "chapterUrl": "href"
+  },
+
+  "content": {
+    "url": "{{chapterUrl}}",
+    "text": "#content",
+    "filter": ["广告", "本章完", "笔趣阁", "www.", "http"],
+    "nextPage": "#nextChapter@href"
+  }
+}
+```
+
+**规则说明**：
+- 选择器：支持 CSS 选择器（`h3 > a`）
+- 属性提取：`@src`、`@href`、`@text`、`@html`
+- 变量替换：`{{keyword}}`、`{{chapterUrl}}`
+- 过滤：支持字符串数组过滤正文中的广告
+
+#### 8.2.2 书源来源
+
+**三层来源**：
+
+| 层级 | 说明 | 管理 |
+|------|------|------|
+| **内置书源** | 预装 15-20 个热门正规书源（起点、纵横、晋江等正版源 + 笔趣阁等聚合源） | 随版本更新 |
+| **书源市场** | 服务器维护书源列表，用户一键订阅/更新 | 服务器端管理 |
+| **用户自定义** | 用户手动添加/编辑 JSON 书源 | 本地存储 |
+
+**书源市场 API**：
+```javascript
+// 获取书源市场列表
+GET https://api.smalluniverseheng.com/v1/novel/sources
+
+// 订阅书源
+POST https://api.smalluniverseheng.com/v1/novel/sources/subscribe
+{ "sourceIds": ["biquge", "qidian"] }
+
+// 检查书源更新
+GET https://api.smalluniverseheng.com/v1/novel/sources/check-update
+```
+
+**书源更新机制**：
+- 每次打开小说页面时，检查已订阅书源是否有更新（版本号对比）
+- 有更新时提示用户"书源有更新，是否同步？"
+- 用户自定义书源不受市场更新影响
+
+#### 8.2.3 书源编辑器
+
+```
+┌─────────────────────────────┐
+│  添加书源                    │
+├─────────────────────────────┤
+│  [书源名称]                  │
+│  [书源URL]                   │
+│  [书源规则 JSON]            │
+│  ┌──────────────────────┐   │
+│  │ {                    │   │
+│  │   "search": {        │   │
+│  │     "list": "..."    │   │
+│  │   }                  │   │
+│  │ }                    │   │
+│  └──────────────────────┘   │
+│  [验证书源] [保存]          │
+│  验证结果: ✅ 可正常解析    │
+└─────────────────────────────┘
+```
+
+**验证功能**：
+- 输入书源规则后，点击"验证"
+- 自动搜索测试关键词（如"斗破苍穹"），检查是否能正确解析书名/作者/章节列表
+- 显示验证结果：成功/失败 + 具体错误信息
+
+---
+
+### 8.3 小说阅读器翻页架构（参考开源阅读）
+
+#### 8.3.1 三种翻页模式
+
+| 模式 | 说明 | 实现方式 |
+------|------|---------|
+| **覆盖** | 新页面从右向左覆盖旧页面 | CSS transform translateX |
+| **仿真** | 模拟真实书籍翻页，有弯曲效果 | CSS 3D transform + perspective |
+| **滚动** | 上下连续滚动，无分页 | overflow-y: scroll |
+
+**默认模式**：覆盖（移动端）/ 滚动（桌面端）
+
+#### 8.3.2 仿真翻页实现
+
+```css
+/* 仿真翻页核心 CSS */
+.book-page {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  backface-visibility: hidden;
+}
+
+.book-page.flipping {
+  transform: rotateY(-140deg);
+  box-shadow: -5px 0 15px rgba(0,0,0,0.15);
+}
+```
+
+```javascript
+// 仿真翻页逻辑
+class PageFlip {
+  constructor(container) {
+    this.container = container;
+    this.currentPage = 0;
+    this.pages = [];
+  }
+
+  flipNext() {
+    const current = this.pages[this.currentPage];
+    const next = this.pages[this.currentPage + 1];
+    if (!next) return; // 加载下一章
+
+    current.classList.add('flipping');
+    setTimeout(() => {
+      current.style.zIndex = 0;
+      next.style.zIndex = 1;
+      current.classList.remove('flipping');
+      this.currentPage++;
+    }, 400);
+  }
+
+  flipPrev() {
+    if (this.currentPage <= 0) return; // 上一章
+    const prev = this.pages[this.currentPage - 1];
+    const current = this.pages[this.currentPage];
+
+    prev.style.zIndex = 2;
+    prev.classList.add('flipping-back');
+    setTimeout(() => {
+      current.style.zIndex = 0;
+      prev.classList.remove('flipping-back');
+      this.currentPage--;
+    }, 400);
+  }
+}
+```
+
+#### 8.3.3 阅读器设置
+
+```javascript
+const ReaderSettings = {
+  fontSize: 18,        // 14-32
+  lineHeight: 1.8,     // 1.2-2.5
+  fontFamily: 'system', // system / serif / sans-serif / custom
+  theme: 'light',      // light / dark / sepia / eye-care
+  pageMode: 'cover',   // cover / simulation / scroll
+  turnPageArea: 0.3,   // 点击屏幕左右 30% 区域翻页
+  keepScreenOn: true,  // 阅读时保持屏幕常亮
+  autoScroll: false,   // 自动滚动
+  scrollSpeed: 2,      // 自动滚动速度
+};
+```
+
+#### 8.3.4 阅读器手势
+
+| 手势 | 动作 |
+|------|------|
+| 点击左侧 30% | 上一页 |
+| 点击右侧 30% | 下一页 |
+| 点击中间 40% | 显示/隐藏菜单（设置/目录/进度） |
+| 左滑 | 下一页 |
+| 右滑 | 上一页 |
+| 双指捏合 | 缩放字体（滚动模式下） |
+| 长按 | 选择文字（复制/朗读/笔记） |
+
+---
+
+### 8.4 朗读功能（TTS）
+
+#### 8.4.1 双引擎设计
+
+| 引擎 | 优先级 | 说明 | 限制 |
+|------|--------|------|------|
+| **浏览器 SpeechSynthesis** | 降级方案 | 免费，无需 API Key | 音质一般，中文支持因浏览器而异 |
+| **AI 厂商 TTS** | 优先方案 | 小米 MiMo、百度、讯飞等 | 需要 API Key，有额度限制 |
+
+#### 8.4.2 朗读设置
+
+```javascript
+const TTSSettings = {
+  engine: 'auto',      // auto / browser / xiaomi / baidu / xunfei
+  speed: 1.0,          // 0.5-2.0
+  pitch: 1.0,          // 0.5-2.0
+  volume: 1.0,         // 0-1
+  voice: 'default',    // 音色选择（厂商提供）
+  paragraphPause: 500, // 段落间停顿 ms
+n  sentencePause: 200,  // 句子间停顿 ms
+};
+```
+
+#### 8.4.3 浏览器 TTS 实现
+
+```javascript
+function speakBrowser(text, opts) {
+  return new Promise((resolve, reject) => {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = opts.speed;
+    utter.pitch = opts.pitch;
+    utter.volume = opts.volume;
+
+    // 选择中文语音
+    const voices = speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => v.lang.startsWith('zh'));
+    if (zhVoice) utter.voice = zhVoice;
+
+    utter.onend = resolve;
+    utter.onerror = reject;
+    speechSynthesis.speak(utter);
+  });
+}
+```
+
+#### 8.4.4 AI 厂商 TTS 实现（以小米 MiMo 为例）
+
+```javascript
+async function speakXiaomi(text, opts) {
+  const key = Store.state.apiKeys['xiaomi'];
+  if (!key) {
+    Toast.warning('请先配置小米 API Key');
+    return speakBrowser(text, opts); // 降级
+  }
+
+  const resp = await fetch('https://api.mimo.ai/v1/tts', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + key,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text,
+      speed: opts.speed,
+      pitch: opts.pitch,
+      voice: opts.voice
+    })
+  });
+
+  const data = await resp.json();
+  const audio = new Audio(data.audio_url);
+  audio.playbackRate = 1;
+  await audio.play();
+}
+```
+
+#### 8.4.5 朗读控制条
+
+阅读器底部显示朗读控制条：
+
+```
+┌─────────────────────────────────────┐
+│  [⏪] [⏯] [⏩]  语速: [1.0x]  引擎: [小米] │
+│  ████████████░░░░  朗读进度          │
+└─────────────────────────────────────┘
+```
+
+**功能**：
+- 播放/暂停
+- 快进 30 秒 / 快退 30 秒
+- 语速调节
+- 引擎切换（浏览器 / 小米 / 百度 / 讯飞）
+- 朗读进度显示
+- 后台播放（使用 Web Audio API + Service Worker）
+
+---
+
+### 8.5 漫画阅读器详细设计
+
+#### 8.5.1 阅读模式
+
+| 模式 | 说明 |
+|------|------|
+| **左右翻页** | 日漫模式，从右向左翻页 |
+| **上下滚动** | 条漫/韩漫模式，连续滚动 |
+| **双页模式** | 桌面端，左右两页并排 |
+
+#### 8.5.2 图片加载策略
+
+```javascript
+class ComicImageLoader {
+  constructor() {
+    this.cache = new Map(); // 内存缓存
+    this.db = null; // IndexedDB 缓存
+  }
+
+  async load(url, index) {
+    // 1. 检查内存缓存
+    if (this.cache.has(url)) return this.cache.get(url);
+
+    // 2. 检查 IndexedDB
+    const blob = await DB.get('comic_image_' + url);
+    if (blob) {
+      const objectUrl = URL.createObjectURL(blob);
+      this.cache.set(url, objectUrl);
+      return objectUrl;
+    }
+
+    // 3. 网络加载
+    const resp = await fetch(url);
+    const data = await resp.blob();
+
+    // 4. 保存到 IndexedDB
+    await DB.set('comic_image_' + url, data);
+
+    const objectUrl = URL.createObjectURL(data);
+    this.cache.set(url, objectUrl);
+    return objectUrl;
+  }
+
+  // 预加载下一页
+  preload(urls, currentIndex) {
+    for (let i = currentIndex + 1; i <= currentIndex + 3 && i < urls.length; i++) {
+      this.load(urls[i], i); // 预加载接下来3页
+    }
+  }
+}
+```
+
+#### 8.5.3 手势
+
+| 手势 | 动作 |
+|------|------|
+| 点击左侧 | 上一页（日漫模式）/ 下一页（条漫模式） |
+| 点击右侧 | 下一页（日漫模式）/ 上一页（条漫模式） |
+| 双指捏合 | 缩放 |
+| 双击 | 放大/还原 |
+| 长按 | 保存图片 / 分享 |
+
+---
+
+### 8.6 缓存策略（IndexedDB）
+
+#### 8.6.1 数据库结构
+
+```javascript
+const DB_SCHEMA = {
+  name: 'AIPlatformDB',
+  version: 1,
+  stores: {
+    // 小说章节缓存
+    novel_chapters: { keyPath: 'id', indexes: ['bookId', 'chapterIndex'] },
+    // 漫画图片缓存
+    comic_images: { keyPath: 'url' },
+    // 生成的图片缓存
+    paint_images: { keyPath: 'id', indexes: ['ts'] },
+    // 生成的视频缓存
+    video_files: { keyPath: 'id', indexes: ['ts'] },
+    // 模型列表缓存
+    models_cache: { keyPath: 'key' },
+    // 用户头像/图片
+    user_images: { keyPath: 'url' }
+  }
+};
+```
+
+#### 8.6.2 缓存清理策略
+
+```javascript
+const CachePolicy = {
+  // 小说章节：保留最近阅读的 10 本书，每本保留最近 50 章
+  novel_chapters: { maxBooks: 10, maxChaptersPerBook: 50 },
+  // 漫画图片：保留最近阅读的 5 本，每本保留最近 100 页
+  comic_images: { maxBooks: 5, maxPagesPerBook: 100 },
+  // 生成的图片：保留最近 100 张
+  paint_images: { maxCount: 100 },
+  // 生成的视频：保留最近 20 个
+  video_files: { maxCount: 20 },
+  // 模型列表：保留 7 天
+  models_cache: { maxAge: 7 * 24 * 60 * 60 * 1000 }
+};
+```
+
+**自动清理**：
+- 每次启动应用时，检查缓存大小
+- 超过 500MB 时，按 LRU 策略清理最久未使用的缓存
+- 用户可在"我的 → 存储管理"中手动清理
+
+---
+
+### 8.7 文件修改清单（补充）
+
+| 优先级 | 文件 | 修改类型 | 说明 |
+|--------|------|---------|------|
+| P1 | `js/lazy-loader.js` | 修改 | 扩展模块懒加载定义 |
+| P1 | `js/novel.js` | 新建 | 书源解析 + 搜索 + 阅读器 + 朗读 |
+| P1 | `js/comic.js` | 新建 | 书源解析 + 图片加载 + 阅读器 |
+| P1 | `js/db.js` | 新建 | IndexedDB 封装 + 缓存策略 |
+| P1 | `css/novel.css` | 新建 | 小说阅读器样式（翻页/主题/设置） |
+| P1 | `css/comic.css` | 新建 | 漫画阅读器样式 |
+| P1 | `index.html` | 修改 | 按需加载模块入口（不直接引入 novel.js/comic.js） |
+| P1 | `js/pages.js` | 修改 | renderNovel 中调用 loadModule('novel') |
+| P1 | `js/store.js` | 修改 | 新增 novelSources / novelBookmarks / novelHistory / ttsSettings |
+| P1 | `js/supabase.js` | 修改 | SETTINGS_WHITELIST 追加 novelSources / novelBookmarks / ttsSettings |
+
+---
+
+## 九、给下一个 AI 的留言（补充）
+
+1. **懒加载是核心架构要求** — 小说/漫画/绘画/视频模块必须点击后才加载 JS/CSS，index.html 中不要直接引入这些模块的脚本
+2. **书源格式参考开源阅读** — 但只实现 CSS 选择器版本，XPath/正则可以后续扩展
+3. **朗读功能先做浏览器 TTS** — AI 厂商 TTS 作为高级功能后续添加
+4. **仿真翻页用 CSS 3D transform** — 不要过度复杂，覆盖模式优先实现
+5. **缓存策略必须实现** — 否则漫画图片会撑爆内存
+6. **书源市场需要后端配合** — 如果后端还没 ready，先用内置书源 + 用户自定义
