@@ -536,22 +536,51 @@ const Pages = (() => {
       box.innerHTML = '<div class="empty-state">' + icon('zap', 44) + '<div class="empty-title">' + I18n.t('tk.empty') + '</div></div>';
       return;
     }
-    const grand = TokenStats.grand();
+    const period = Store.state.tokenPeriod || 'all';
     const sort = Store.state.tokenSort || 'total';
     const cell = (v, k) => '<div class="tk-cell"><b>' + esc(v) + '</b><span>' + I18n.t(k) + '</span></div>';
     let html =
       '<div class="tk-total">' +
-      cell(TokenStats.fmt(grand.total), 'tk.total') +
-      cell(TokenStats.fmt(grand.prompt), 'tk.input') +
-      cell(TokenStats.fmt(grand.completion), 'tk.output') +
-      cell(TokenStats.fmt(grand.count), 'tk.calls') +
+      cell(TokenStats.fmt(TokenStats.grand().total), 'tk.total') +
+      cell(TokenStats.fmt(TokenStats.grand().prompt), 'tk.input') +
+      cell(TokenStats.fmt(TokenStats.grand().completion), 'tk.output') +
+      cell(TokenStats.fmt(TokenStats.grand().count), 'tk.calls') +
+      '</div>' +
+      '<div class="seg-btns tk-period" style="margin:8px 0;">' +
+      '<button class="seg-btn' + (period === 'all' ? ' active' : '') + '" data-tkperiod="all">全部</button>' +
+      '<button class="seg-btn' + (period === 'day' ? ' active' : '') + '" data-tkperiod="day">今日</button>' +
+      '<button class="seg-btn' + (period === 'week' ? ' active' : '') + '" data-tkperiod="week">本周</button>' +
+      '<button class="seg-btn' + (period === 'month' ? ' active' : '') + '" data-tkperiod="month">本月</button>' +
       '</div>' +
       '<div class="seg-btns tk-sort">' +
       '<button class="seg-btn' + (sort === 'total' ? ' active' : '') + '" data-tksort="total">' + I18n.t('tk.sortTotal') + '</button>' +
       '<button class="seg-btn' + (sort === 'recent' ? ' active' : '') + '" data-tksort="recent">' + I18n.t('tk.sortRecent') + '</button>' +
       '<button class="seg-btn' + (sort === 'count' ? ' active' : '') + '" data-tksort="count">' + I18n.t('tk.sortCount') + '</button>' +
       '</div>';
-    const groups = TokenStats.byProvider();
+    // v5.3: 按周期聚合数据
+    let groups = TokenStats.byProvider();
+    let grand = TokenStats.grand();
+    if (period !== 'all' && typeof aggregateTokenStats === 'function') {
+      const agg = aggregateTokenStats(period);
+      if (agg && Object.keys(agg.byModel).length) {
+        const providerMap = {};
+        Object.entries(agg.byModel).forEach(([modelId, stat]) => {
+          const m = getModel(modelId);
+          const p = m ? m.provider : '其他';
+          if (!providerMap[p]) providerMap[p] = { provider: p, models: [], total: 0, prompt: 0, completion: 0, count: 0, lastTs: 0 };
+          providerMap[p].models.push({ name: m ? m.name : modelId, id: modelId, prompt: stat.input, completion: stat.output, total: stat.input + stat.output, count: stat.count, lastTs: Date.now() });
+          providerMap[p].total += stat.input + stat.output;
+          providerMap[p].prompt += stat.input;
+          providerMap[p].completion += stat.output;
+          providerMap[p].count += stat.count;
+        });
+        groups = Object.values(providerMap);
+        grand = { total: agg.totalInput + agg.totalOutput, prompt: agg.totalInput, completion: agg.totalOutput, count: Object.values(agg.byModel).reduce((a,v)=>a+v.count,0) };
+      } else {
+        groups = [];
+        grand = { total: 0, prompt: 0, completion: 0, count: 0 };
+      }
+    }
     if (!groups.length || !grand.count) {
       html += '<div class="empty-state">' + icon('zap', 44) + '<div class="empty-title">' + I18n.t('tk.empty') + '</div></div>';
     } else {
