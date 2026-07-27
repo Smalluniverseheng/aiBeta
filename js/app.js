@@ -55,15 +55,22 @@
       const mode = settings[currentDevice] || (currentDevice === 'watch' ? 'float' : 'navbar');
       const isChat = page === 'chat';
 
+      // 悬浮按钮
       if (isChat) {
         btn.style.display = 'none';
         document.documentElement.dataset.floatVisible = 'false';
-        return;
+      } else {
+        const showFloat = mode === 'float' || mode === 'both';
+        btn.style.display = showFloat ? 'flex' : 'none';
+        document.documentElement.dataset.floatVisible = showFloat ? 'true' : 'false';
       }
 
-      const showFloat = mode === 'float' || mode === 'both';
-      btn.style.display = showFloat ? 'flex' : 'none';
-      document.documentElement.dataset.floatVisible = showFloat ? 'true' : 'false';
+      // 导航栏控制
+      const bottomNav = $('#bottomNav');
+      if (bottomNav) {
+        const showNav = mode === 'navbar' || mode === 'both';
+        bottomNav.style.display = showNav ? '' : 'none';
+      }
     }
 
     // 点击返回对话（关闭子页面 + 切换页面）
@@ -88,7 +95,7 @@
       if (!dragging) return;
       const t = e.touches[0];
       const dx = t.clientX - startX, dy = t.clientY - startY;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
       let nx = startLeft + dx, ny = startTop + dy;
       const ww = window.innerWidth, wh = window.innerHeight;
       nx = Math.max(0, Math.min(ww - 48, nx));
@@ -124,7 +131,7 @@
     document.addEventListener('mousemove', (e) => {
       if (!dragging) return;
       const dx = e.clientX - startX, dy = e.clientY - startY;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
       let nx = startLeft + dx, ny = startTop + dy;
       const ww = window.innerWidth, wh = window.innerHeight;
       nx = Math.max(0, Math.min(ww - 48, nx));
