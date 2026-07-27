@@ -965,6 +965,7 @@ const Pages = (() => {
     else if (id === 'subProfileEdit') renderProfileEdit();
     else if (id === 'subTranslate') renderTranslate();
     else if (id === 'subProxy') renderProxySection();
+    else if (id === 'subNavSettings') renderNavSettings();
     else if (id === 'subTrash') renderTrash();
   }
 
@@ -1089,6 +1090,14 @@ const Pages = (() => {
     if (proxyDesc) {
       const mode = (Store.state && Store.state.proxyMode) || 'local';
       proxyDesc.textContent = mode === 'server' ? '服务器代理' : '本地直连';
+    }
+    const navDesc = $('#navRowDesc');
+    if (navDesc) {
+      const ns = Store.state.navSettings || {};
+      const d = DeviceInfo.type;
+      const mode = ns[d] || (d === 'watch' ? 'float' : 'navbar');
+      const labels = { navbar: '导航栏', float: '悬浮按钮', both: '两者', none: '关闭' };
+      navDesc.textContent = labels[mode] || '导航栏';
     }
   }
 

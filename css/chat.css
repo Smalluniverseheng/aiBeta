@@ -1119,18 +1119,18 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
 }
 
 
-/* ==================== v5.0 手表端悬浮返回按钮 ==================== */
+/* ==================== v5.0 可拖动悬浮返回按钮 ==================== */
 .float-back-btn {
   position: fixed;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: grab;
   z-index: 500;
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
   transition: transform 0.15s, opacity 0.2s;
@@ -1138,22 +1138,30 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  right: 16px;
+  bottom: 80px;
+}
+.float-back-btn.dragging {
+  cursor: grabbing;
+  transition: none;
+  opacity: 0.9;
+  transform: scale(1.05);
 }
 .float-back-btn:active {
   transform: scale(0.92);
 }
 .float-back-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
 }
-/* 手表端默认位置：右下角 */
-html[data-device="watch"] .float-back-btn {
-  display: flex !important;
-  right: 12px;
-  bottom: 12px;
-}
-/* 桌面端和移动端隐藏悬浮按钮 */
-html[data-device="desktop"] .float-back-btn,
-html[data-device="mobile"] .float-back-btn {
+/* 对话页隐藏悬浮按钮 */
+#pageChat.active ~ .float-back-btn,
+#pageChat.active + .float-back-btn,
+.chat-page-active .float-back-btn {
   display: none !important;
+}
+/* 导航设置：显示悬浮按钮时 */
+html[data-float-visible="true"] .float-back-btn {
+  display: flex !important;
 }
