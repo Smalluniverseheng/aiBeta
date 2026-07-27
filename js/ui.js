@@ -248,7 +248,7 @@ const UI = (() => {
 
   /* 手表端：点击主内容区关闭侧边栏并返回对话 */
   (function bindWatchMainClick() {
-    const main = $('#mainContent') || $('.main-content') || document.querySelector('.chat-container');
+    const main = document.querySelector('.chat-container');
     if (!main || !(window.DeviceInfo && DeviceInfo.isWatch())) return;
     main.addEventListener('click', (e) => {
       const sb = $('#sidebar');
