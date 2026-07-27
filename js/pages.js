@@ -2327,6 +2327,7 @@ const Pages = (() => {
     bindTranslateEvents();
     bindPluginLibEvents();
     bindSkillEvents();
+    bindSubpageEvents();
     renderDiscoverTools();
     // 语言切换时重渲染动态内容
     document.addEventListener('langchange', () => {
