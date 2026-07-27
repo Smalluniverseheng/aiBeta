@@ -1,15 +1,10 @@
 /* ==================== CHAT · 对话编排（单模型/多模型/辩论/协同） ==================== */
 const Chat = (() => {
-  // 初始化：清理历史记录中已有的空白对话（没有任何消息）
-  (function cleanupEmptyChats() {
-    const before = Store.state.chats.length;
-    Store.state.chats = Store.state.chats.filter(c => c.messages && c.messages.length > 0);
-    const removed = before - Store.state.chats.length;
-    if (removed > 0) { Store.save(); console.log("[Chat] 清理了", removed, "个空白对话"); }
-  })();
-
   let sending = false;
   let stopFlag = false;
+  let sseTimeoutTimer = null;
+  let sseWaitSeconds = 0;
+  let currentMsgId = null;
 
   const attachments = { image: null, files: [] };
 
@@ -31,6 +26,16 @@ const Chat = (() => {
     const now = Date.now();
     if (now - lastCreateTime < 300) return;
     lastCreateTime = now;
+
+    // 清理历史空白会话（保留当前正在查看的）
+    const currentId = Store.state.currentChatId;
+    const before = Store.state.chats.length;
+    Store.state.chats = Store.state.chats.filter(c =>
+      c.id === currentId || (c.messages && c.messages.length > 0)
+    );
+    const removed = before - Store.state.chats.length;
+    if (removed > 0) Store.save();
+
     // 如果当前对话为空，直接复用，不创建新对话
     const current = getCurrentChat();
     if (current && (!current.messages || current.messages.length === 0)) {
@@ -242,6 +247,24 @@ const Chat = (() => {
     if (!sending) return;
     stopFlag = true;
     API.abortAll();
+    if (sseTimeoutTimer) { clearInterval(sseTimeoutTimer); sseTimeoutTimer = null; }
+    if (currentMsgId) {
+      const msgEl = document.querySelector('#chatContainer [data-id="' + currentMsgId + '"]');
+      if (msgEl) {
+        const body = msgEl.querySelector('.msg-body');
+        if (body && !body.querySelector('.stop-hint')) {
+          const hint = document.createElement('div');
+          hint.className = 'stop-hint';
+          hint.innerHTML = '<span class="icon">' + icon('pause', 16) + '</span><span>已停止生成</span>' +
+            '<span class="btn-link" data-act="continue">继续生成</span>';
+          body.appendChild(hint);
+          hint.querySelector('[data-act="continue"]').addEventListener('click', () => {
+            hint.remove();
+            regenerate(currentMsgId);
+          });
+        }
+      }
+    }
   }
 
   async function send(rawContent) {
@@ -362,28 +385,73 @@ const Chat = (() => {
     const cleanMsgs = msgs.filter(m => !(m.role === 'assistant' && !m.content));
 
     try {
+      currentMsgId = msg.id;
+      sseWaitSeconds = 0;
+      if (sseTimeoutTimer) clearInterval(sseTimeoutTimer);
+      sseTimeoutTimer = setInterval(() => {
+        sseWaitSeconds++;
+        if (sseWaitSeconds >= 30) {
+          stop();
+          Toast.warning('连接超时（30秒无数据），已自动停止');
+          const msgEl = document.querySelector('#chatContainer [data-id="' + msg.id + '"]');
+          if (msgEl) {
+            const body = msgEl.querySelector('.msg-body');
+            if (body) {
+              const hint = document.createElement('div');
+              hint.className = 'stop-hint';
+              hint.innerHTML = '<span class="icon">' + icon('zap', 16) + '</span><span>连接超时，请重试</span>' +
+                '<span class="btn-link" data-act="retry">重新生成</span>';
+              body.appendChild(hint);
+              hint.querySelector('[data-act="retry"]').addEventListener('click', () => {
+                hint.remove();
+                regenerate(msg.id);
+              });
+            }
+          }
+        } else if (sseWaitSeconds >= 20) {
+          Toast.info('已等待 ' + sseWaitSeconds + ' 秒…');
+        }
+      }, 1000);
+
       const result = await API.chat({
         modelId, messages: cleanMsgs,
-        onChunk: (chunk, full) => { if (!stopFlag) { msg.content = full; UI.setMsgContent(msg.id, full); } },
-        onThinking: (t, fullT) => { if (!stopFlag) { msg.thinking = fullT; UI.setMsgThinking(msg.id, fullT); } },
+        onChunk: (chunk, full) => { 
+          if (!stopFlag) { 
+            sseWaitSeconds = 0;
+            msg.content = full; 
+            UI.setMsgContent(msg.id, full); 
+            if (typeof renderTokenUsageBar === 'function') renderTokenUsageBar(chat.id);
+          } 
+        },
+        onThinking: (t, fullT) => { 
+          if (!stopFlag) { 
+            sseWaitSeconds = 0;
+            msg.thinking = fullT; 
+            UI.setMsgThinking(msg.id, fullT, true, 1); 
+          } 
+        },
         onToolCall: toolCallHandler(msg)
       });
+      if (sseTimeoutTimer) { clearInterval(sseTimeoutTimer); sseTimeoutTimer = null; }
       msg.content = result.content;
       msg.thinking = result.thinking || msg.thinking;
       if (result.toolCalls && result.toolCalls.length) msg.toolCalls = result.toolCalls;
       settleToolCalls(msg);
       UI.finishMsg(msg.id, msg.content);
       autoSpeak(msg.content, msg.id);
+    if (sseTimeoutTimer) { clearInterval(sseTimeoutTimer); sseTimeoutTimer = null; }
     } catch (e) {
-      if (stopFlag || e.name === 'AbortError') {
+      if (stopFlag || e.name === 'AbortError' || (e.message && e.message.includes('超时'))) {
         msg.content = msg.content || '';
         settleToolCalls(msg);
         UI.finishMsg(msg.id, msg.content);
+        if (typeof renderTokenUsageBar === 'function') renderTokenUsageBar(chat.id);
       } else {
         msg.error = e.message;
         msg.content = '';
         settleToolCalls(msg);
         UI.setMsgError(msg.id, e.message);
+        if (typeof renderTokenUsageBar === 'function') renderTokenUsageBar(chat.id);
       }
     }
     chat.updatedAt = Date.now();
@@ -665,4 +733,12 @@ const Chat = (() => {
     addAttachment, removeAttachment, clearAttachments, addPastedText,
     send, stop, regenerate, editAndResend, delMsg
   };
+
+  /* v5.3 Esc键停止生成 */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sending) {
+      e.preventDefault();
+      stop();
+    }
+  });
 })();
