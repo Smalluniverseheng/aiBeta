@@ -65,17 +65,18 @@
         document.documentElement.dataset.floatVisible = showFloat ? 'true' : 'false';
       }
 
-      // 导航栏控制
-      const bottomNav = $('#bottomNav');
-      if (bottomNav) {
-        const showNav = mode === 'navbar' || mode === 'both';
-        bottomNav.style.display = showNav ? '' : 'none';
-      }
-      // 顶部导航栏控制（桌面端）
-      const topNav = $('#topbar');
-      if (topNav) {
-        const showNav = mode === 'navbar' || mode === 'both';
-        topNav.style.display = showNav ? '' : 'none';
+      // 导航栏控制（只在非对话页生效，避免与 ui.js navigate() 冲突）
+      if (!isChat) {
+        const bottomNav = $('#bottomNav');
+        if (bottomNav) {
+          const showNav = mode === 'navbar' || mode === 'both';
+          bottomNav.style.display = showNav ? '' : 'none';
+        }
+        const topNav = $('#topbar');
+        if (topNav) {
+          const showNav = mode === 'navbar' || mode === 'both';
+          topNav.style.display = showNav ? '' : 'none';
+        }
       }
     }
 
