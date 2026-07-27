@@ -88,6 +88,13 @@ const API = (() => {
     const reader = resp.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
+    let lastDataTime = Date.now();
+    const sseCheckTimer = setInterval(() => {
+      if (Date.now() - lastDataTime > 30000) {
+        clearInterval(sseCheckTimer);
+        reader.cancel();
+      }
+    }, 1000);
     let full = '';
     let fullThink = '';
     let usage = null;
@@ -98,6 +105,7 @@ const API = (() => {
     };
 
     const handleData = (data) => {
+      lastDataTime = Date.now();
       if (!data || data === '[DONE]') return;
       let json;
       try { json = JSON.parse(data); } catch (e) { return; }
@@ -201,9 +209,11 @@ const API = (() => {
         toolCallsAcc.forEach(t => { t.status = 'done'; });
         notifyToolCalls();
       }
-      return { content: full, thinking: fullThink, toolCalls: toolCallsAcc, usage };
+      clearInterval(sseCheckTimer);
+    return { content: full, thinking: fullThink, toolCalls: toolCallsAcc, usage };
     } finally {
       if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+      if (sseCheckTimer) { clearInterval(sseCheckTimer); }
     }
   }
 
