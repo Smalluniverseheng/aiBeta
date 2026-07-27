@@ -332,7 +332,36 @@ const MODELS = [
   // Groq 历史
   {id:'gemma2-9b-it',name:'Gemma 2 9B (Groq)',provider:'Groq',ctx:8,status:'deprecated'},
   {id:'llama-3.1-8b-instant',name:'Llama 3.1 8B (Groq)',provider:'Groq',ctx:128},
-];
+,
+  // ==================== v5.3 新增分类模型 ====================
+  // 教育
+  { id: 'gpt-5.5-edu', name: 'GPT-5.5 Edu', provider: 'OpenAI', type: 'chat', ctx: 128, status: 'new', tags: ['paid'], category: 'education' },
+  { id: 'claude-sonnet-5-edu', name: 'Claude Sonnet 5 Edu', provider: 'Anthropic', type: 'chat', ctx: 200, status: 'new', tags: ['paid'], category: 'education' },
+  { id: 'qwen-edu-plus', name: '通义千问教育版', provider: '通义千问', type: 'chat', ctx: 128, status: 'new', tags: ['limited-free'], category: 'education' },
+  { id: 'glm-edu-4', name: '智谱教育助手', provider: '智谱AI', type: 'chat', ctx: 128, tags: ['free'], category: 'education' },
+  { id: 'kimi-edu-k3', name: 'Kimi教育K3', provider: 'Kimi', type: 'chat', ctx: 256, status: 'new', tags: ['paid'], category: 'education' },
+
+  // 医疗
+  { id: 'gpt-5.5-med', name: 'GPT-5.5 Medical', provider: 'OpenAI', type: 'chat', ctx: 128, status: 'new', tags: ['paid'], category: 'medical' },
+  { id: 'claude-opus-4-med', name: 'Claude Opus 4 Medical', provider: 'Anthropic', type: 'chat', ctx: 200, status: 'new', tags: ['paid'], category: 'medical' },
+  { id: 'qwen-med-v2', name: '通义千问医疗版', provider: '通义千问', type: 'chat', ctx: 128, vision: true, status: 'new', tags: ['limited-free'], category: 'medical' },
+  { id: 'hunyuan-med-2', name: '腾讯混元医疗', provider: '腾讯混元', type: 'chat', ctx: 32, tags: ['paid'], category: 'medical' },
+  { id: 'baichuan-med-7', name: '百川医疗7B', provider: '百川智能', type: 'chat', ctx: 32, tags: ['free'], category: 'medical' },
+
+  // 法律
+  { id: 'gpt-5.5-law', name: 'GPT-5.5 Legal', provider: 'OpenAI', type: 'chat', ctx: 128, status: 'new', tags: ['paid'], category: 'legal' },
+  { id: 'claude-sonnet-5-law', name: 'Claude Sonnet 5 Legal', provider: 'Anthropic', type: 'chat', ctx: 200, status: 'new', tags: ['paid'], category: 'legal' },
+  { id: 'qwen-law-plus', name: '通义千问法律版', provider: '通义千问', type: 'chat', ctx: 128, status: 'new', tags: ['limited-free'], category: 'legal' },
+  { id: 'ernie-law-4', name: '文心法律4.0', provider: '文心一言', type: 'chat', ctx: 128, tags: ['paid'], category: 'legal' },
+  { id: 'kimi-law-k3', name: 'Kimi法律K3', provider: 'Kimi', type: 'chat', ctx: 256, status: 'new', tags: ['paid'], category: 'legal' },
+
+  // 金融
+  { id: 'gpt-5.5-fin', name: 'GPT-5.5 Finance', provider: 'OpenAI', type: 'chat', ctx: 128, status: 'new', tags: ['paid'], category: 'finance' },
+  { id: 'claude-opus-4-fin', name: 'Claude Opus 4 Finance', provider: 'Anthropic', type: 'chat', ctx: 200, status: 'new', tags: ['paid'], category: 'finance' },
+  { id: 'qwen-fin-plus', name: '通义千问金融版', provider: '通义千问', type: 'chat', ctx: 128, status: 'new', tags: ['limited-free'], category: 'finance' },
+  { id: 'glm-fin-4', name: '智谱金融助手', provider: '智谱AI', type: 'chat', ctx: 128, tags: ['free'], category: 'finance' },
+  { id: 'doubao-fin-pro', name: '豆包金融Pro', provider: '火山引擎', type: 'chat', ctx: 256, status: 'new', tags: ['paid'], category: 'finance' },
+  { id: 'deepseek-fin-v4', name: 'DeepSeek金融V4', provider: 'DeepSeek', type: 'chat', ctx: 64, tags: ['free'], category: 'finance' }];
 
 /* ==================== MODEL_RANK · 模型排行榜 ====================
  * 数据锚定公开榜单 2026-07 期：LMArena（lmarena.ai，原 Chatbot Arena）文本总榜
