@@ -259,6 +259,65 @@ const UI = (() => {
     });
   })();
 
+  /* ---------- 对话页左右滑动手势：展开/收起侧边栏 ---------- */
+  (function bindChatSwipeGesture() {
+    const main = document.querySelector('.chat-container');
+    if (!main) return;
+
+    let startX = 0, startY = 0, tracking = false;
+    const SWIPE_THRESHOLD = 60;      // 水平滑动触发阈值
+    const EDGE_ZONE = 24;            // 边缘触发区域（px）
+
+    main.addEventListener('touchstart', (e) => {
+      if (Store.state.currentPage !== 'chat') return;
+      // 桌面端不启用（侧边栏固定显示）
+      if (window.DeviceInfo && DeviceInfo.type === 'desktop') return;
+
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      const sb = $('#sidebar');
+      const isOpen = sb && sb.classList.contains('open');
+
+      // 从左边缘开始 或 侧边栏已展开时任意位置开始
+      if (startX < EDGE_ZONE || isOpen) {
+        tracking = true;
+      }
+    }, { passive: true });
+
+    main.addEventListener('touchmove', (e) => {
+      if (!tracking) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      // 垂直分量大于水平分量时取消跟踪
+      if (Math.abs(dy) > Math.abs(dx) * 1.2) {
+        tracking = false;
+        return;
+      }
+    }, { passive: true });
+
+    main.addEventListener('touchend', (e) => {
+      if (!tracking) return;
+      tracking = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const sb = $('#sidebar');
+      if (!sb) return;
+      const isOpen = sb.classList.contains('open');
+
+      if (!isOpen && dx > SWIPE_THRESHOLD && startX < EDGE_ZONE) {
+        // 从左边缘向右滑动：展开侧边栏
+        sb.classList.add('open');
+        const overlay = $('#sidebarOverlay');
+        if (overlay) overlay.classList.add('show');
+      } else if (isOpen && dx < -SWIPE_THRESHOLD) {
+        // 从右向左滑动：收起侧边栏
+        closeSidebarMobile();
+      }
+    }, { passive: true });
+  })();
+
   /* 手表端专用事件绑定 */
   (function bindWatchEvents() {
     const watchSearch = $('#sidebarSearchInputWatch');
