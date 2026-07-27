@@ -71,6 +71,12 @@
         const showNav = mode === 'navbar' || mode === 'both';
         bottomNav.style.display = showNav ? '' : 'none';
       }
+      // 顶部导航栏控制（桌面端）
+      const topNav = $('#topbar');
+      if (topNav) {
+        const showNav = mode === 'navbar' || mode === 'both';
+        topNav.style.display = showNav ? '' : 'none';
+      }
     }
 
     // 点击返回对话（关闭子页面 + 切换页面）
