@@ -2400,8 +2400,14 @@ const Pages = (() => {
       }).join('');
     });
 
-    $$('.nav-opt-row').forEach(row => {
-      row.addEventListener('click', () => {
+    // 事件委托：在容器上绑定一次，避免重复渲染导致内存泄漏
+    devices.forEach(dev => {
+      const container = $('#nav' + dev.key.charAt(0).toUpperCase() + dev.key.slice(1) + 'Opts');
+      if (!container || container.dataset.navBound) return;
+      container.dataset.navBound = '1';
+      container.addEventListener('click', e => {
+        const row = e.target.closest('.nav-opt-row');
+        if (!row) return;
         const device = row.dataset.device;
         const mode = row.dataset.mode;
         const ns = Object.assign({}, Store.state.navSettings || {});
