@@ -1,77 +1,71 @@
-# 当前上下文快照
+# AI_CONTEXT — 第三方科技 · AI 智能聚合平台
 
-> 供 AI 快速了解项目当前状态，每次重大修改后更新。
-
----
-
-## 基本信息
-
-| 项目 | 值 |
-|------|-----|
-| 当前版本 | **v3.6** |
-| 前端版本 | `APP_VERSION = '3.6.0'` |
-| SW 版本 | `VERSION = 'v3.6.0'` |
-| 缓存穿透 | `?v=3.6.0` |
-| 部署地址 | `https://smalluniverseheng.github.io/AI/` |
-| 仓库 | `https://github.com/Smalluniverseheng/AI` |
+> **当前版本**: v5.2
+> **最后更新**: 2026-07-27
+> **仓库**: `Smalluniverseheng/aiBeta` (测试服) / `Smalluniverseheng/AI` (生产服)
 
 ---
 
-## 分支状态
+## 快速开始
 
-| 分支 | 最新提交 | 用途 |
-|------|----------|------|
-| `preview` | v3.6 | 线上部署（GitHub Pages） |
-| `production` | v3.6 | 开发主干（默认分支） |
-| `backup` | v3.6 | 备份回滚 |
-| `ai-context` | v3.6 | AI 规则/上下文 |
-| `v2` | - | Next.js 重构实验 |
+1. 读取 `00-START-HERE.md` 了解项目概览
+2. 读取 `AI_README.md` 了解详细功能与交互逻辑
+3. 读取 `01-RULES/` 目录下的规则文档
+4. 读取 `.ai-handoff/handoff-v2.md` 了解经验教训
 
 ---
 
-## 已知问题
+## 当前状态
 
-1. **Service Worker 缓存**：手表端测试时需清除缓存或换端口
-2. **空白对话残留**：v3.6 已修复（初始化清理 + 创建时自动删除）
-3. **侧滑手势冲突**：v3.5 已修复（复用现有 `bindSwipeGesture()`）
+### 已完成功能
 
----
+- **v5.0**: 多厂商模型聚合、语音、文件、联网、绘画
+- **v5.1**: 悬浮按钮、三端导航设置、侧边栏页面控制、子页面修复、同步修复
+- **v5.2**: 悬浮按钮返回修复、帮助中心/回收站修复、对话页滑动手势
 
-## 待办事项
+### 待开发功能
 
-| 优先级 | 事项 | 状态 |
-|--------|------|------|
-| P0 | 手表端空白对话清理验证 | 待测试 |
-| P1 | 垃圾回收站 30 天自动清理定时器 | 待实现 |
-| P1 | 扫一扫功能实现 | 预留 |
-| P2 | 会员中心（纯前端 Mock） | 未开始 |
-| P2 | AI 集群协作模式（Swarm） | 未开始 |
-| P2 | 完整插件市场（10 个纯前端工具） | 部分完成 |
+见 `.ai-handoff/roadmap.md`
+
+### 已知问题
+
+无阻塞性问题。
 
 ---
 
-## 关键文件位置
+## 关键规则
 
-| 功能 | 文件 |
-|------|------|
-| 手表端检测 | `js/device.js` |
-| 手表端样式 | `css/watch.css` |
-| 侧滑手势 | `js/ui.js` ~第 1328 行 `bindSwipeGesture()` |
-| 对话核心 | `js/chat.js` |
-| 状态管理 | `js/store.js` |
-| 页面路由 | `js/pages.js` |
-| 厂商配置 | `js/providers.js` |
-| 模型数据 | `js/models.js` |
-| 多语言 | `js/i18n.js` |
+### 版本号
+- 只用 `x.y` 格式，禁止 `x.y.z`
+- 发版改 4 处：providers.js、sw.js、index.html、changelog.js
 
----
+### 分支
+- `aiBeta/5.2`: 当前开发分支
+- `AI/production`: 生产端
+- `ai-context`: 本文档所在分支
 
-## 凭证位置
-
-凭证存储在 `.ai-handoff/handoff-v2.md` 中（base64 编码块），**不要直接写入本文件**。
-
-**注意**：Secret Key 只存 Worker 环境变量，绝不暴露前端。
+### 代码规范
+- Pages IIFE 内定义 renderXxx
+- 事件委托优于直接绑定
+- 不要在模块加载时清理数据
 
 ---
 
-*最后更新：2026-07-23 | 版本：v3.6*
+## 后端配置
+
+### Supabase
+- URL: 见 js/supabase.js
+- 表: messages, usage, configs
+- 约束: messages.id 非空
+
+### API
+- 模型请求通过 providers.js 中 baseURL 路由
+- 支持 SSE 流式响应
+
+---
+
+## 部署
+
+- 测试服: GitHub Pages (aiBeta 仓库)
+- 生产服: GitHub Pages (AI 仓库)
+- 缓存: 1-2 分钟生效，测试加 `?nocache=1`
