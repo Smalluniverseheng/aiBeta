@@ -1,66 +1,83 @@
-# 🚀 AI 接手指南（START HERE）
+# 00-START-HERE — AI 开发者入口
 
-> **每次对话开始时，按顺序读取以下文件恢复上下文。**
-> **不要跳过任何步骤。**
-
----
-
-## 📋 必做清单（每次对话）
-
-1. ✅ 读取 `01-RULES/00-index.md` → 了解所有规则
-2. ✅ 读取 `02-CURRENT-STATE.md` → 了解当前项目状态
-3. ✅ 读取 `05-CREDENTIALS.md` → 获取必要凭证
-4. ✅ 读取 `production` 分支的 `.ai-handoff/handoff-v2.md` → 完整交接信息
-
-**以上 4 步完成后，才能开始执行用户指令。**
+> 如果你是接手这个项目的 AI，请从这里开始阅读。
 
 ---
 
-## 📁 目录结构
+## 1. 项目是什么？
 
-```
-ai-context/
-├── 00-START-HERE.md          ← 你在这里（入口）
-├── 01-RULES/                 ← 【每次必看】规则目录
-│   ├── 00-index.md           ← 规则总览
-│   ├── 01-version-rules.md   ← 版本号规则（强制）
-│   ├── 02-branch-rules.md    ← 分支与推送规则（强制）
-│   ├── 03-dev-constraints.md ← 开发约束（强制）
-│   └── 04-watch-rules.md     ← 手表端开发规范
-├── 02-CURRENT-STATE.md       ← 【每次必看】当前状态快照
-├── 03-HISTORY/               ← 【详细过程】版本历史
-│   ├── v3.6.md
-│   └── v3.5.md
-├── 04-ARCHIVE/               ← 【详细过程】完整交接文档
-│   ├── handoff-v2.md
-│   ├── architecture.md
-│   ├── conventions.md
-│   ├── roadmap.md
-│   └── specs/
-└── 05-CREDENTIALS.md         ← 【每次必看】凭证（安全）
-```
+**第三方科技 · AI 智能聚合平台** — 一个纯前端实现的第三方 AI 对话聚合平台。
+
+- 支持多厂商模型（OpenAI、Anthropic、Google、阿里云等）
+- 语音输入/输出、文件上传、联网搜索、绘画
+- PWA 架构，无后端服务器（除 Supabase 同步外）
+- 部署在 GitHub Pages
 
 ---
 
-## ⚡ 快速判断
+## 2. 当前版本
 
-| 场景 | 读取文件 |
-|------|----------|
-| 第一次接手 | 全部读一遍 |
-| 日常开发 | `01-RULES/00-index.md` + `02-CURRENT-STATE.md` |
-| 发版时 | `01-RULES/01-version-rules.md` |
-| 出 Bug 时 | `03-HISTORY/` + `04-ARCHIVE/handoff-v2.md` |
-| 手表端问题 | `01-RULES/04-watch-rules.md` |
+**v5.2** — 已部署到生产服
 
----
-
-## 🔔 重要提醒
-
-- **上下文有限制**：超过限制时必须让用户说"继续"重置工具调用
-- **工具调用耗尽时**：告诉用户"回复继续即可重置工具调用"
-- **不要暴露凭证**：Secret Key 只存 Worker 环境变量
-- **只做增量添加**：禁止改动现有逻辑（聊天管线、模型库、主题 CSS、API 层）
+最新功能：
+- 可拖动悬浮返回按钮
+- 三端导航设置（桌面/移动/手表）
+- 对话页左右滑动手势展开/收起侧边栏
+- 帮助中心、回收站等子页面修复
 
 ---
 
-*最后更新：2026-07-23 | 版本：v3.6*
+## 3. 必读文档（按顺序）
+
+| 顺序 | 文档 | 内容 |
+|------|------|------|
+| 1 | `AI_README.md` | **最全面的指南** — 功能、交互逻辑、数据结构、API |
+| 2 | `.ai-handoff/handoff-v2.md` | **经验教训** — 坑点、解决方案、测试清单 |
+| 3 | `.ai-handoff/roadmap.md` | **版本规划** — 已完成和待开发功能 |
+| 4 | `01-RULES/00-index.md` | **规则索引** — 版本号、分支、开发约束 |
+| 5 | `AI_CONTEXT.md` | **快速参考** — 当前状态、关键规则 |
+
+---
+
+## 4. 关键规则（速查）
+
+### 版本号
+- 只用 `x.y` 格式，禁止 `x.y.z`
+- 发版改 4 处：providers.js、sw.js、index.html、changelog.js
+
+### 代码规范
+- `renderXxx` 必须在 Pages IIFE 内部
+- 事件委托优于直接绑定
+- 不要在模块加载时清理数据
+
+### 部署流程
+1. `aiBeta/5.x` 开发 → 测试
+2. 稳定后同步到 `AI/production`
+3. GitHub Pages 1-2 分钟生效
+
+---
+
+## 5. 仓库地址
+
+- 测试服: `https://github.com/Smalluniverseheng/aiBeta`
+- 生产服: `https://github.com/Smalluniverseheng/AI`
+- 测试地址: `https://smalluniverseheng.github.io/aiBeta/`
+- 生产地址: `https://smalluniverseheng.github.io/AI/`
+
+---
+
+## 6. 给下一个 AI 的留言
+
+**先读文档再动手！**
+
+本项目有完整的文档体系，修改前先读 `AI_README.md` 和 `handoff-v2.md`。
+
+最大的坑是 **Pages IIFE 作用域** — 所有 `renderXxx` 必须在 IIFE 内部。
+
+版本号严格 **x.y** 格式，绝对禁止 x.y.z。
+
+测试服先行，稳定后再推生产服。
+
+---
+
+最后更新: 2026-07-27 | v5.2
