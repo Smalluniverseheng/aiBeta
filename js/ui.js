@@ -629,7 +629,8 @@ const UI = (() => {
       const av = userAvatarHtml();
       return '<div class="msg user" data-id="' + m.id + '">' +
         '<div class="msg-avatar">' + av + '</div>' +
-        '<div class="msg-body"><div class="msg-head"><span class="msg-author">' + esc(Store.state.userInfo && Store.state.userInfo.name || '我') + '</span><span class="msg-time">' + fmtTime(m.ts) + '</span></div>' +
+        '<div class="msg-body">' +
+        '<div class="msg-head"><span class="msg-author">' + esc((Store.state.userInfo && Store.state.userInfo.name) || '我') + '</span><span class="msg-time">' + fmtTime(m.ts) + '</span></div>' +
         (m.image ? '<img class="msg-image" src="' + m.image + '" alt="图片">' : '') +
         '<div class="msg-content">' + esc(m.content) + '</div>' +
         '<div class="msg-actions">' +
@@ -637,6 +638,10 @@ const UI = (() => {
         '<button class="msg-action" data-act="edit" title="编辑重发">' + icon('edit', 14) + '</button>' +
         '<button class="msg-action danger" data-act="del" title="删除">' + icon('trash', 14) + '</button>' +
         '</div></div></div>';
+    }
+    if (m.role === 'system') {
+      return '<div class="msg system" data-id="' + m.id + '">' +
+        '<div class="msg-content">' + esc(m.content) + '</div></div>';
     }
     // assistant
     const model = getModel(m.modelId);
@@ -683,11 +688,13 @@ const UI = (() => {
       }).join('') + '</div></div></div>';
   }
 
-  function thinkingHtml(text, live) {
-    return '<div class="thinking-box' + (live ? ' live' : '') + '">' +
+  function thinkingHtml(text, live, roundIndex, roundTime) {
+    roundIndex = roundIndex || 1;
+    const label = live ? '思考中…' : ('思考 ' + roundIndex + (roundTime ? ' · ' + roundTime + 'ms' : ''));
+    return '<div class="thinking-box' + (live ? ' live' : '') + '" data-round="' + roundIndex + '">' +
       '<button class="thinking-toggle">' +
       '<span class="thinking-brain">' + icon('brain', 14) + '</span>' +
-      '<span class="thinking-label">' + (live ? '思考中…' : '思考已完成') + '</span>' +
+      '<span class="thinking-label">' + label + '</span>' +
       '<span class="thinking-copy" title="复制思考内容">' + icon('copy', 12) + '<span>复制</span></span>' +
       '<span class="chevron">' + icon('chevronDown', 13) + '</span></button>' +
       '<div class="thinking-content">' + esc(text) + '</div></div>';
@@ -710,7 +717,7 @@ const UI = (() => {
         copyText(content ? content.textContent : '').then(() => {
           copyBtn.classList.add('copied');
           copyBtn.innerHTML = icon('check', 12) + '<span>已复制</span>';
-          setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = icon('copy', 12) + '<span>复制</span>'; }, 1600);
+          setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = icon('copy', 12) + '<span>复制</span>'; }, 2000);
         }).catch(() => {});
       });
     }
@@ -884,6 +891,42 @@ const UI = (() => {
       img.addEventListener('click', () => openLightbox(img.src));
     });
     scanGhWrite(root);
+    /* v5.3 长消息自动折叠 */
+    if (Store.state.msgAutoCollapse !== false) {
+      $$('.msg.assistant .msg-content-slot', root).forEach(slot => {
+        const content = slot.querySelector('.md') || slot;
+        if (content.scrollHeight > 800) {
+          content.classList.add('collapsed');
+          const btn = document.createElement('button');
+          btn.className = 'msg-expand-btn';
+          btn.innerHTML = '展开全文 ' + icon('chevronDown', 12);
+          btn.addEventListener('click', () => {
+            content.classList.remove('collapsed');
+            btn.style.display = 'none';
+          });
+          slot.parentNode.insertBefore(btn, slot.nextSibling);
+        }
+      });
+    }
+    /* v5.3 代码块复制优化 */
+    $$('.code-block', root).forEach(block => {
+      const copyBtn = block.querySelector('.code-copy');
+      if (!copyBtn || copyBtn.dataset.v53bound) return;
+      copyBtn.dataset.v53bound = '1';
+      copyBtn.addEventListener('click', () => {
+        const pre = block.querySelector('pre');
+        const code = pre ? pre.textContent : '';
+        copyText(code).then(() => {
+          copyBtn.classList.add('copied');
+          const original = copyBtn.innerHTML;
+          copyBtn.innerHTML = icon('check', 12) + '<span>已复制</span>';
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = original;
+          }, 2000);
+        });
+      });
+    });
   }
 
   /* ==================== github-write 指令卡片 ====================
@@ -1043,15 +1086,42 @@ const UI = (() => {
     if (slot) scheduleRender[id](slot, text);
   }
 
-  function setMsgThinking(id, text) {
-    const slot = $('#chatContainer [data-id="' + id + '"] .thinking-slot');
-    if (!slot) return;
-    const existing = $('.thinking-box', slot);
-    if (existing) {
-      $('.thinking-content', existing).textContent = text;
+  function setMsgThinking(id, text, live, roundIndex) {
+    const msgEl = $('#chatContainer [data-id="' + id + '"]');
+    if (!msgEl) return;
+    let slot = msgEl.querySelector('.thinking-slot');
+    if (!slot) {
+      slot = document.createElement('div');
+      slot.className = 'thinking-slot';
+      const body = msgEl.querySelector('.msg-body');
+      if (body) {
+        const contentSlot = body.querySelector('.msg-content-slot');
+        if (contentSlot) body.insertBefore(slot, contentSlot);
+        else body.appendChild(slot);
+      }
+    }
+    let box = slot.querySelector('.thinking-box[data-round="' + (roundIndex || 1) + '"]');
+    if (!box) {
+      box = document.createElement('div');
+      box.innerHTML = thinkingHtml(text, live !== false, roundIndex || 1);
+      box = box.firstElementChild;
+      slot.appendChild(box);
+      bindThinking(box.querySelector('.thinking-toggle'));
+      if (live === false && Store.state.thinkingAutoCollapse !== false) {
+        box.classList.remove('open');
+      } else {
+        box.classList.add('open');
+      }
     } else {
-      slot.innerHTML = thinkingHtml(text, true);
-      bindThinking($('.thinking-toggle', slot));
+      const content = box.querySelector('.thinking-content');
+      if (content) content.textContent = text;
+      if (live) box.classList.add('live');
+      else {
+        box.classList.remove('live');
+        if (Store.state.thinkingAutoCollapse !== false) box.classList.remove('open');
+        const label = box.querySelector('.thinking-label');
+        if (label) label.textContent = '思考 ' + (roundIndex || 1) + ' · 已完成';
+      }
     }
     scrollToBottom();
   }
