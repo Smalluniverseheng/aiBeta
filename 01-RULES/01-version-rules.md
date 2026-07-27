@@ -1,67 +1,56 @@
-# 版本号规则（强制）
+# 版本号规则
 
-> 每次发版必须同时更新以下 4 处，缺一不可。
-
----
-
-## 更新清单
-
-| # | 文件 | 字段/位置 | 示例 |
-|---|------|----------|------|
-| 1 | `js/providers.js` | `const APP_VERSION = 'X.Y.Z';` | `3.6.0` → `3.7.0` |
-| 2 | `sw.js` | `const VERSION = 'vX.Y.Z';` | `v3.6.0` → `v3.7.0` |
-| 3 | `js/changelog.js` | 数组最顶部追加新对象 | `{version: '3.7', ...}` |
-| 4 | `index.html` | 所有 `?v=X.Y.Z` 查询串 | 全局替换 `?v=3.6.0` → `?v=3.7.0` |
+> 绝对禁止违反！
 
 ---
 
 ## 规则
 
-1. **逐一加 0.1**：`3.6` → `3.7` → `3.8`，**不要**用 `3.6.1`
-2. **changelog 数组顶部追加**：最新的在最前面
-3. **index.html 全量替换**：所有 `?v=` 都要换，用于缓存穿透
-4. **4 处必须同时更新**：漏一处会导致缓存不一致
+### 1. 格式
 
----
+只用 `x.y` 格式（如 `4.3`、`5.2`）。
 
-## 错误示例
+**禁止** `x.y.z`（如 `4.3.1`）。
 
-```javascript
-// ❌ 错误：用小版本号
-const APP_VERSION = '3.5.1';
+### 2. 发版同步
 
-// ❌ 错误：只更新一处
-// providers.js 更新了，但 index.html 还是旧版本
+每次发版必须同时修改 **4 处**：
 
-// ❌ 错误：changelog 追加到数组末尾
-// 应该追加到数组最顶部
-```
+1. `js/providers.js`: `const APP_VERSION = 'x.y';`
+2. `sw.js`: `const VERSION = 'vx.y';`
+3. `index.html`: 所有 `?v=x.y`（缓存版本标记）
+4. `js/changelog.js`: 数组末尾追加新版本条目
 
-## 正确示例
+### 3. 提交信息
+
+Git 提交信息、文档、changelog 条目也禁止出现 `x.y.z`。
+
+### 4. 示例
 
 ```javascript
 // js/providers.js
-const APP_VERSION = '3.7.0';
+const APP_VERSION = '5.2';
 
 // sw.js
-const VERSION = 'v3.7.0';
+const VERSION = 'v5.2';
 
-// js/changelog.js（数组最顶部）
-const CHANGELOG = [
+// index.html
+<script src="js/app.js?v=5.2"></script>
+
+// js/changelog.js
   {
-    version: '3.7', date: '2026-07-24', major: false, items: [
-      'xxx 功能',
-      'yyy 修复'
+    version: '5.2', date: '2026-07-27', major: false, items: [
+      '修复悬浮按钮返回后导航栏消失',
+      '修复帮助中心/回收站打不开',
+      '新增对话页滑动手势'
     ]
-  },
-  // ... 旧记录在下面
-];
-
-// index.html（所有 ?v= 都要换）
-<script src="js/app.js?v=3.7.0"></script>
-<link rel="stylesheet" href="css/base.css?v=3.7.0">
+  }
 ```
 
 ---
 
-*违反此规则会导致线上缓存不一致，用户看到旧界面。*
+## 历史版本
+
+- v5.2 — 悬浮按钮修复、滑动手势、子页面修复
+- v5.1 — 悬浮按钮、导航设置、侧边栏控制
+- v5.0 — 基础稳定版
