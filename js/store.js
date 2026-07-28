@@ -51,6 +51,28 @@ const Store = (() => {
     cloudMap: {},           // 会话映射 {本地会话id: 云端uuid}（管理员全量同步用）
     cloudMeta: { lastSync: 0, lastSettingsSync: 0, lastUsagePush: 0, usageTotal: 0 },  // 同步游标
     navSettings: { desktop: 'navbar', mobile: 'navbar', watch: 'float' }  // 三端导航方式：navbar(导航栏) / float(悬浮按钮) / both(两者) / none(都不显示)
+    // Novel (v5.4)
+    novelSources: [],          // 书源列表
+    novelHistory: [],          // 阅读历史
+    novelBookmarks: [],        // 书签
+    novelSettings: { fontSize: 18, lineHeight: 1.8, theme: 'light', pageMode: 'scroll', fontFamily: '' },
+    // Comic (v5.4 placeholder)
+    comicSources: [],
+    comicHistory: [],
+    comicBookmarks: [],
+    // Paint (v5.4 placeholder)
+    paintHistory: [],
+    // Video (v5.4 placeholder)
+    videoHistory: [],
+    videoTasks: [],
+    // ShortVideo (v5.4 placeholder)
+    shortVideoHistory: [],
+    shortVideoFavorites: [],
+    // VideoHub (v5.4 placeholder)
+    videoHubHistory: [],
+    videoHubFavorites: [],
+    // Theme (v5.4)
+    themeSettings: { preset: 'default', customPrimary: '', customBg: '', customFont: '', bgImage: '' },
   };
 
   let state = JSON.parse(JSON.stringify(DEFAULTS));
