@@ -1151,3 +1151,83 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
 .am-loading .icon { animation: spin 1s linear infinite; }
 .am-success { color: var(--success); font-weight: 600; }
 .am-fail { color: var(--danger); }
+
+
+/* ==================== 小说/漫画阅读器 v5.5 ==================== */
+
+/* 标签页 */
+.novel-tabs { display:flex; gap:8px; padding:12px 16px; border-bottom:1px solid var(--border); background:var(--card-bg); }
+.novel-tab { flex:1; padding:8px 0; text-align:center; border-radius:8px; font-size:13px; color:var(--text-secondary); background:transparent; border:none; cursor:pointer; transition:all .2s; }
+.novel-tab.active { background:var(--primary); color:#fff; font-weight:500; }
+
+/* 面板显隐 */
+.novel-panel.hidden { display:none !important; }
+.novel-body { padding:0; min-height:calc(100vh - 120px); }
+
+/* 空状态 */
+.novel-empty { padding:48px 16px; text-align:center; color:var(--text-secondary); font-size:14px; }
+
+/* 搜索栏 */
+.novel-search-bar { display:flex; gap:8px; padding:12px 16px; background:var(--card-bg); }
+.novel-search-bar input { flex:1; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:14px; outline:none; }
+.novel-search-bar input:focus { border-color:var(--primary); }
+
+/* 书源导入 */
+.novel-source-bar { padding:12px 16px; background:var(--card-bg); }
+.novel-source-bar textarea { width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:13px; resize:vertical; outline:none; font-family:monospace; }
+.novel-source-bar textarea:focus { border-color:var(--primary); }
+
+/* 书架卡片 */
+.novel-book-card, .comic-book-card { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+.novel-book-card:active, .comic-book-card:active { background:var(--hover-bg); }
+.novel-cover { width:48px; height:64px; border-radius:4px; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+.comic-cover { width:60px; height:80px; border-radius:4px; background:#444 center/cover; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+.novel-info, .comic-info { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; }
+.novel-title, .comic-title { font-size:15px; font-weight:500; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.novel-author, .comic-author { font-size:12px; color:var(--text-secondary); margin-bottom:4px; }
+.novel-meta, .comic-meta { font-size:11px; color:var(--text-tertiary); }
+
+/* 搜索结果 */
+.novel-result-row { padding:14px 16px; border-bottom:1px solid var(--border); }
+.novel-r-title { font-size:15px; font-weight:500; color:var(--text); margin-bottom:4px; }
+.novel-r-meta { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
+.novel-add-shelf-btn { padding:5px 14px; border-radius:6px; border:1px solid var(--primary); background:transparent; color:var(--primary); font-size:12px; cursor:pointer; transition:all .15s; }
+.novel-add-shelf-btn:hover { background:var(--primary); color:#fff; }
+
+/* 漫画搜索结果 */
+.comic-result-row { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); }
+.comic-r-cover { width:60px; height:80px; border-radius:4px; background:#444 center/cover; flex-shrink:0; }
+.comic-r-info { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; }
+.comic-r-title { font-size:15px; font-weight:500; color:var(--text); margin-bottom:4px; }
+.comic-r-meta { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
+
+/* 书源列表 */
+.novel-source-row { display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--border); }
+.novel-src-name { flex:1; font-size:14px; color:var(--text); font-weight:500; }
+.novel-src-url { flex:2; font-size:12px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.novel-src-del { padding:5px 12px; border-radius:6px; border:none; background:#ef4444; color:#fff; font-size:12px; cursor:pointer; transition:opacity .15s; }
+.novel-src-del:hover { opacity:.85; }
+
+/* 章节列表 */
+.novel-chapter-row { padding:13px 16px; border-bottom:1px solid var(--border); font-size:14px; color:var(--text); cursor:pointer; transition:background .15s; }
+.novel-chapter-row:active { background:var(--hover-bg); }
+.novel-chapter-row.active { color:var(--primary); font-weight:600; background:rgba(var(--primary-rgb),.06); }
+
+/* 面板头部 */
+.novel-panel-head { display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--border); font-size:15px; font-weight:500; color:var(--text); background:var(--card-bg); position:sticky; top:0; z-index:2; }
+.novel-panel-head button { background:none; border:none; color:var(--text-secondary); cursor:pointer; padding:4px; display:flex; align-items:center; }
+
+/* 小说阅读器正文 */
+#novelReaderContent { padding:20px 16px; line-height:1.85; font-size:16px; color:var(--text); min-height:calc(100vh - 160px); }
+#novelReaderContent p { margin-bottom:12px; }
+#novelReaderContent br { display:block; margin-bottom:8px; }
+
+/* 漫画阅读器 */
+#comicReaderContent { padding:12px 0; min-height:calc(100vh - 160px); }
+.comic-page-img { display:block; width:100%; max-width:800px; margin:0 auto 10px; border-radius:4px; background:var(--card-bg); }
+
+/* 响应式 */
+@media (min-width: 769px) {
+  .novel-book-card:hover, .comic-book-card:hover { background:var(--hover-bg); }
+  .novel-chapter-row:hover { background:var(--hover-bg); }
+}
