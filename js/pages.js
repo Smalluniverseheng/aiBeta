@@ -925,6 +925,8 @@ const Pages = (() => {
 
   function bindDiscoverEvents() {
     $('#toolPaint').addEventListener('click', openPaintModal);
+    $('#toolNovel').addEventListener('click', () => UI.navigate('chat'));
+    $('#toolComic').addEventListener('click', () => UI.navigate('chat'));
     $('#toolVoiceStudio').addEventListener('click', () => openVoiceStudio());
     $('#toolPresets').addEventListener('click', () => {
       renderPresetGrid();
