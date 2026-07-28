@@ -3,6 +3,12 @@
  * v5.4 完整实现
  */
 const Novel = (() => {
+  function fetchWithTimeout(url, timeout) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+  }
+
   const BUILTIN_SOURCES = [
     { id:'src_qidian', name:'起点中文网', url:'https://www.qidian.com', type:'official', enabled:true,
       search:'/search?kw={{keyword}}', searchList:'.book-img-text>ul>li', searchName:'h4>a', searchAuthor:'.author>a', searchCover:'img@src', searchUrl:'h4>a@href',
@@ -177,7 +183,7 @@ const Novel = (() => {
       try {
         const url = src.url + src.search.replace('{{keyword}}', encodeURIComponent(keyword));
         const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-        const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+        const resp = await fetchWithTimeout(proxyUrl, 8000);
         if (!resp.ok) continue;
         const html = await resp.text();
         const items = parseList(html, src, 'search');
@@ -198,7 +204,7 @@ const Novel = (() => {
     if (!src) return [];
     try {
       const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(bookUrl);
-      const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+      const resp = await fetchWithTimeout(proxyUrl, 10000);
       if (!resp.ok) return [];
       const html = await resp.text();
       const items = parseList(html, src, 'chapter');
@@ -213,7 +219,7 @@ const Novel = (() => {
     if (!src) return null;
     try {
       const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(chapterUrl);
-      const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+      const resp = await fetchWithTimeout(proxyUrl, 10000);
       if (!resp.ok) return null;
       const html = await resp.text();
       const parser = new DOMParser();
