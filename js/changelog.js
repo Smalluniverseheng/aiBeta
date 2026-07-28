@@ -424,6 +424,14 @@ const CHANGELOG = [
       '漫画/小说书架本地持久化存储'
     ]
   }
+,
+  {
+    version: '5.6', date: '2026-07-28', major: true, items: [
+      '书源/图源导入支持智能识别混杂文本中的 JSON',
+      '书源/图源导入支持粘贴链接自动下载内容',
+      '新增书源/图源可用性验证功能'
+    ]
+  }
 ];
 
 window.CHANGELOG = CHANGELOG;
