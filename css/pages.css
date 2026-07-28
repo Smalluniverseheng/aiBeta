@@ -1231,15 +1231,3 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
   .novel-book-card:hover, .comic-book-card:hover { background:var(--hover-bg); }
   .novel-chapter-row:hover { background:var(--hover-bg); }
 }
-
-/* 书源操作按钮组 */
-.novel-source-actions { display:flex; gap:8px; margin-top:10px; }
-.novel-source-actions .btn { flex:1; padding:8px 0; border-radius:8px; font-size:13px; cursor:pointer; transition:all .15s; }
-.novel-source-actions .btn-primary { background:var(--primary); color:#fff; border:none; }
-.novel-source-actions .btn-secondary { background:var(--card-bg); color:var(--text); border:1px solid var(--border); }
-.novel-source-actions .btn:disabled { opacity:.5; cursor:not-allowed; }
-
-/* 书源验证状态 */
-.novel-src-status { display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:6px; }
-.novel-src-status.ok { background:#22c55e; }
-.novel-src-status.fail { background:#ef4444; }
