@@ -2952,6 +2952,453 @@ function bindKeyEvents() {
     `;
   }
 
+
+  // ========== v5.7 会员计划完整渲染 ==========
+  function renderMembership() {
+    const plans = [
+      { key: 'guest', name: '游客', icon: '🌑', price: 0, storage: '本地', devices: 1, sync: false, proxy: false, family: false, color: '#888' },
+      { key: 'satellite', name: '卫星', icon: '🛰️', price: 0, storage: '10MB', devices: 1, sync: false, proxy: false, family: false, color: '#9e9e9e' },
+      { key: 'planet', name: '行星', icon: '🪐', price: 9.9, storage: '1GB', devices: 10, sync: true, proxy: true, family: false, color: '#4caf50' },
+      { key: 'star', name: '恒星', icon: '☀️', price: 29.9, storage: '10GB', devices: 20, sync: true, proxy: true, family: true, color: '#2196f3' },
+      { key: 'galaxy', name: '星系', icon: '🌌', price: 59.9, storage: '50GB', devices: 40, sync: true, proxy: true, family: true, color: '#9c27b0' },
+      { key: 'universe', name: '宇宙', icon: '🌠', price: 99, storage: '100GB', devices: '无限', sync: true, proxy: true, family: true, color: '#ffc107' }
+    ];
+    const m = Store.get('membership');
+    const current = (m && m.tier) || (Store.state.userInfo ? 'satellite' : 'guest');
+    const box = $('#membershipPlans');
+    if (!box) return;
+
+    // 当前等级信息
+    const currentPlan = plans.find(p => p.key === current) || plans[0];
+    const isExpired = m && m.expiresAt && new Date(m.expiresAt) < new Date();
+
+    let html = '<div class="membership-current">';
+    html += '<div class="membership-current-header" style="border-color:' + currentPlan.color + '">';
+    html += '<span class="membership-current-icon">' + currentPlan.icon + '</span>';
+    html += '<span class="membership-current-name">' + currentPlan.name + '</span>';
+    if (m && m.expiresAt) {
+      html += '<span class="membership-current-expire">' + (isExpired ? '已过期' : '有效期至 ' + new Date(m.expiresAt).toLocaleDateString('zh-CN')) + '</span>';
+    }
+    html += '</div>';
+    html += '<div class="membership-current-stats">';
+    html += '<div>💾 ' + (Membership ? Membership.getStoragePercent() : 0) + '% 已用</div>';
+    html += '<div>📱 ' + (Store.get('devices') || []).length + ' 台设备</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // 卡密激活
+    html += '<div class="cardkey-section">';
+    html += '<div class="cardkey-title">🔑 卡密激活</div>';
+    html += '<div class="cardkey-input-wrap">';
+    html += '<input type="text" id="cardKeyInput" placeholder="TP-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" maxlength="55">';
+    html += '<button class="btn btn-primary" id="btnRedeemCardKey">激活</button>';
+    html += '</div>';
+    html += '<div class="cardkey-hint">输入卡密即可激活会员，支持续费和升级</div>';
+    html += '</div>';
+
+    // 邀请有奖
+    html += '<div class="invite-section">';
+    html += '<div class="invite-title">🎁 邀请有奖</div>';
+    const lotteryCount = Store.get('lotteryCount') || 0;
+    html += '<div class="invite-count">您当前有 <b>' + lotteryCount + '</b> 次抽奖机会</div>';
+    html += '<button class="btn btn-primary" id="btnOpenLottery">🎰 去抽奖</button>';
+    html += '</div>';
+
+    // 等级对比
+    html += '<div class="plans-grid">';
+    html += plans.map(p => {
+      const isCurrent = p.key === current;
+      const isPaid = p.price > 0;
+      return `
+        <div class="plan-card ${isCurrent ? 'active' : ''}" data-plan="${p.key}">
+          <div class="plan-header" style="border-color:${p.color}">
+            <span class="plan-icon">${p.icon}</span>
+            <span class="plan-name">${p.name}</span>
+            ${isCurrent ? '<span class="plan-badge">当前</span>' : ''}
+          </div>
+          <div class="plan-price">
+            ${p.price === 0 ? '<span class="free">免费</span>' : `<span class="price">¥${p.price}</span><span class="period">/月</span>`}
+          </div>
+          <div class="plan-storage">💾 ${p.storage}</div>
+          <div class="plan-devices">📱 ${p.devices}台</div>
+          <div class="plan-features">
+            <div class="feat ${p.sync ? 'yes' : 'no'}">☁️ 云端同步</div>
+            <div class="feat ${p.proxy ? 'yes' : 'no'}">🚀 Worker代理</div>
+            <div class="feat ${p.family ? 'yes' : 'no'}">👨‍👩‍👧‍👦 家庭共享</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    html += '</div>';
+
+    // 支付方式预留
+    html += '<div class="payment-reserve">';
+    html += '<div class="payment-title">💳 支付方式</div>';
+    html += '<div class="payment-hint">在线支付即将上线，当前请使用卡密激活</div>';
+    html += '<div class="payment-methods">';
+    html += '<span class="payment-method disabled">微信支付</span>';
+    html += '<span class="payment-method disabled">支付宝</span>';
+    html += '<span class="payment-method disabled">Stripe</span>';
+    html += '</div>';
+    html += '</div>';
+
+    box.innerHTML = html;
+
+    // 绑定卡密激活事件
+    const btnRedeem = $('#btnRedeemCardKey');
+    if (btnRedeem) {
+      btnRedeem.addEventListener('click', async () => {
+        const input = $('#cardKeyInput');
+        if (!input || !input.value.trim()) { showToast('请输入卡密'); return; }
+        btnRedeem.disabled = true;
+        btnRedeem.textContent = '验证中...';
+        const result = await Membership.redeemCardKey(input.value.trim());
+        showToast(result.msg, result.ok ? 'success' : 'error');
+        btnRedeem.disabled = false;
+        btnRedeem.textContent = '激活';
+        if (result.ok) {
+          input.value = '';
+          renderMembership();
+          if (window.renderSidebarUser) renderSidebarUser();
+        }
+      });
+    }
+
+    // 绑定抽奖入口
+    const btnLottery = $('#btnOpenLottery');
+    if (btnLottery) {
+      btnLottery.addEventListener('click', () => {
+        openSub('lottery');
+      });
+    }
+  }
+
+  // ========== 老虎机抽奖渲染 ==========
+  function renderLottery() {
+    const box = $('#lotteryPanel');
+    if (!box) return;
+    const count = Lottery ? Lottery.getLotteryCount() : 0;
+    const records = Store.get('lotteryRecords') || [];
+
+    let html = '<div class="lottery-container">';
+    html += '<div class="lottery-title">🎰 幸运老虎机</div>';
+    html += '<div class="lottery-subtitle">邀请好友成为付费会员，获得抽奖机会</div>';
+
+    // 老虎机滚筒
+    html += '<div class="lottery-machine">';
+    html += '<div class="lottery-reel">🎁</div>';
+    html += '<div class="lottery-reel">🎁</div>';
+    html += '<div class="lottery-reel">🎁</div>';
+    html += '</div>';
+
+    // 抽奖按钮
+    html += '<div class="lottery-count">您当前有 <b>' + count + '</b> 次抽奖机会</div>';
+    html += '<button class="btn btn-primary lottery-btn' + (count <= 0 ? ' disabled' : '') + '" id="btnLotteryDraw" ' + (count <= 0 ? 'disabled' : '') + '>🎲 拉下把手抽奖</button>';
+
+    // 奖品预览
+    html += '<div class="lottery-prizes">';
+    html += '<div class="lottery-prizes-title">奖品预览</div>';
+    html += '<div class="lottery-prize-list">';
+    const prizes = Lottery ? Lottery.PRIZES : [];
+    prizes.forEach(p => {
+      if (p.prob > 0) {
+        html += '<div class="lottery-prize-item tier-' + p.tier + '">';
+        html += '<span class="lottery-prize-name">' + p.name + '</span>';
+        html += '<span class="lottery-prize-prob">' + p.prob + '%</span>';
+        html += '</div>';
+      }
+    });
+    html += '</div>';
+    html += '</div>';
+
+    // 中奖记录
+    html += '<div class="lottery-records">';
+    html += '<div class="lottery-records-title">我的中奖记录</div>';
+    if (records.length === 0) {
+      html += '<div class="lottery-records-empty">暂无中奖记录</div>';
+    } else {
+      html += '<div class="lottery-records-list">';
+      records.slice(0, 10).forEach(r => {
+        html += '<div class="lottery-record-item">';
+        html += '<span class="lottery-record-prize">' + r.prizeName + '</span>';
+        html += '<span class="lottery-record-time">' + new Date(r.time).toLocaleDateString('zh-CN') + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    html += '</div>';
+    box.innerHTML = html;
+
+    // 绑定抽奖事件
+    const btnDraw = $('#btnLotteryDraw');
+    if (btnDraw && count > 0) {
+      btnDraw.addEventListener('click', () => {
+        if (!Lottery) return;
+        if (!Lottery.consumeLotteryCount()) { showToast('抽奖次数不足'); return; }
+        btnDraw.disabled = true;
+        btnDraw.textContent = '抽奖中...';
+        Lottery.runSlotMachine((prize) => {
+          btnDraw.disabled = false;
+          btnDraw.textContent = '🎲 拉下把手抽奖';
+          const msg = prize.type === 'none' ? '谢谢参与，再试一次！' : '恭喜获得：' + prize.name + '！';
+          showToast(msg, prize.type === 'none' ? 'info' : 'success');
+          renderLottery(); // 刷新界面
+          if (window.renderSidebarUser) renderSidebarUser();
+        });
+      });
+    }
+  }
+
+  // ========== 存储管理渲染 ==========
+  function renderStorage() {
+    const used = Membership ? Membership.getStorageUsed() : 0;
+    const limit = Membership ? Membership.getStorageLimit() : 0;
+    const pct = Membership ? Membership.getStoragePercent() : 0;
+    const box = $('#storagePanel');
+    if (!box) return;
+
+    let html = '<div class="storage-container">';
+
+    // 存储总览卡片
+    html += '<div class="storage-card">';
+    html += '<div class="storage-card-title">💾 存储空间</div>';
+    html += '<div class="storage-bar-wrap">';
+    html += '<div class="storage-bar"><div class="storage-fill" style="width:' + pct + '%;background:' + (pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#22c55e') + '"></div></div>';
+    html += '<div class="storage-text">' + formatBytes(used) + ' / ' + (limit > 0 ? formatBytes(limit) : '本地') + ' (' + pct + '%)</div>';
+    html += '</div>';
+    html += '<div class="storage-actions">';
+    html += '<button class="btn btn-secondary" id="btnManageStorageDetail">管理存储</button>';
+    html += '<button class="btn btn-primary" id="btnUpgradeStoragePlan">升级空间</button>';
+    html += '</div>';
+    html += '</div>';
+
+    // 分类详情
+    html += '<div class="storage-detail-section">';
+    html += '<div class="storage-detail-title">存储详情</div>';
+    const types = [
+      { key: 'conversations', label: '💬 历史对话', size: ExportData ? ExportData.estimateSize('conversations') : '0 B' },
+      { key: 'novelSources', label: '📚 书源列表', size: ExportData ? ExportData.estimateSize('novelSources') : '0 B' },
+      { key: 'comicSources', label: '🎨 漫画图源', size: ExportData ? ExportData.estimateSize('comicSources') : '0 B' },
+      { key: 'novelShelf', label: '📖 小说书架', size: ExportData ? ExportData.estimateSize('novelShelf') : '0 B' },
+      { key: 'comicShelf', label: '🖼️ 漫画书架', size: ExportData ? ExportData.estimateSize('comicShelf') : '0 B' },
+      { key: 'customRoles', label: '🎭 自定义角色', size: ExportData ? ExportData.estimateSize('customRoles') : '0 B' },
+      { key: 'settings', label: '⚙️ 设置偏好', size: ExportData ? ExportData.estimateSize('settings') : '0 B' }
+    ];
+    types.forEach(t => {
+      html += '<div class="storage-detail-row">';
+      html += '<span class="storage-detail-label">' + t.label + '</span>';
+      html += '<span class="storage-detail-size">' + t.size + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // 导出数据入口
+    html += '<div class="storage-export-section">';
+    html += '<div class="storage-export-title">📦 数据导出</div>';
+    html += '<div class="storage-export-hint">导出数据后可选择删除，释放存储空间</div>';
+    html += '<button class="btn btn-secondary" id="btnOpenExport">导出数据</button>';
+    html += '</div>';
+
+    html += '</div>';
+    box.innerHTML = html;
+
+    // 绑定事件
+    const btnExport = $('#btnOpenExport');
+    if (btnExport) btnExport.addEventListener('click', () => openSub('export'));
+
+    const btnUpgrade = $('#btnUpgradeStoragePlan');
+    if (btnUpgrade) btnUpgrade.addEventListener('click', () => openSub('membership'));
+  }
+
+  // ========== 设备管理渲染 ==========
+  function renderDevices() {
+    const devices = Store.get('devices') || [];
+    const dm = Store.get('deviceManagement') || false;
+    const tier = Membership ? Membership.getCurrentTier() : { devices: 1 };
+    const box = $('#devicesPanel');
+    if (!box) return;
+
+    let html = '<div class="devices-container">';
+
+    // 设备管理开关
+    html += '<div class="device-mgmt-toggle">';
+    html += '<div class="device-mgmt-info">';
+    html += '<div class="device-mgmt-title">🔐 设备管理</div>';
+    html += '<div class="device-mgmt-desc">开启后，新设备登录需要邮箱验证</div>';
+    html += '</div>';
+    html += '<label class="switch"><input type="checkbox" id="toggleDeviceMgmt" ' + (dm ? 'checked' : '') + '><span class="slider"></span></label>';
+    html += '</div>';
+
+    // 设备统计
+    html += '<div class="device-stats">已登录 ' + devices.length + ' / ' + (tier.devices === Infinity ? '无限' : tier.devices) + ' 台设备</div>';
+
+    // 设备列表
+    html += '<div class="device-list">';
+    if (devices.length === 0) {
+      html += '<div class="device-empty">暂无设备记录</div>';
+    } else {
+      devices.forEach((d, i) => {
+        html += '<div class="device-row' + (d.isCurrent ? ' current' : '') + '">';
+        html += '<div class="device-info">';
+        html += '<div class="device-name">' + (d.isCurrent ? '📱 ' : '💻 ') + (d.name || '未知设备') + (d.isCurrent ? ' [本机]' : '') + '</div>';
+        html += '<div class="device-meta">' + (d.os || '') + ' · ' + (d.browser || '') + ' · 最后活跃: ' + (d.lastActive ? new Date(d.lastActive).toLocaleString('zh-CN') : '未知') + '</div>';
+        html += '</div>';
+        html += '<div class="device-actions">';
+        html += '<label class="device-trust-label"><input type="checkbox" class="device-trust-check" data-id="' + d.deviceId + '" ' + (d.isTrusted ? 'checked' : '') + '> 信任</label>';
+        if (!d.isCurrent) {
+          html += '<button class="device-remove-btn" data-id="' + d.deviceId + '">移除</button>';
+        }
+        html += '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    html += '</div>';
+    box.innerHTML = html;
+
+    // 绑定开关事件
+    const toggle = $('#toggleDeviceMgmt');
+    if (toggle) {
+      toggle.addEventListener('change', (e) => {
+        Store.set('deviceManagement', e.target.checked);
+        showToast(e.target.checked ? '设备管理已开启' : '设备管理已关闭');
+      });
+    }
+
+    // 绑定信任事件
+    document.querySelectorAll('.device-trust-check').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const id = e.target.dataset.id;
+        if (Membership) Membership.setDeviceTrusted(id, e.target.checked);
+        showToast(e.target.checked ? '已设为信任设备' : '已取消信任');
+      });
+    });
+
+    // 绑定移除事件
+    document.querySelectorAll('.device-remove-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.target.dataset.id;
+        if (confirm('确定要移除这台设备吗？该设备将被强制下线。')) {
+          if (Membership) Membership.removeDevice(id);
+          renderDevices();
+          showToast('设备已移除');
+        }
+      });
+    });
+  }
+
+  // ========== 数据导出渲染 ==========
+  function renderExport() {
+    const box = $('#exportPanel');
+    if (!box) return;
+
+    const types = ExportData ? ExportData.EXPORT_TYPES : [];
+    let html = '<div class="export-container">';
+    html += '<div class="export-title">📦 导出数据</div>';
+    html += '<div class="export-subtitle">选择要导出的内容，支持多种格式</div>';
+
+    // 导出内容选择
+    html += '<div class="export-types">';
+    types.forEach(t => {
+      const size = ExportData ? ExportData.estimateSize(t.key) : '0 B';
+      html += '<label class="export-type-item">';
+      html += '<input type="checkbox" class="export-type-check" value="' + t.key + '" checked>';
+      html += '<span class="export-type-label">' + t.icon + ' ' + t.label + '</span>';
+      html += '<span class="export-type-size">' + size + '</span>';
+      html += '</label>';
+    });
+    html += '</div>';
+
+    // 格式选择
+    html += '<div class="export-format-section">';
+    html += '<div class="export-format-title">导出格式</div>';
+    html += '<div class="export-format-options">';
+    ['json', 'markdown', 'txt', 'html', 'zip'].forEach((f, i) => {
+      html += '<label class="export-format-option">';
+      html += '<input type="radio" name="exportFormat" value="' + f + '" ' + (i === 0 ? 'checked' : '') + '>';
+      html += '<span>' + f.toUpperCase() + '</span>';
+      html += '</label>';
+    });
+    html += '</div>';
+    html += '</div>';
+
+    // 操作按钮
+    html += '<div class="export-actions">';
+    html += '<button class="btn btn-primary" id="btnDoExport">📥 开始导出</button>';
+    html += '<label class="export-delete-label"><input type="checkbox" id="chkDeleteAfterExport"> 导出后删除这些数据</label>';
+    html += '</div>';
+
+    html += '</div>';
+    box.innerHTML = html;
+
+    // 绑定导出事件
+    const btnDo = $('#btnDoExport');
+    if (btnDo) {
+      btnDo.addEventListener('click', async () => {
+        const checks = document.querySelectorAll('.export-type-check:checked');
+        if (checks.length === 0) { showToast('请至少选择一项'); return; }
+        const selected = Array.from(checks).map(c => c.value);
+        const format = document.querySelector('input[name="exportFormat"]:checked')?.value || 'json';
+        const deleteAfter = $('#chkDeleteAfterExport')?.checked || false;
+
+        btnDo.disabled = true;
+        btnDo.textContent = '导出中...';
+        try {
+          const result = await ExportData.doExport(selected, format, deleteAfter);
+          showToast('导出成功：' + result.filename, 'success');
+          if (deleteAfter) {
+            renderStorage();
+          }
+        } catch (e) {
+          showToast('导出失败：' + e.message, 'error');
+        }
+        btnDo.disabled = false;
+        btnDo.textContent = '📥 开始导出';
+      });
+    }
+  }
+
+  // ========== 家庭共享渲染 ==========
+  function renderFamily() {
+    const box = $('#familyPanel');
+    if (!box) return;
+    const family = Store.get('familyGroup');
+    const tier = Membership ? Membership.getCurrentTier() : { family: false };
+
+    let html = '<div class="family-container">';
+
+    if (!tier.family) {
+      html += '<div class="family-locked">';
+      html += '<div class="family-locked-icon">🔒</div>';
+      html += '<div class="family-locked-title">家庭共享</div>';
+      html += '<div class="family-locked-desc">恒星及以上会员可开启家庭共享，最多4人共用存储空间</div>';
+      html += '<button class="btn btn-primary" onclick="openSub('membership')">去升级</button>';
+      html += '</div>';
+    } else if (!family) {
+      html += '<div class="family-create">';
+      html += '<div class="family-create-title">👨‍👩‍👧‍👦 创建家庭组</div>';
+      html += '<div class="family-create-desc">邀请家人加入，共享存储空间</div>';
+      html += '<button class="btn btn-primary" id="btnCreateFamily">创建家庭组</button>';
+      html += '</div>';
+    } else {
+      html += '<div class="family-manage">';
+      html += '<div class="family-manage-title">👨‍👩‍👧‍👦 家庭共享管理</div>';
+      html += '<div class="family-storage-total">总存储: ' + formatBytes(tier.storage) + '</div>';
+      html += '<div class="family-members">';
+      // 成员列表（占位）
+      html += '</div>';
+      html += '<button class="btn btn-secondary" id="btnInviteFamily">邀请成员</button>';
+      html += '<button class="btn btn-danger" id="btnDissolveFamily">解散家庭组</button>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    box.innerHTML = html;
+  }
+
   function formatBytes(b) {
     if (b === 0) return '0 B';
     const k = 1024;
@@ -2960,5 +3407,5 @@ function bindKeyEvents() {
     return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + s[i];
   }
 
-return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings };
+return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings, renderMembership, renderStorage, renderDevices, renderLottery, renderExport, renderFamily };
 })();
