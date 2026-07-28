@@ -22,67 +22,14 @@ const Novel = (() => {
   function delSource(name) {
     setSources(getSources().filter(s => s.name !== name));
   }
-  /* 从混杂文本中智能提取 JSON 书源 */
-  function extractSources(text) {
-    const sources = [];
-    // 策略1: 尝试直接解析整个文本为 JSON
+  function importSources(text) {
     try {
       const data = JSON.parse(text);
       const arr = Array.isArray(data) ? data : [data];
-      arr.forEach(s => { if (s && s.name && s.url) sources.push(s); });
-      if (sources.length) return sources;
-    } catch(e) {}
-    // 策略2: 从文本中提取所有 JSON 对象/数组
-    // 匹配 {...} 和 [...]
-    const objRegex = /\{[\s\S]*?\}/g;
-    const arrRegex = /\[[\s\S]*?\]/g;
-    let match;
-    // 先尝试数组
-    while ((match = arrRegex.exec(text)) !== null) {
-      try {
-        const arr = JSON.parse(match[0]);
-        if (Array.isArray(arr)) {
-          arr.forEach(s => { if (s && s.name && s.url) sources.push(s); });
-        }
-      } catch(e) {}
-    }
-    if (sources.length) return sources;
-    // 再尝试单个对象
-    while ((match = objRegex.exec(text)) !== null) {
-      try {
-        const obj = JSON.parse(match[0]);
-        if (obj && obj.name && obj.url) sources.push(obj);
-      } catch(e) {}
-    }
-    return sources;
-  }
-
-  function importSources(text) {
-    const sources = extractSources(text);
-    if (!sources.length) return { ok: false, err: '未识别到有效书源，请检查格式（需要包含 name 和 url 字段）' };
-    let n = 0;
-    sources.forEach(s => { if (!getSources().find(x => x.name === s.name)) { addSource(s); n++; } });
-    return { ok: true, n, total: sources.length };
-  }
-
-  /* 验证书源可用性 */
-  async function verifySource(src) {
-    try {
-      const resp = await fetch(src.url, { mode: 'cors', credentials: 'omit', method: 'HEAD' });
-      return { ok: resp.ok, status: resp.status };
-    } catch(e) {
-      return { ok: false, err: e.message };
-    }
-  }
-
-  async function verifyAllSources() {
-    const list = getSources();
-    const results = [];
-    for (const src of list) {
-      const res = await verifySource(src);
-      results.push({ name: src.name, ...res });
-    }
-    return results;
+      let n = 0;
+      arr.forEach(s => { if (s.name && s.url) { addSource(s); n++; } });
+      return { ok: true, n };
+    } catch(e) { return { ok: false, err: e.message }; }
   }
 
   /* ---------- 书架 ---------- */
@@ -276,6 +223,6 @@ const Novel = (() => {
     getSources, addSource, delSource, importSources,
     getShelf, addShelf, delShelf, inShelf, updateShelf,
     searchBooks, fetchChapters, fetchContent,
-    renderShelf, renderSearchResults, renderSourceList, renderChapterList, renderReader, importSources, extractSources, verifySource, verifyAllSources
+    renderShelf, renderSearchResults, renderSourceList, renderChapterList, renderReader
   };
 })();
