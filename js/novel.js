@@ -18,11 +18,32 @@ const Novel = (() => {
   function addSource(src) {
     const list = getSources();
     if (!list.find(s => s.name === src.name)) { list.push(src); setSources(list); }
+  
+
+  function isUrl(str) {
+    return /^https?:\/\//i.test(str.trim());
   }
+
+  async function fetchSourceFromUrl(url) {
+    try {
+      const resp = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return await resp.text();
+    } catch(e) {
+      try {
+        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+        const resp2 = await fetch(proxyUrl, { credentials: 'omit' });
+        if (!resp2.ok) throw new Error('Proxy HTTP ' + resp2.status);
+        return await resp2.text();
+      } catch(e2) {
+        throw new Error('无法下载书源: ' + e.message);
+      }
+    }
+  }}
   function delSource(name) {
     setSources(getSources().filter(s => s.name !== name));
   }
-  function importSources(text) {
+  async function importSources(text) {
     try {
       const data = JSON.parse(text);
       const arr = Array.isArray(data) ? data : [data];
