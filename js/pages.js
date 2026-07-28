@@ -925,8 +925,8 @@ const Pages = (() => {
 
   function bindDiscoverEvents() {
     $('#toolPaint').addEventListener('click', openPaintModal);
-    $('#toolNovel').addEventListener('click', () => UI.navigate('chat'));
-    $('#toolComic').addEventListener('click', () => UI.navigate('chat'));
+    $('#toolNovel').addEventListener('click', () => openSub('subNovel'));
+    $('#toolComic').addEventListener('click', () => openSub('subComic'));
     $('#toolVoiceStudio').addEventListener('click', () => openVoiceStudio());
     $('#toolPresets').addEventListener('click', () => {
       renderPresetGrid();
@@ -1062,6 +1062,8 @@ const Pages = (() => {
     else if (id === 'subProxy') renderProxySection();
     else if (id === 'subNavSettings') renderNavSettings();
     else if (id === 'subTrash') renderTrash();
+    else if (id === 'subNovel') { renderNovel(); bindNovelEvents(); }
+    else if (id === 'subComic') { renderComic(); bindComicEvents(); }
   }
 
   function bindSubpageEvents() {
@@ -2607,5 +2609,220 @@ function bindKeyEvents() {
 
   
 
-  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings };
+  
+  /* ==================== 小说阅读器 ==================== */
+  function renderNovel() {
+    Novel.renderShelf();
+    Novel.renderSourceList();
+  }
+  function bindNovelEvents() {
+    // 标签切换
+    const tabs = $$('#subNovel .novel-tab');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      $$('#subNovel .novel-panel').forEach(p => p.classList.add('hidden'));
+      const panel = $('#novelPanel' + (t.dataset.tab[0].toUpperCase() + t.dataset.tab.slice(1)));
+      if (panel) { panel.classList.remove('hidden'); }
+      if (t.dataset.tab === 'shelf') Novel.renderShelf();
+      if (t.dataset.tab === 'source') Novel.renderSourceList();
+    }));
+    // 搜索
+    const searchBtn = $('#novelSearchBtn');
+    const searchInput = $('#novelSearchInput');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', async () => {
+        const kw = searchInput.value.trim();
+        if (!kw) return Toast.warning('请输入搜索关键词');
+        searchBtn.textContent = '搜索中…';
+        const res = await Novel.searchBooks(kw);
+        searchBtn.textContent = '搜索';
+        if (!res.ok) return Toast.warning(res.err);
+        Novel.renderSearchResults(res.list);
+      });
+    }
+    // 导入书源
+    const importBtn = $('#novelSourceImport');
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        const text = $('#novelSourceInput').value.trim();
+        if (!text) return Toast.warning('请粘贴书源 JSON');
+        const res = Novel.importSources(text);
+        if (res.ok) { Toast.success('导入 ' + res.n + ' 个书源'); $('#novelSourceInput').value = ''; Novel.renderSourceList(); }
+        else { Toast.warning('导入失败: ' + res.err); }
+      });
+    }
+    // 书源列表事件委托（删除）
+    const sourceList = $('#novelSourceList');
+    if (sourceList) {
+      sourceList.addEventListener('click', e => {
+        const btn = e.target.closest('.novel-src-del');
+        if (btn) { Novel.delSource(btn.dataset.name); Novel.renderSourceList(); }
+      });
+    }
+    // 书架点击（打开章节列表）
+    const shelf = $('#novelShelf');
+    if (shelf) {
+      shelf.addEventListener('click', async e => {
+        const card = e.target.closest('.novel-book-card');
+        if (!card) return;
+        const url = card.dataset.url;
+        const sourceName = card.dataset.source;
+        const src = Novel.getSources().find(s => s.name === sourceName);
+        if (!src) return Toast.warning('书源已删除');
+        const chapters = await Novel.fetchChapters(url, src);
+        if (!chapters.length) return Toast.warning('获取章节失败');
+        window.__novelChapters = chapters;
+        window.__novelCurrentBook = { url, sourceName, name: card.querySelector('.novel-title').textContent };
+        Novel.renderChapterList(chapters, 0);
+        $('#novelChapterBookName').textContent = window.__novelCurrentBook.name;
+        $$('#subNovel .novel-panel').forEach(p => p.classList.add('hidden'));
+        $('#novelPanelChapters').classList.remove('hidden');
+      });
+    }
+    // 章节列表点击（打开阅读器）
+    const chapterList = $('#novelChapterList');
+    if (chapterList) {
+      chapterList.addEventListener('click', async e => {
+        const row = e.target.closest('.novel-chapter-row');
+        if (!row) return;
+        const idx = parseInt(row.dataset.idx);
+        const chapters = window.__novelChapters;
+        const book = window.__novelCurrentBook;
+        const src = Novel.getSources().find(s => s.name === book.sourceName);
+        if (!src || !chapters[idx]) return;
+        const content = await Novel.fetchContent(chapters[idx].url, src);
+        Novel.renderReader(content, chapters[idx].name);
+        window.__novelCurrentChapter = idx;
+        Novel.updateShelf(book.url, { lastRead: Date.now(), chapterIdx: idx, chapterName: chapters[idx].name });
+        $$('#subNovel .novel-panel').forEach(p => p.classList.add('hidden'));
+        $('#novelPanelReader').classList.remove('hidden');
+      });
+    }
+    // 返回按钮
+    const backCh = $('#subNovel button[data-back-chapters]');
+    if (backCh) backCh.addEventListener('click', () => { $('#novelPanelChapters').classList.add('hidden'); $('#novelPanelShelf').classList.remove('hidden'); $$('#subNovel .novel-tab')[0].classList.add('active'); });
+    const backRd = $('#subNovel button[data-back-reader]');
+    if (backRd) backRd.addEventListener('click', () => { $('#novelPanelReader').classList.add('hidden'); $('#novelPanelChapters').classList.remove('hidden'); });
+    // 搜索结果加入书架
+    const results = $('#novelSearchResults');
+    if (results) {
+      results.addEventListener('click', e => {
+        const btn = e.target.closest('.novel-add-shelf-btn');
+        if (btn) {
+          const row = btn.closest('.novel-result-row');
+          if (row) {
+            Novel.addShelf({ name: row.dataset.name, author: row.dataset.author, url: row.dataset.url, sourceName: row.dataset.source });
+            btn.textContent = '已在书架';
+            Toast.success('已加入书架');
+          }
+        }
+      });
+    }
+  }
+
+  /* ==================== 漫画阅读器 ==================== */
+  function renderComic() {
+    Comic.renderShelf();
+    Comic.renderSourceList();
+  }
+  function bindComicEvents() {
+    const tabs = $$('#subComic .novel-tab');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      $$('#subComic .novel-panel').forEach(p => p.classList.add('hidden'));
+      const panel = $('#comicPanel' + (t.dataset.tab[0].toUpperCase() + t.dataset.tab.slice(1)));
+      if (panel) { panel.classList.remove('hidden'); }
+      if (t.dataset.tab === 'shelf') Comic.renderShelf();
+      if (t.dataset.tab === 'source') Comic.renderSourceList();
+    }));
+    const searchBtn = $('#comicSearchBtn');
+    const searchInput = $('#comicSearchInput');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', async () => {
+        const kw = searchInput.value.trim();
+        if (!kw) return Toast.warning('请输入搜索关键词');
+        searchBtn.textContent = '搜索中…';
+        const res = await Comic.searchBooks(kw);
+        searchBtn.textContent = '搜索';
+        if (!res.ok) return Toast.warning(res.err);
+        Comic.renderSearchResults(res.list);
+      });
+    }
+    const importBtn = $('#comicSourceImport');
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        const text = $('#comicSourceInput').value.trim();
+        if (!text) return Toast.warning('请粘贴图源 JSON');
+        const res = Comic.importSources(text);
+        if (res.ok) { Toast.success('导入 ' + res.n + ' 个图源'); $('#comicSourceInput').value = ''; Comic.renderSourceList(); }
+        else { Toast.warning('导入失败: ' + res.err); }
+      });
+    }
+    const sourceList = $('#comicSourceList');
+    if (sourceList) {
+      sourceList.addEventListener('click', e => {
+        const btn = e.target.closest('.novel-src-del');
+        if (btn) { Comic.delSource(btn.dataset.name); Comic.renderSourceList(); }
+      });
+    }
+    const shelf = $('#comicShelf');
+    if (shelf) {
+      shelf.addEventListener('click', async e => {
+        const card = e.target.closest('.comic-book-card');
+        if (!card) return;
+        const url = card.dataset.url;
+        const sourceName = card.dataset.source;
+        const src = Comic.getSources().find(s => s.name === sourceName);
+        if (!src) return Toast.warning('图源已删除');
+        const chapters = await Comic.fetchChapters(url, src);
+        if (!chapters.length) return Toast.warning('获取章节失败');
+        window.__comicChapters = chapters;
+        window.__comicCurrentBook = { url, sourceName, name: card.querySelector('.comic-title').textContent };
+        Comic.renderChapterList(chapters, 0);
+        $('#comicChapterBookName').textContent = window.__comicCurrentBook.name;
+        $$('#subComic .novel-panel').forEach(p => p.classList.add('hidden'));
+        $('#comicPanelChapters').classList.remove('hidden');
+      });
+    }
+    const chapterList = $('#comicChapterList');
+    if (chapterList) {
+      chapterList.addEventListener('click', async e => {
+        const row = e.target.closest('.novel-chapter-row');
+        if (!row) return;
+        const idx = parseInt(row.dataset.idx);
+        const chapters = window.__comicChapters;
+        const book = window.__comicCurrentBook;
+        const src = Comic.getSources().find(s => s.name === book.sourceName);
+        if (!src || !chapters[idx]) return;
+        const images = await Comic.fetchImages(chapters[idx].url, src);
+        Comic.renderReader(images, chapters[idx].name);
+        window.__comicCurrentChapter = idx;
+        Comic.updateShelf(book.url, { lastRead: Date.now(), chapterIdx: idx, chapterName: chapters[idx].name });
+        $$('#subComic .novel-panel').forEach(p => p.classList.add('hidden'));
+        $('#comicPanelReader').classList.remove('hidden');
+      });
+    }
+    const backCh = $('#subComic button[data-back-chapters]');
+    if (backCh) backCh.addEventListener('click', () => { $('#comicPanelChapters').classList.add('hidden'); $('#comicPanelShelf').classList.remove('hidden'); $$('#subComic .novel-tab')[0].classList.add('active'); });
+    const backRd = $('#subComic button[data-back-reader]');
+    if (backRd) backRd.addEventListener('click', () => { $('#comicPanelReader').classList.add('hidden'); $('#comicPanelChapters').classList.remove('hidden'); });
+    const results = $('#comicSearchResults');
+    if (results) {
+      results.addEventListener('click', e => {
+        const btn = e.target.closest('.novel-add-shelf-btn');
+        if (btn) {
+          const row = btn.closest('.comic-result-row');
+          if (row) {
+            Comic.addShelf({ name: row.dataset.name, author: row.dataset.author, url: row.dataset.url, sourceName: row.dataset.source, cover: row.dataset.cover });
+            btn.textContent = '已在书架';
+            Toast.success('已加入书架');
+          }
+        }
+      });
+    }
+  }
+
+return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings };
 })();
