@@ -12,7 +12,7 @@ const SB = (() => {
   const SUPABASE_KEY = 'sb_publishable_WzUzAQK5cOEsn7QwFB2cAw_ubIkG7RJ';
   const ADMIN_EMAIL = 'admin@thirdparty.ai';
   /* 轻量同步的设置白名单（state 里不存在的小字段自动跳过，前向兼容） */
-  const SETTINGS_WHITELIST = ['theme', 'lang', 'voiceSettings', 'toolsEnabled', 'currentModelId', 'debatePreset', 'collabRoles', 'tokenSort', 'autoSpeak'];
+  const SETTINGS_WHITELIST = ['theme', 'lang', 'voiceSettings', 'toolsEnabled', 'currentModelId', 'debatePreset', 'collabRoles', 'tokenSort', 'autoSpeak', 'novelSources', 'novelShelf', 'comicSources', 'comicShelf'];
   const ATTACH_MAX = 200 * 1024;   // 附件内容 >200KB 不入库，只存元数据
   const BACKUP_KEEP = 10;          // 云端备份保留份数
   const PUSH_DEBOUNCE = 2000;      // Store.save 触发推送的防抖
