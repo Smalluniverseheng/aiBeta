@@ -922,9 +922,6 @@ const Pages = (() => {
         total: (a, b) => b.total - a.total,
         recent: (a, b) => (b.lastTs || 0) - (a.lastTs || 0),
         count: (a, b) => b.count - a.count
-    // v5.4 novel & placeholders
-    renderNovel, renderComic, renderPaint, renderVideo, renderShortVideo, renderVideoHub,
-    openNovelReader, loadNovelChapter,
       };
       const by = sorters[sort] || sorters.total;
       html += groups.slice().sort(by).map(g =>
@@ -2951,5 +2948,5 @@ function bindKeyEvents() {
 
   
 
-  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings };
+  return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings , renderNovel, renderComic, renderPaint, renderVideo, renderShortVideo, renderVideoHub, openNovelReader, loadNovelChapter };
 })();
