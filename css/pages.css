@@ -1244,3 +1244,354 @@ button.badge.key-link:hover { background: var(--accent-soft); color: var(--accen
 .novel-src-status { display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:6px; }
 .novel-src-status.ok { background:#22c55e; }
 .novel-src-status.fail { background:#ef4444; }
+
+
+/* ========== v5.7 会员体系样式 ========== */
+
+/* 侧边栏等级标签 */
+.tier-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  margin-left: 6px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* 会员计划页面 */
+.membership-current {
+  margin: 16px;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+  border: 2px solid var(--border-color, #2a2a4a);
+}
+.membership-current-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+}
+.membership-current-icon { font-size: 24px; }
+.membership-current-name { font-size: 18px; font-weight: 700; }
+.membership-current-expire { font-size: 12px; color: #888; margin-left: auto; }
+.membership-current-stats {
+  display: flex;
+  gap: 20px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* 卡密激活 */
+.cardkey-section {
+  margin: 16px;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+}
+.cardkey-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.cardkey-input-wrap {
+  display: flex;
+  gap: 8px;
+}
+.cardkey-input-wrap input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #2a2a4a);
+  background: var(--input-bg, #0f0f1a);
+  color: var(--text-color, #e0e0e0);
+  font-size: 12px;
+  font-family: monospace;
+}
+.cardkey-hint { font-size: 11px; color: #888; margin-top: 8px; }
+
+/* 邀请有奖 */
+.invite-section {
+  margin: 16px;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.invite-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.invite-count { font-size: 13px; color: #aaa; margin-bottom: 12px; }
+
+/* 等级卡片网格 */
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 16px;
+}
+@media (min-width: 600px) {
+  .plans-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.plan-card {
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 14px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.plan-card.active {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+.plan-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid;
+  margin-bottom: 8px;
+}
+.plan-icon { font-size: 20px; }
+.plan-name { font-size: 15px; font-weight: 700; }
+.plan-badge {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--accent, #6366f1);
+  color: #fff;
+}
+.plan-price { margin: 8px 0; }
+.plan-price .free { color: #888; font-size: 16px; }
+.plan-price .price { font-size: 20px; font-weight: 700; }
+.plan-price .period { font-size: 12px; color: #888; }
+.plan-storage, .plan-devices { font-size: 12px; color: #aaa; margin: 2px 0; }
+.plan-features { margin-top: 8px; }
+.plan-features .feat {
+  font-size: 11px;
+  padding: 2px 0;
+  color: #666;
+}
+.plan-features .feat.yes { color: #4caf50; }
+.plan-features .feat.no { color: #666; text-decoration: line-through; }
+
+/* 支付方式预留 */
+.payment-reserve {
+  margin: 16px;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+}
+.payment-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.payment-hint { font-size: 12px; color: #888; margin-bottom: 10px; }
+.payment-methods { display: flex; gap: 8px; }
+.payment-method {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--input-bg, #0f0f1a);
+  font-size: 12px;
+  color: #666;
+}
+.payment-method.disabled { opacity: 0.5; }
+
+/* ========== 老虎机 ========== */
+.lottery-container {
+  padding: 16px;
+  text-align: center;
+}
+.lottery-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.lottery-subtitle { font-size: 12px; color: #888; margin-bottom: 20px; }
+.lottery-machine {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+.lottery-reel {
+  width: 80px;
+  height: 80px;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  border: 2px solid var(--border-color, #2a2a4a);
+  transition: transform 0.1s;
+}
+.lottery-reel-stop {
+  animation: reelStop 0.3s ease-out;
+}
+@keyframes reelStop {
+  0% { transform: scale(1.1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.lottery-count { font-size: 14px; margin: 12px 0; }
+.lottery-btn {
+  padding: 12px 32px;
+  font-size: 16px;
+  border-radius: 24px;
+}
+.lottery-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.lottery-prizes { margin-top: 24px; text-align: left; }
+.lottery-prizes-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.lottery-prize-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.lottery-prize-item {
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  background: var(--input-bg, #0f0f1a);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.lottery-prize-prob { color: #888; font-size: 10px; }
+.lottery-records { margin-top: 20px; text-align: left; }
+.lottery-records-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.lottery-records-empty { font-size: 12px; color: #888; text-align: center; padding: 12px; }
+.lottery-record-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+  font-size: 13px;
+}
+.lottery-record-time { color: #888; font-size: 11px; }
+
+/* ========== 存储管理 ========== */
+.storage-container { padding: 16px; }
+.storage-card {
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.storage-card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.storage-bar-wrap { margin-bottom: 12px; }
+.storage-bar {
+  height: 8px;
+  background: var(--input-bg, #0f0f1a);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.storage-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.storage-text { font-size: 12px; color: #aaa; margin-top: 6px; }
+.storage-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+.storage-detail-section {
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.storage-detail-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.storage-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+  font-size: 13px;
+}
+.storage-detail-label { display: flex; align-items: center; gap: 6px; }
+.storage-detail-size { color: #888; font-size: 12px; }
+
+.storage-export-section {
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+}
+.storage-export-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.storage-export-hint { font-size: 12px; color: #888; margin-bottom: 10px; }
+
+/* ========== 设备管理 ========== */
+.devices-container { padding: 16px; }
+.device-mgmt-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.device-mgmt-title { font-size: 15px; font-weight: 600; }
+.device-mgmt-desc { font-size: 12px; color: #888; margin-top: 2px; }
+.device-stats { font-size: 13px; color: #aaa; margin-bottom: 10px; padding: 0 4px; }
+.device-list { background: var(--card-bg, #1a1a2e); border-radius: 12px; overflow: hidden; }
+.device-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+}
+.device-row.current { background: rgba(99,102,241,0.08); }
+.device-row:last-child { border-bottom: none; }
+.device-name { font-size: 14px; font-weight: 500; }
+.device-meta { font-size: 11px; color: #888; margin-top: 2px; }
+.device-actions { display: flex; align-items: center; gap: 8px; }
+.device-trust-label { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.device-remove-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+}
+.device-empty { padding: 20px; text-align: center; color: #888; font-size: 13px; }
+
+/* ========== 导出数据 ========== */
+.export-container { padding: 16px; }
+.export-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.export-subtitle { font-size: 12px; color: #888; margin-bottom: 16px; }
+.export-types { background: var(--card-bg, #1a1a2e); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+.export-type-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border-color, #2a2a4a);
+}
+.export-type-item:last-child { border-bottom: none; }
+.export-type-label { flex: 1; font-size: 13px; }
+.export-type-size { font-size: 11px; color: #888; }
+.export-format-section {
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.export-format-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.export-format-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.export-format-option {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--input-bg, #0f0f1a);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.export-actions { display: flex; flex-direction: column; gap: 10px; }
+.export-delete-label { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; }
+
+/* ========== 家庭共享 ========== */
+.family-container { padding: 16px; }
+.family-locked, .family-create, .family-manage {
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.family-locked-icon { font-size: 40px; margin-bottom: 8px; }
+.family-locked-title, .family-create-title, .family-manage-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.family-locked-desc, .family-create-desc { font-size: 12px; color: #888; margin-bottom: 16px; }
