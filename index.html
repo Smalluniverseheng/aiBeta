@@ -667,85 +667,7 @@
           <span data-icon="star"></span> 收藏当前翻译
         </button>
   
-    <!-- 小说阅读 -->
-    <div class="subpage" id="subNovel">
-      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>小说阅读</h2></div>
-      <div class="subpage-body novel-body">
-        <!-- 标签切换 -->
-        <div class="novel-tabs">
-          <button class="novel-tab active" data-tab="shelf">书架</button>
-          <button class="novel-tab" data-tab="search">搜索</button>
-          <button class="novel-tab" data-tab="source">书源</button>
-        </div>
-        <!-- 书架 -->
-        <div class="novel-panel" id="novelPanelShelf">
-          <div id="novelShelf"></div>
-        </div>
-        <!-- 搜索 -->
-        <div class="novel-panel hidden" id="novelPanelSearch">
-          <div class="novel-search-bar">
-            <input type="text" id="novelSearchInput" placeholder="输入书名或作者搜索…">
-            <button class="btn btn-primary" id="novelSearchBtn">搜索</button>
-          </div>
-          <div id="novelSearchResults"></div>
-        </div>
-        <!-- 书源 -->
-        <div class="novel-panel hidden" id="novelPanelSource">
-          <div class="novel-source-bar">
-            <textarea id="novelSourceInput" rows="4" placeholder="粘贴书源 JSON（支持批量数组）…"></textarea>
-            <button class="btn btn-primary" id="novelSourceImport">导入书源</button>
-          </div>
-          <div id="novelSourceList"></div>
-        </div>
-        <!-- 章节列表 -->
-        <div class="novel-panel hidden" id="novelPanelChapters">
-          <div class="novel-panel-head"><button class="novel-panel-back" data-back-chapters><span data-icon="chevronRight"></span></button><span id="novelChapterBookName">章节列表</span></div>
-          <div id="novelChapterList"></div>
-        </div>
-        <!-- 阅读器 -->
-        <div class="novel-panel hidden" id="novelPanelReader">
-          <div class="novel-panel-head"><button class="novel-panel-back" data-back-reader><span data-icon="chevronRight"></span></button><span id="novelReaderTitle">阅读</span></div>
-          <div id="novelReaderContent"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 漫画阅读 -->
-    <div class="subpage" id="subComic">
-      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>漫画阅读</h2></div>
-      <div class="subpage-body novel-body">
-        <div class="novel-tabs">
-          <button class="novel-tab active" data-tab="shelf">书架</button>
-          <button class="novel-tab" data-tab="search">搜索</button>
-          <button class="novel-tab" data-tab="source">图源</button>
-        </div>
-        <div class="novel-panel" id="comicPanelShelf">
-          <div id="comicShelf"></div>
-        </div>
-        <div class="novel-panel hidden" id="comicPanelSearch">
-          <div class="novel-search-bar">
-            <input type="text" id="comicSearchInput" placeholder="输入漫画名搜索…">
-            <button class="btn btn-primary" id="comicSearchBtn">搜索</button>
-          </div>
-          <div id="comicSearchResults"></div>
-        </div>
-        <div class="novel-panel hidden" id="comicPanelSource">
-          <div class="novel-source-bar">
-            <textarea id="comicSourceInput" rows="4" placeholder="粘贴图源 JSON（支持批量数组）…"></textarea>
-            <button class="btn btn-primary" id="comicSourceImport">导入图源</button>
-          </div>
-          <div id="comicSourceList"></div>
-        </div>
-        <div class="novel-panel hidden" id="comicPanelChapters">
-          <div class="novel-panel-head"><button class="novel-panel-back" data-back-chapters><span data-icon="chevronRight"></span></button><span id="comicChapterBookName">章节列表</span></div>
-          <div id="comicChapterList"></div>
-        </div>
-        <div class="novel-panel hidden" id="comicPanelReader">
-          <div class="novel-panel-head"><button class="novel-panel-back" data-back-reader><span data-icon="chevronRight"></span></button><span id="comicReaderTitle">阅读</span></div>
-          <div id="comicReaderContent"></div>
-        </div>
-      </div>
-    </div>
+    
     </div>
     </div>
 
@@ -800,7 +722,81 @@ id="subHelp">
         <button class="nav-item" data-page="profile"><span data-icon="user"></span>我的</button>
       </div>
     </nav>
-  </main>
+      <!-- 小说阅读 -->
+    <div class="subpage" id="subNovel">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>小说阅读</h2></div>
+      <div class="subpage-body novel-body">
+        <div class="novel-tabs">
+          <button class="novel-tab active" data-tab="shelf">书架</button>
+          <button class="novel-tab" data-tab="search">搜索</button>
+          <button class="novel-tab" data-tab="source">书源</button>
+        </div>
+        <div class="novel-panel" id="novelPanelShelf">
+          <div id="novelShelf"></div>
+        </div>
+        <div class="novel-panel hidden" id="novelPanelSearch">
+          <div class="novel-search-bar">
+            <input type="text" id="novelSearchInput" placeholder="输入书名或作者搜索…">
+            <button class="btn btn-primary" id="novelSearchBtn">搜索</button>
+          </div>
+          <div id="novelSearchResults"></div>
+        </div>
+        <div class="novel-panel hidden" id="novelPanelSource">
+          <div class="novel-source-bar">
+            <textarea id="novelSourceInput" rows="4" placeholder="粘贴书源 JSON（支持批量数组）…"></textarea>
+            <button class="btn btn-primary" id="novelSourceImport">导入书源</button>
+          </div>
+          <div id="novelSourceList"></div>
+        </div>
+        <div class="novel-panel hidden" id="novelPanelChapters">
+          <div class="novel-panel-head"><button class="novel-panel-back" data-back-chapters><span data-icon="chevronRight"></span></button><span id="novelChapterBookName">章节列表</span></div>
+          <div id="novelChapterList"></div>
+        </div>
+        <div class="novel-panel hidden" id="novelPanelReader">
+          <div class="novel-panel-head"><button class="novel-panel-back" data-back-reader><span data-icon="chevronRight"></span></button><span id="novelReaderTitle">阅读</span></div>
+          <div id="novelReaderContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 漫画阅读 -->
+    <div class="subpage" id="subComic">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>漫画阅读</h2></div>
+      <div class="subpage-body novel-body">
+        <div class="novel-tabs">
+          <button class="novel-tab active" data-tab="shelf">书架</button>
+          <button class="novel-tab" data-tab="search">搜索</button>
+          <button class="novel-tab" data-tab="source">图源</button>
+        </div>
+        <div class="novel-panel" id="comicPanelShelf">
+          <div id="comicShelf"></div>
+        </div>
+        <div class="novel-panel hidden" id="comicPanelSearch">
+          <div class="novel-search-bar">
+            <input type="text" id="comicSearchInput" placeholder="输入漫画名搜索…">
+            <button class="btn btn-primary" id="comicSearchBtn">搜索</button>
+          </div>
+          <div id="comicSearchResults"></div>
+        </div>
+        <div class="novel-panel hidden" id="comicPanelSource">
+          <div class="novel-source-bar">
+            <textarea id="comicSourceInput" rows="4" placeholder="粘贴图源 JSON（支持批量数组）…"></textarea>
+            <button class="btn btn-primary" id="comicSourceImport">导入图源</button>
+          </div>
+          <div id="comicSourceList"></div>
+        </div>
+        <div class="novel-panel hidden" id="comicPanelChapters">
+          <div class="novel-panel-head"><button class="novel-panel-back" data-back-chapters><span data-icon="chevronRight"></span></button><span id="comicChapterBookName">章节列表</span></div>
+          <div id="comicChapterList"></div>
+        </div>
+        <div class="novel-panel hidden" id="comicPanelReader">
+          <div class="novel-panel-head"><button class="novel-panel-back" data-back-reader><span data-icon="chevronRight"></span></button><span id="comicReaderTitle">阅读</span></div>
+          <div id="comicReaderContent"></div>
+        </div>
+      </div>
+    </div>
+
+</main>
 </div>
 
 <!-- ==================== 更新日志弹窗 ==================== -->
