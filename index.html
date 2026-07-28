@@ -6,7 +6,7 @@
 <!-- Apple Watch：使用真实视口（272-368px），关闭自动缩放适配 -->
 <meta name="disabled-adaptations" content="watch">
 <title>第三方科技 · AI 智能聚合平台</title>
-<script src="js/device.js?v=5.3"></script>
+<script src="js/device.js?v=5.4"></script>
 <meta name="description" content="第三方科技 AI 智能聚合平台：270+ 模型一站通达，支持单模型/多模型对比/辩论/协同四种模式，语音、文件解析、AI 绘画、联网搜索，可安装为应用。">
 <meta name="theme-color" content="#F5F6F8">
 <!-- PWA -->
@@ -22,13 +22,13 @@
 <link rel="stylesheet" href="https://registry.npmmirror.com/katex/latest/files/dist/katex.min.css">
 <!-- Mermaid（图表渲染，可选增强） -->
 <script src="https://registry.npmmirror.com/mermaid/latest/files/dist/mermaid.min.js" async></script>
-<link rel="stylesheet" href="css/base.css?v=5.3">
-<link rel="stylesheet" href="css/layout.css?v=5.3">
-<link rel="stylesheet" href="css/components.css?v=5.3">
-<link rel="stylesheet" href="css/chat.css?v=5.3">
-<link rel="stylesheet" href="css/login.css?v=5.3">
-<link rel="stylesheet" href="css/pages.css?v=5.3">
-<link rel="stylesheet" href="css/watch.css?v=5.3">
+<link rel="stylesheet" href="css/base.css?v=5.4">
+<link rel="stylesheet" href="css/layout.css?v=5.4">
+<link rel="stylesheet" href="css/components.css?v=5.4">
+<link rel="stylesheet" href="css/chat.css?v=5.4">
+<link rel="stylesheet" href="css/login.css?v=5.4">
+<link rel="stylesheet" href="css/pages.css?v=5.4">
+<link rel="stylesheet" href="css/watch.css?v=5.4">
 </head>
 <body>
 
@@ -657,7 +657,12 @@
     </div>
 
     <!-- 帮助中心 -->
-    <div class="subpage"     <!-- ==================== 回收站 ==================== -->
+    <div class="subpage" id="subHelp">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2 data-i18n-text="sub.help">帮助中心</h2></div>
+      <div class="subpage-body" id="helpBody"></div>
+    </div>
+
+    <!-- ==================== 回收站 ==================== -->
     <div class="subpage" id="subTrash">
       <div class="subpage-header"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>回收站</h2></div>
       <div class="subpage-body" id="subTrashBody">
@@ -671,12 +676,6 @@
         <div style="padding:0 16px;font-size:12px;color:var(--text-3);">回收站中的数据 30 天后自动永久删除</div>
       </div>
     </div>
-
-id="subHelp">
-      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2 data-i18n-text="sub.help">帮助中心</h2></div>
-      <div class="subpage-body" id="helpBody"></div>
-    </div>
-
     <!-- 关于平台 -->
     <div class="subpage" id="subAbout">
       <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2 data-i18n-text="sub.about">关于平台</h2></div>
@@ -688,6 +687,144 @@ id="subHelp">
             <p>核心能力：语音输入与朗读 · 文件解析（PDF / Word / TXT / Markdown / 图片）· AI 绘画 · Tavily 联网搜索 · 30 个精品角色预设 · 插件库 · 技能库 · Token 用量统计 · Supabase 云端同步 · 七语言界面</p>
             <p>支持厂商：小米 MiMo · OpenAI · Anthropic · Google · DeepSeek · Kimi · 通义千问 · 智谱 AI · 文心一言 · 腾讯混元 · MiniMax · 火山引擎 等 23 家</p>
           </div>
+
+    <!-- ==================== 小说 ==================== -->
+    <div class="subpage" id="subNovel">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>小说</h2></div>
+      <div class="subpage-body" id="novelBody">
+        <div class="novel-tabs">
+          <button class="novel-tab active" data-novel-tab="bookshelf">书架</button>
+          <button class="novel-tab" data-novel-tab="search">搜索</button>
+          <button class="novel-tab" data-novel-tab="sources">书源</button>
+          <button class="novel-tab" data-novel-tab="history">历史</button>
+        </div>
+        <div id="novelTabContent">
+          <div class="novel-panel active" id="novelBookshelfPanel">
+            <div id="novelBookshelf" class="novel-grid"></div>
+          </div>
+          <div class="novel-panel" id="novelSearchPanel">
+            <div class="novel-search-bar">
+              <input type="text" id="novelSearchInput" placeholder="搜索书名或作者" class="novel-input">
+              <button class="btn btn-primary" id="novelSearchBtn">搜索</button>
+            </div>
+            <div id="novelSearchResults" class="novel-list"></div>
+          </div>
+          <div class="novel-panel" id="novelSourcesPanel">
+            <div class="novel-source-header">
+              <span>内置书源</span>
+              <button class="btn btn-sm btn-secondary" id="novelAddSourceBtn">+ 添加书源</button>
+            </div>
+            <div id="novelSourceList" class="novel-source-list"></div>
+          </div>
+          <div class="novel-panel" id="novelHistoryPanel">
+            <div id="novelHistoryList" class="novel-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 小说阅读器 -->
+    <div class="subpage" id="subNovelReader">
+      <div class="subpage-head reader-head">
+        <button class="subpage-back" data-back><span data-icon="chevronRight"></span></button>
+        <h2 id="novelReaderTitle">阅读中</h2>
+        <button class="btn btn-ghost btn-sm" id="novelReaderMenuBtn">目录</button>
+      </div>
+      <div class="subpage-body reader-body" id="novelReaderBody">
+        <div id="novelReaderContent" class="novel-reader-content"></div>
+      </div>
+      <div class="reader-toolbar" id="novelReaderToolbar">
+        <button class="reader-tool-btn" id="novelPrevChap">上一章</button>
+        <button class="reader-tool-btn" id="novelReaderSettings">设置</button>
+        <button class="reader-tool-btn" id="novelAddBookmark">书签</button>
+        <button class="reader-tool-btn" id="novelTtsBtn">朗读</button>
+        <button class="reader-tool-btn" id="novelNextChap">下一章</button>
+      </div>
+      <div class="reader-settings-panel" id="novelReaderSettingsPanel" style="display:none;">
+        <div class="settings-row"><span>字体</span><select id="novelFontFamily"><option value="">默认</option><option value="serif">宋体</option><option value="sans-serif">黑体</option></select></div>
+        <div class="settings-row"><span>字号</span><input type="range" id="novelFontSize" min="12" max="32" value="18"></div>
+        <div class="settings-row"><span>行高</span><input type="range" id="novelLineHeight" min="1.2" max="2.5" step="0.1" value="1.8"></div>
+        <div class="settings-row"><span>主题</span><select id="novelReaderTheme"><option value="light">白天</option><option value="dark">夜间</option><option value="sepia">护眼</option><option value="green">绿豆</option></select></div>
+        <div class="settings-row"><span>翻页</span><select id="novelPageMode"><option value="scroll">滚动</option><option value="cover">覆盖</option><option value="simulation">仿真</option></select></div>
+      </div>
+      <div class="reader-chapter-panel" id="novelChapterPanel" style="display:none;">
+        <div class="panel-head">目录</div>
+        <div id="novelChapterList" class="novel-chapter-list"></div>
+      </div>
+    </div>
+
+    <!-- ==================== 漫画 (UI占位) ==================== -->
+    <div class="subpage" id="subComic">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>漫画</h2></div>
+      <div class="subpage-body placeholder-body">
+        <div class="placeholder-icon">🎨</div>
+        <div class="placeholder-title">漫画功能</div>
+        <div class="placeholder-desc">书源列表 · 搜索 · 阅读器<br>功能开发中，敬请期待</div>
+        <div class="placeholder-grid" id="comicPlaceholderGrid"></div>
+      </div>
+    </div>
+
+    <!-- ==================== AI绘画 (UI占位) ==================== -->
+    <div class="subpage" id="subPaint">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>AI绘画</h2></div>
+      <div class="subpage-body placeholder-body">
+        <div class="placeholder-icon">🖌️</div>
+        <div class="placeholder-title">AI绘画独立空间</div>
+        <div class="placeholder-desc">提示词输入 · 参数面板 · 画廊 · 历史<br>功能开发中，敬请期待</div>
+        <div class="paint-mock-area">
+          <div class="paint-input-mock">
+            <textarea placeholder="输入画面描述..." readonly></textarea>
+            <div class="paint-params-mock">
+              <span>尺寸: 1024×1024</span>
+              <span>风格: 默认</span>
+              <span>数量: 1</span>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="Toast.show('功能开发中')">生成图片</button>
+          </div>
+          <div class="paint-gallery-mock" id="paintGalleryMock"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 图生视频 (UI占位) ==================== -->
+    <div class="subpage" id="subVideo">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>图生视频</h2></div>
+      <div class="subpage-body placeholder-body">
+        <div class="placeholder-icon">🎬</div>
+        <div class="placeholder-title">图生视频</div>
+        <div class="placeholder-desc">上传图片 · 提示词 · 参数面板 · 任务队列<br>功能开发中，敬请期待</div>
+        <div class="video-mock-area">
+          <div class="video-upload-mock">
+            <div class="upload-zone">📤 点击上传图片</div>
+            <input type="text" placeholder="输入视频描述..." readonly>
+            <button class="btn btn-primary btn-block" onclick="Toast.show('功能开发中')">生成视频</button>
+          </div>
+          <div class="video-task-mock" id="videoTaskMock"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 短视频 (UI占位) ==================== -->
+    <div class="subpage" id="subShortVideo">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>短视频</h2></div>
+      <div class="subpage-body placeholder-body">
+        <div class="placeholder-icon">📱</div>
+        <div class="placeholder-title">短视频</div>
+        <div class="placeholder-desc">竖屏浏览 · 滑动切换 · 点赞收藏<br>功能开发中，敬请期待</div>
+        <div class="shortvideo-mock" id="shortVideoMock"></div>
+      </div>
+    </div>
+
+    <!-- ==================== 视频端 (UI占位) ==================== -->
+    <div class="subpage" id="subVideoHub">
+      <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2>视频端</h2></div>
+      <div class="subpage-body placeholder-body">
+        <div class="placeholder-icon">📺</div>
+        <div class="placeholder-title">视频端</div>
+        <div class="placeholder-desc">搜索 · 分类 · 播放列表 · 播放器<br>功能开发中，敬请期待</div>
+        <div class="videohub-mock" id="videoHubMock"></div>
+      </div>
+    </div>
         </div>
       </div>
     </div>
@@ -824,32 +961,34 @@ id="subHelp">
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- 脚本（顺序有依赖） -->
-<script src="js/icons.js?v=5.3"></script>
-<script src="js/models.js?v=5.3"></script>
-<script src="js/providers.js?v=5.3"></script>
-<script src="js/changelog.js?v=5.3"></script>
-<script src="js/modelsync.js?v=5.3"></script>
+<script src="js/icons.js?v=5.4"></script>
+<script src="js/models.js?v=5.4"></script>
+<script src="js/providers.js?v=5.4"></script>
+<script src="js/changelog.js?v=5.4"></script>
+<script src="js/modelsync.js?v=5.4"></script>
 <!-- Supabase SDK（UMD 全局 window.supabase）：主链 jsdelivr，失败回退 unpkg；两者都挂则云功能优雅降级 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="var _s=document.createElement('script');_s.src='https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';document.head.appendChild(_s)"></script>
-<script src="js/supabase.js?v=5.3"></script>
-<script src="js/store.js?v=5.3"></script>
-<script src="js/plugins.js?v=5.3"></script>
-<script src="js/skills.js?v=5.3"></script>
-<script src="js/token.js?v=5.3"></script>
-<script src="js/pricing.js?v=5.3"></script>
-<script src="js/i18n.js?v=5.3"></script>
-<script src="js/util.js?v=5.3"></script>
-<script src="js/markdown.js?v=5.3"></script>
-<script src="js/api.js?v=5.3"></script>
-<script src="js/voice.js?v=5.3"></script>
-<script src="js/files.js?v=5.3"></script>
-<script src="js/presets.js?v=5.3"></script>
-<script src="js/auth.js?v=5.3"></script>
-<script src="js/chat.js?v=5.3"></script>
-<script src="js/ui.js?v=5.3"></script>
-<script src="js/pages.js?v=5.3"></script>
-<script src="js/api-v2.js?v=5.3"></script>
-<script src="js/app.js?v=5.3"></script>
+<script src="js/supabase.js?v=5.4"></script>
+<script src="js/store.js?v=5.4"></script>
+<script src="js/plugins.js?v=5.4"></script>
+<script src="js/skills.js?v=5.4"></script>
+<script src="js/token.js?v=5.4"></script>
+<script src="js/pricing.js?v=5.4"></script>
+<script src="js/i18n.js?v=5.4"></script>
+<script src="js/util.js?v=5.4"></script>
+<script src="js/markdown.js?v=5.4"></script>
+<script src="js/api.js?v=5.4"></script>
+<script src="js/voice.js?v=5.4"></script>
+<script src="js/files.js?v=5.4"></script>
+<script src="js/presets.js?v=5.4"></script>
+<script src="js/auth.js?v=5.4"></script>
+<script src="js/chat.js?v=5.4"></script>
+<script src="js/ui.js?v=5.4"></script>
+<script src="js/pages.js?v=5.4"></script>
+<script src="js/api-v2.js?v=5.4"></script>
+    <script src="js/novel.js?v=5.4"></script>
+    <script src="js/db.js?v=5.4"></script>
+<script src="js/app.js?v=5.4"></script>
 <script>
 /* 静态占位图标注入（减少 HTML 重复） */
 document.addEventListener('DOMContentLoaded', () => {
@@ -880,8 +1019,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loginVersion').textContent = APP_VERSION.split('.').slice(0, 2).join('.');
 });
 </script>
-<script src="js/error-handler.js?v=5.3"></script>
-<script src="js/lazy-load.js?v=5.3"></script>
+<script src="js/error-handler.js?v=5.4"></script>
+<script src="js/lazy-load.js?v=5.4"></script>
 
 <!-- ==================== 底部工具抽屉 ==================== -->
 <div id="inputToolsSheet" class="input-tools-sheet">
