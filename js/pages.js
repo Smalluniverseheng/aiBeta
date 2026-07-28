@@ -2646,15 +2646,34 @@ function bindKeyEvents() {
         Novel.renderSearchResults(res.list);
       });
     }
-    // 导入书源
+    // 导入书源（支持 URL 自动下载）
     const importBtn = $('#novelSourceImport');
     if (importBtn) {
-      importBtn.addEventListener('click', () => {
+      importBtn.addEventListener('click', async () => {
         const text = $('#novelSourceInput').value.trim();
-        if (!text) return Toast.warning('请粘贴书源 JSON');
-        const res = Novel.importSources(text);
-        if (res.ok) { Toast.success('导入 ' + res.n + ' 个书源'); $('#novelSourceInput').value = ''; Novel.renderSourceList(); }
-        else { Toast.warning('导入失败: ' + res.err); }
+        if (!text) return Toast.warning('请粘贴书源内容或链接');
+        importBtn.textContent = '导入中…';
+        importBtn.disabled = true;
+        const res = await Novel.importSources(text);
+        importBtn.textContent = '导入书源';
+        importBtn.disabled = false;
+        if (res.ok) { Toast.success('成功导入 ' + res.n + ' 个书源（识别到 ' + res.total + ' 个）'); $('#novelSourceInput').value = ''; Novel.renderSourceList(); }
+        else { Toast.warning(res.err); }
+      });
+    }
+    // 验证书源
+    const verifyBtn = $('#novelSourceVerify');
+    if (verifyBtn) {
+      verifyBtn.addEventListener('click', async () => {
+        verifyBtn.textContent = '验证中…';
+        verifyBtn.disabled = true;
+        const results = await Novel.verifyAllSources();
+        verifyBtn.textContent = '验证书源';
+        verifyBtn.disabled = false;
+        let ok = 0, fail = 0;
+        results.forEach(r => { if (r.ok) ok++; else fail++; });
+        Toast.success('验证完成：' + ok + ' 个可用，' + fail + ' 个不可用');
+        Novel.renderSourceList();
       });
     }
     // 书源列表事件委托（删除）
@@ -2754,17 +2773,35 @@ function bindKeyEvents() {
         if (!res.ok) return Toast.warning(res.err);
         Comic.renderSearchResults(res.list);
       });
-    }
-    const importBtn = $('#comicSourceImport');
+        const importBtn = $('#comicSourceImport');
     if (importBtn) {
-      importBtn.addEventListener('click', () => {
+      importBtn.addEventListener('click', async () => {
         const text = $('#comicSourceInput').value.trim();
-        if (!text) return Toast.warning('请粘贴图源 JSON');
-        const res = Comic.importSources(text);
-        if (res.ok) { Toast.success('导入 ' + res.n + ' 个图源'); $('#comicSourceInput').value = ''; Comic.renderSourceList(); }
-        else { Toast.warning('导入失败: ' + res.err); }
+        if (!text) return Toast.warning('请粘贴图源内容或链接');
+        importBtn.textContent = '导入中…';
+        importBtn.disabled = true;
+        const res = await Comic.importSources(text);
+        importBtn.textContent = '导入图源';
+        importBtn.disabled = false;
+        if (res.ok) { Toast.success('成功导入 ' + res.n + ' 个图源（识别到 ' + res.total + ' 个）'); $('#comicSourceInput').value = ''; Comic.renderSourceList(); }
+        else { Toast.warning(res.err); }
       });
     }
+    // 验证图源
+    const verifyBtn = $('#comicSourceVerify');
+    if (verifyBtn) {
+      verifyBtn.addEventListener('click', async () => {
+        verifyBtn.textContent = '验证中…';
+        verifyBtn.disabled = true;
+        const results = await Comic.verifyAllSources();
+        verifyBtn.textContent = '验证图源';
+        verifyBtn.disabled = false;
+        let ok = 0, fail = 0;
+        results.forEach(r => { if (r.ok) ok++; else fail++; });
+        Toast.success('验证完成：' + ok + ' 个可用，' + fail + ' 个不可用');
+        Comic.renderSourceList();
+      });
+    }}
     const sourceList = $('#comicSourceList');
     if (sourceList) {
       sourceList.addEventListener('click', e => {
