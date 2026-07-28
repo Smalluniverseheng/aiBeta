@@ -1069,6 +1069,12 @@ const Pages = (() => {
     else if (id === 'subTrash') renderTrash();
     else if (id === 'subNovel') { if (typeof renderNovel === 'function') renderNovel(); else console.warn('renderNovel 未定义'); if (typeof bindNovelEvents === 'function') bindNovelEvents(); }
     else if (id === 'subComic') { if (typeof renderComic === 'function') renderComic(); else console.warn('renderComic 未定义'); if (typeof bindComicEvents === 'function') bindComicEvents(); }
+else if (id === 'subMembership') { if (typeof renderMembership === 'function') renderMembership(); else console.warn('renderMembership 未定义'); }
+else if (id === 'subStorage') { if (typeof renderStorage === 'function') renderStorage(); else console.warn('renderStorage 未定义'); }
+else if (id === 'subDevices') { if (typeof renderDevices === 'function') renderDevices(); else console.warn('renderDevices 未定义'); }
+else if (id === 'subLottery') { if (typeof renderLottery === 'function') renderLottery(); else console.warn('renderLottery 未定义'); }
+else if (id === 'subExport') { if (typeof renderExport === 'function') renderExport(); else console.warn('renderExport 未定义'); }
+else if (id === 'subFamily') { if (typeof renderFamily === 'function') renderFamily(); else console.warn('renderFamily 未定义'); }
   }
 
   function bindSubpageEvents() {
