@@ -407,6 +407,14 @@ const CHANGELOG = [
     'Esc键停止生成：生成过程中按Esc立即停止，保留已生成内容，提供"继续生成"按钮'
   ]
 }
+,
+  {
+    version: '5.4', date: '2026-07-28', major: false, items: [
+      '在"其他"页面新增小说阅读入口',
+      '在"其他"页面新增漫画阅读入口',
+      '点击小说/漫画入口跳转至主对话页'
+    ]
+  }
 ];
 
 window.CHANGELOG = CHANGELOG;
