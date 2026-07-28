@@ -440,11 +440,14 @@ const Pages = (() => {
     if (typeof Skills !== 'undefined') {
       const s = Skills.get(id);
 
-  /* ==================== NOVEL · 小说 (v5.4) ==================== */
+      if (s) return { name: s.name, icon: s.icon || 'wand', btn: s.btn || '开始生成', ph: s.ph || '输入内容…', sys: s.promptTemplate };
+    }
+    return null;
+  }
+
   function renderNovel() {
     const body = $('#novelBody');
     if (!body) return;
-    Novel.init();
     renderNovelBookshelf();
     renderNovelSources();
     renderNovelHistory();
@@ -772,10 +775,7 @@ const Pages = (() => {
   }
   function bindVideoHubEvents() {}
 
-      if (s) return { name: s.name, icon: s.icon || 'wand', btn: s.btn || '开始生成', ph: s.ph || '输入内容…', sys: s.promptTemplate };
-    }
-    return null;
-  }
+
 
   function openTool(id) {
     const t = getToolDef(id);
