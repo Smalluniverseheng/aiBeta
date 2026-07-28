@@ -40,13 +40,16 @@ const Comic = (() => {
     setSources(getSources().filter(s => s.name !== name));
   }
   async function importSources(text) {
-    try {
-      const data = JSON.parse(text);
-      const arr = Array.isArray(data) ? data : [data];
-      let n = 0;
-      arr.forEach(s => { if (s.name && s.url) { addSource(s); n++; } });
-      return { ok: true, n };
-    } catch(e) { return { ok: false, err: e.message }; }
+    let raw = text.trim();
+    if (isUrl(raw)) {
+      try { raw = await fetchSourceFromUrl(raw); }
+      catch(e) { return { ok: false, err: e.message }; }
+    }
+    const sources = extractSources(raw);
+    if (!sources.length) return { ok: false, err: '未识别到有效图源。支持：直接粘贴JSON、粘贴链接自动下载、混杂文本自动提取' };
+    let n = 0;
+    sources.forEach(s => { if (!getSources().find(x => x.name === s.name)) { addSource(s); n++; } });
+    return { ok: true, n: n, total: sources.length };
   }
 
   function inShelf(url) { return getShelf().some(b => b.url === url); }
