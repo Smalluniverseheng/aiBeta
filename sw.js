@@ -1,5 +1,5 @@
 /* ==================== Service Worker · PWA 离线缓存 ==================== */
-const VERSION = 'v5.5';
+const VERSION = 'v5.6';
 const CACHE_STATIC = 'thirdparty-ai-static-' + VERSION;
 const CACHE_RUNTIME = 'thirdparty-ai-runtime-' + VERSION;
 
