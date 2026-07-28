@@ -1034,8 +1034,13 @@ const Pages = (() => {
 
   /* ==================== 设置子页管理 ==================== */
   function openSub(id) {
-    renderSubContent(id);
-    $('#' + id).classList.add('show');
+    try {
+      renderSubContent(id);
+      $('#' + id).classList.add('show');
+    } catch(e) {
+      console.error('[openSub] 打开子页面失败:', id, e);
+      Toast.warning('页面加载失败: ' + e.message);
+    }
   }
   function closeSubs() {
     $$('.subpage').forEach(s => s.classList.remove('show'));
@@ -1062,8 +1067,8 @@ const Pages = (() => {
     else if (id === 'subProxy') renderProxySection();
     else if (id === 'subNavSettings') renderNavSettings();
     else if (id === 'subTrash') renderTrash();
-    else if (id === 'subNovel') { renderNovel(); bindNovelEvents(); }
-    else if (id === 'subComic') { renderComic(); bindComicEvents(); }
+    else if (id === 'subNovel') { if (typeof renderNovel === 'function') renderNovel(); else console.warn('renderNovel 未定义'); if (typeof bindNovelEvents === 'function') bindNovelEvents(); }
+    else if (id === 'subComic') { if (typeof renderComic === 'function') renderComic(); else console.warn('renderComic 未定义'); if (typeof bindComicEvents === 'function') bindComicEvents(); }
   }
 
   function bindSubpageEvents() {
