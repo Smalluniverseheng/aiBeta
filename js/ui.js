@@ -88,6 +88,23 @@ const UI = (() => {
   }
 
   /* 侧边栏用户卡 */
+  function getTierBadge() {
+    const m = Store.get('membership');
+    if (!m || !m.tier) return '';
+    const tierMap = {
+      satellite: { name: '卫星', icon: '🛰️', color: '#9e9e9e' },
+      planet:    { name: '行星', icon: '🪐', color: '#4caf50' },
+      star:      { name: '恒星', icon: '☀️', color: '#2196f3' },
+      galaxy:    { name: '星系', icon: '🌌', color: '#9c27b0' },
+      universe:  { name: '宇宙', icon: '🌠', color: '#ffc107' }
+    };
+    const t = tierMap[m.tier];
+    if (!t) return '';
+    // 检查是否过期
+    if (m.expiresAt && new Date(m.expiresAt) < new Date()) return '';
+    return '<span class="tier-badge" style="background:' + t.color + '">' + t.icon + ' ' + t.name + '</span>';
+  }
+
   function renderSidebarUser() {
     const u = Store.state.userInfo || {};
     const av = avatarView();
@@ -98,7 +115,7 @@ const UI = (() => {
       box.style.background = av.img ? 'transparent' : av.grad;
     }
     const nm = $('#sidebarUserName');
-    if (nm) nm.textContent = u.name || '用户';
+    if (nm) nm.innerHTML = esc(u.name || '用户') + getTierBadge();
   }
 
   function renderSidebar(filter) {
