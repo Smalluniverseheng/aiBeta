@@ -50,7 +50,13 @@ const Store = (() => {
     cloudUser: null,        // 云端账号 {id, email, name, isAdmin}（js/supabase.js；游客/本地账号为 null）
     cloudMap: {},           // 会话映射 {本地会话id: 云端uuid}（管理员全量同步用）
     cloudMeta: { lastSync: 0, lastSettingsSync: 0, lastUsagePush: 0, usageTotal: 0 },  // 同步游标
-    navSettings: { desktop: 'navbar', mobile: 'navbar', watch: 'float' }  // 三端导航方式：navbar(导航栏) / float(悬浮按钮) / both(两者) / none(都不显示)
+    navSettings: { desktop: 'navbar', mobile: 'navbar', watch: 'float' },
+    novelSources: [],      // 小说书源列表
+    novelShelf: [],        // 小说书架
+    novelHistory: [],      // 小说阅读历史
+    comicSources: [],      // 漫画图源列表
+    comicShelf: [],        // 漫画书架
+    comicHistory: []       // 漫画阅读历史
   };
 
   let state = JSON.parse(JSON.stringify(DEFAULTS));
