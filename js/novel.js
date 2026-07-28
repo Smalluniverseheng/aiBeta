@@ -39,7 +39,7 @@ const Novel = (() => {
         throw new Error('无法下载书源: ' + e.message);
       }
     }
-  }}
+  }
   function delSource(name) {
     setSources(getSources().filter(s => s.name !== name));
   }
