@@ -292,3 +292,278 @@ CREATE TABLE user_devices (
 ---
 
 *本文档由 AI 维护，每次会员方案变更后更新。*
+
+
+---
+
+## 十四、超量处理策略（更新）
+
+### 14.1 旧方案（已废弃）
+~~到期30天后自动删除超出免费额度的旧数据~~
+
+### 14.2 新方案：禁止新增 + 引导导出
+
+**到期或超量后的处理流程：**
+
+1. **达到 100% 存储上限**
+   - 系统**禁止新增任何数据**（不能发消息、不能导入书源、不能上传图片）
+   - 弹窗提示："存储空间已满，请导出数据或升级会员"
+
+2. **导出数据界面**
+   - 多选列表，用户自选要导出的内容：
+     - [ ] 历史对话（可筛选时间段、特定对话）
+     - [ ] 书源列表
+     - [ ] 书架数据
+     - [ ] 自定义角色
+     - [ ] 聊天图片/文档
+     - [ ] 语音消息
+     - [ ] 设置偏好
+   - 支持导出格式：JSON / Markdown / ZIP
+   - 导出后询问："是否删除已导出的数据以释放空间？"
+     - [删除并释放空间] / [保留数据]
+
+3. **到期降级**
+   - 30 天宽限期：只读模式，可以浏览、导出
+   - 30 天后：仍然只读，不自动删除数据
+   - 用户必须手动导出 + 删除，或续费恢复
+
+4. **数据主权**
+   - 用户的数据永远属于用户
+   - 平台**永不自动删除**用户数据
+   - 只通过"禁止新增"倒逼用户处理
+
+---
+
+## 十五、支付与激活
+
+### 15.1 当前阶段：卡密系统
+
+**暂不接入第三方支付，使用卡密激活。**
+
+**卡密规则：**
+- 卡密格式：`TP-XXXX-XXXX-XXXX`（16位字母数字）
+- 卡密类型：
+  - 行星月卡 / 行星年卡
+  - 恒星月卡 / 恒星年卡
+  - 星系月卡 / 星系年卡
+  - 宇宙月卡 / 宇宙年卡
+- 卡密由管理员在 AI-admin 后台生成
+- 用户在前端「会员计划」页面输入卡密激活
+- 卡密一次性使用，激活后绑定账号
+
+**卡密激活流程：**
+```
+用户输入卡密 → 前端校验格式 → 调用 Supabase 函数验证
+→ 卡密有效且未使用 → 更新 profiles.plan / plan_expires_at
+→ 激活成功，刷新会员状态
+→ 卡密标记为已使用，记录使用者和时间
+```
+
+### 15.2 预留支付接口
+
+为未来接入第三方支付预留接口：
+
+```javascript
+// js/payment.js（预留文件）
+const Payment = {
+  // 微信支付
+  async wechatPay(plan, duration) { /* 预留 */ },
+  // 支付宝
+  async alipay(plan, duration) { /* 预留 */ },
+  // Stripe
+  async stripePay(plan, duration) { /* 预留 */ },
+  // 卡密（当前可用）
+  async redeemCardKey(key) { /* 已实现 */ }
+};
+```
+
+### 15.3 卡密数据库表
+
+```sql
+CREATE TABLE card_keys (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  key_code text UNIQUE NOT NULL,           -- 卡密字符串
+  plan_type text NOT NULL,                  -- planet | star | galaxy | universe
+  duration_months int NOT NULL,             -- 1 | 12
+  is_used boolean DEFAULT false,
+  used_by uuid REFERENCES auth.users(id),
+  used_at timestamptz,
+  created_by uuid,                          -- 管理员ID
+  created_at timestamptz DEFAULT now(),
+  note text                                 -- 备注（如"活动赠送"）
+);
+
+-- 卡密使用记录
+CREATE TABLE card_key_logs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  card_key_id uuid REFERENCES card_keys(id),
+  user_id uuid REFERENCES auth.users(id),
+  action text,                              -- 'redeem' | 'revoke'
+  created_at timestamptz DEFAULT now()
+);
+```
+
+---
+
+## 十六、家庭共享
+
+### 16.1 资格
+
+**仅 ¥29.9 及以上的套餐支持家庭共享。**
+
+| 等级 | 价格 | 家庭共享 |
+|------|------|----------|
+| 行星 ¥9.9 | ❌ 不支持 |
+| 恒星 ¥29.9 | ✅ 支持 |
+| 星系 ¥59.9 | ✅ 支持 |
+| 宇宙 ¥99 | ✅ 支持 |
+
+### 16.2 共享规则
+
+- **共享人数**：主账号 + 最多 3 个子账号 = 共 4 人
+- **共享内容**：
+  - 存储空间：共用主账号的存储池（如恒星 10GB 全家共用）
+  - 书源：共享书源列表
+  - Worker 代理：共用
+  - 云端同步：子账号享有云端同步
+- **不共享内容**：
+  - 历史对话：各自独立
+  - 书架：各自独立（可选共享开关）
+  - API Key：各自独立
+- **子账号限制**：
+  - 不能再次发起家庭共享
+  - 不能单独升级会员（必须先退出家庭组）
+  - 退出家庭组后，数据保留但降级为卫星（免费）
+
+### 16.3 家庭组管理
+
+```
+家庭共享管理
+├── 主账号：小宇宙 [恒星 ☀️]
+│   存储：已用 6.2GB / 10GB
+│
+├── 成员列表
+│   ├─ 👤 小宇宙（我） [主]
+│   ├─ 👤 妈妈 [子]
+│   ├─ 👤 爸爸 [子]
+│   └─ 👤 弟弟 [子]
+│
+├── [邀请成员] （通过链接/二维码）
+├── [解散家庭组]
+└── [退出家庭组] （子账号显示）
+```
+
+---
+
+## 十七、邀请有奖 — 抽奖系统
+
+### 17.1 规则
+
+- **触发条件**：邀请的用户**成为付费会员**（行星及以上）后，邀请人获得 1 次抽奖机会
+- **邀请方式**：专属邀请链接 / 邀请码
+- **抽奖次数**：可累积，不清零
+
+### 17.2 奖品池
+
+| 奖项 | 奖品 | 概率 | 说明 |
+|------|------|------|------|
+| 🥇 一等奖 | **宇宙会员 1 个月** | 0.01% | 几乎不可能，但存在 |
+| 🥈 二等奖 | 星系会员 1 个月 | 0.1% | 极低概率 |
+| 🥉 三等奖 | 恒星会员 1 个月 | 1% | 低概率 |
+| 🎁 四等奖 | 行星会员 1 个月 | 5% | 中等概率 |
+| 💾 五等奖 | 存储空间 2GB / 30 天 | 15% | 独立存储，无代理 |
+| 💾 六等奖 | 存储空间 500MB / 7 天 | 30% | 独立存储，无代理 |
+| 🕐 七等奖 | 存储空间 200MB / 3 天 | 35% | 独立存储，无代理 |
+| 🙏 谢谢参与 | 无 | 13.89% | — |
+
+> 总概率：100%（0.01 + 0.1 + 1 + 5 + 15 + 30 + 35 + 13.89 = 100）
+
+### 17.3 独立存储说明
+
+- 抽奖获得的存储空间是**独立于会员之外**的
+- 只有存储空间，**没有 Worker 代理、没有云端同步、没有多设备**
+- 可以理解为"临时扩容包"
+- 有效期到期后自动失效，数据不删除但禁止新增
+- 可与会员存储叠加使用
+
+### 17.4 抽奖界面
+
+```
+🎰 幸运抽奖
+
+您当前有 3 次抽奖机会
+
+[🎲 开始抽奖]
+
+奖品预览：
+🥇 宇宙会员  🥈 星系会员  🥉 恒星会员
+🎁 行星会员  💾 2GB/30天  💾 500MB/7天
+💾 200MB/3天  🙏 谢谢参与
+
+我的中奖记录：
+2026-07-28  💾 500MB/7天
+2026-07-25  🙏 谢谢参与
+2026-07-20  💾 200MB/3天
+```
+
+### 17.5 数据库设计
+
+```sql
+-- 邀请记录
+CREATE TABLE user_invites (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  inviter_id uuid REFERENCES auth.users(id),
+  invitee_id uuid REFERENCES auth.users(id),
+  invite_code text,
+  invitee_paid boolean DEFAULT false,       -- 被邀请人是否付费
+  lottery_earned boolean DEFAULT false,     -- 是否已获得抽奖机会
+  created_at timestamptz DEFAULT now()
+);
+
+-- 抽奖记录
+CREATE TABLE lottery_records (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id),
+  prize_type text,                          -- 'membership' | 'storage'
+  prize_detail jsonb,                       -- {plan:'universe', days:30} 或 {size:'500MB', days:7}
+  prize_tier int,                           -- 1-7
+  is_claimed boolean DEFAULT false,         -- 是否已领取
+  claimed_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+-- 用户临时存储额度（抽奖获得）
+CREATE TABLE user_bonus_storage (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id),
+  size_bytes bigint,                        -- 奖励存储大小
+  expires_at timestamptz,                   -- 过期时间
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+---
+
+## 十八、更新后的完整权益表
+
+| 权益 | 游客 | 卫星 | 行星¥9.9 | 恒星¥29.9 | 星系¥59.9 | 宇宙¥99 |
+|------|------|------|----------|-----------|-----------|---------|
+| 登录 | ❌ 免登录 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 存储空间 | 本地 | 10MB | 1GB | 10GB | 50GB | 100GB |
+| 设备数 | 1 | 1 | 10 | 20 | 40 | 无限 |
+| 云端同步 | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Worker 代理 | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| 书源导入 | ✅ 无限 | ✅ 无限 | ✅ 无限 | ✅ 无限 | ✅ 无限 | ✅ 无限 |
+| 历史保存 | 关闭即丢 | 本地永久 | 云端30天 | 云端90天 | 云端1年 | 云端永久 |
+| 家庭共享 | ❌ | ❌ | ❌ | ✅ 4人 | ✅ 4人 | ✅ 4人 |
+| 图片压缩 | 强制压缩 | 可选 | 可选 | 可选 | 可选 | 可选 |
+| 设备管理 | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| 邀请抽奖 | ❌ | ❌ | 被邀请人付费后获得 | 同左 | 同左 | 同左 |
+| 超量处理 | — | — | 禁止新增，引导导出 | 同左 | 同左 | 同左 |
+| 到期处理 | — | — | 30天宽限期只读 | 同左 | 同左 | 同左 |
+
+---
+
+*本文档由 AI 维护，每次会员方案变更后更新。*
+*最后更新: 2026-07-28 23:50*
