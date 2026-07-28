@@ -161,6 +161,26 @@ const Comic = (() => {
   }
 
   /* ---------- UI ---------- */
+
+  async function verifySource(src) {
+    try {
+      const resp = await fetch(src.url, { mode: 'cors', credentials: 'omit', method: 'HEAD' });
+      return { ok: resp.ok, status: resp.status };
+    } catch(e) {
+      return { ok: false, err: e.message };
+    }
+  }
+
+  async function verifyAllSources() {
+    const list = getSources();
+    const results = [];
+    for (const src of list) {
+      const res = await verifySource(src);
+      results.push({ name: src.name, ...res });
+    }
+    return results;
+  }
+
   function renderShelf() {
     const box = $('comicShelf');
     if (!box) return;
@@ -236,6 +256,7 @@ const Comic = (() => {
     getSources, addSource, delSource, importSources,
     getShelf, addShelf, delShelf, inShelf, updateShelf,
     searchBooks, fetchChapters, fetchImages,
-    renderShelf, renderSearchResults, renderSourceList, renderChapterList, renderReader
+    renderShelf, renderSearchResults, renderSourceList, renderChapterList, renderReader,
+    verifySource, verifyAllSources
   };
 })();
