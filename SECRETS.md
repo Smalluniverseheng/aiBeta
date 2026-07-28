@@ -266,8 +266,8 @@
 
 | 密钥名称 | 值 | 说明 | 状态 |
 |---------|-----|------|------|
-| 待确认密钥 | `43a379d1850a953981f2835a9d5ed683` | 用户新提供，用途待确认 | ❓ 待确认 |
-| Cloudflare Worker API Token | — | 如果使用了 CF Worker 作为后端代理 | ❓ 待确认 |
+| Cloudflare Global API Key | `43a379d1850a953981f2835a9d5ed683` | Cloudflare 全局 API Key，用于管理域名、DNS、Worker | ✅ 已确认 |
+| Cloudflare API Token | `cfat_6VoONLgyp7k8PLWLPr61TByzsbQJzyQw5sxwQmZ362349c` | Cloudflare API Token，用于 Worker、R2、Pages 等服务 | ✅ 已确认 |
 | 其他后端服务密钥 | — | 如 AWS、GCP、Azure 等 | ❓ 待确认 |
 
 ---
