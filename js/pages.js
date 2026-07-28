@@ -2866,5 +2866,99 @@ function bindKeyEvents() {
     }
   }
 
+
+  /* ==================== 会员计划 v5.7 ==================== */
+  function renderMembership() {
+    const plans = [
+      { key: 'tourist', name: '游客', icon: '🌑', price: 0, storage: '本地', devices: 1, sync: false, proxy: false, color: '#888' },
+      { key: 'satellite', name: '卫星', icon: '🛰️', price: 0, storage: '10MB', devices: 1, sync: false, proxy: false, color: '#888' },
+      { key: 'planet', name: '行星', icon: '🪐', price: 9.9, storage: '1GB', devices: 10, sync: true, proxy: true, color: '#22c55e' },
+      { key: 'star', name: '恒星', icon: '☀️', price: 29.9, storage: '10GB', devices: 20, sync: true, proxy: true, color: '#3b82f6' },
+      { key: 'galaxy', name: '星系', icon: '🌌', price: 59.9, storage: '50GB', devices: 40, sync: true, proxy: true, color: '#a855f7' },
+      { key: 'universe', name: '宇宙', icon: '🌠', price: 99, storage: '100GB', devices: '无限', sync: true, proxy: true, color: '#f59e0b' }
+    ];
+    const current = Store.state.plan || 'satellite';
+    const box = $('#membershipPlans');
+    if (!box) return;
+    box.innerHTML = plans.map(p => {
+      const isCurrent = p.key === current;
+      const isPaid = p.price > 0;
+      return `
+        <div class="plan-card ${isCurrent ? 'active' : ''}" data-plan="${p.key}">
+          <div class="plan-header" style="border-color:${p.color}">
+            <span class="plan-icon">${p.icon}</span>
+            <span class="plan-name">${p.name}</span>
+            ${isCurrent ? '<span class="plan-badge">当前</span>' : ''}
+          </div>
+          <div class="plan-price">
+            ${p.price === 0 ? '<span class="free">免费</span>' : `<span class="price">¥${p.price}</span><span class="period">/月</span>`}
+          </div>
+          <div class="plan-storage">存储: ${p.storage}</div>
+          <div class="plan-devices">设备: ${p.devices}台</div>
+          <div class="plan-features">
+            <div class="feat ${p.sync ? 'yes' : 'no'}">云端同步</div>
+            <div class="feat ${p.proxy ? 'yes' : 'no'}">Worker代理</div>
+            <div class="feat ${p.price === 0 ? 'no' : 'yes'}">存储管理</div>
+          </div>
+          ${isPaid ? `<button class="btn btn-primary plan-buy" data-plan="${p.key}" data-price="${p.price}">选择此方案</button>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderStorage() {
+    const used = Store.state.storageUsed || 0;
+    const plan = Store.state.plan || 'satellite';
+    const limits = { tourist: 0, satellite: 10*1024*1024, planet: 1024*1024*1024, star: 10*1024*1024*1024, galaxy: 50*1024*1024*1024, universe: 100*1024*1024*1024 };
+    const limit = limits[plan] || 0;
+    const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
+    const box = $('#storagePanel');
+    if (!box) return;
+    box.innerHTML = `
+      <div class="storage-card">
+        <div class="storage-title">💾 存储空间</div>
+        <div class="storage-bar"><div class="storage-fill" style="width:${pct}%;background:${pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#22c55e'}"></div></div>
+        <div class="storage-text">${formatBytes(used)} / ${limit > 0 ? formatBytes(limit) : '本地'} (${pct}%)</div>
+        <div class="storage-actions">
+          <button class="btn btn-secondary" id="btnManageStorage">管理存储</button>
+          <button class="btn btn-primary" id="btnUpgradeStorage">升级空间</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDevices() {
+    const devices = Store.state.trustedDevices || [];
+    const box = $('#devicesPanel');
+    if (!box) return;
+    const dm = Store.state.deviceManagement || false;
+    box.innerHTML = `
+      <div class="device-card">
+        <div class="device-title">📱 设备管理</div>
+        <div class="device-toggle">
+          <span>开启设备管理（新设备需验证）</span>
+          <label class="switch"><input type="checkbox" id="toggleDeviceMgmt" ${dm ? 'checked' : ''}><span class="slider"></span></label>
+        </div>
+        <div class="device-list">
+          ${devices.length === 0 ? '<div class="device-empty">暂无信任设备</div>' : devices.map((d, i) => `
+            <div class="device-row">
+              <span class="device-name">${d.name || '未知设备'}</span>
+              <span class="device-time">${fmtDate(d.lastActive)}</span>
+              <button class="device-remove" data-idx="${i}">移除</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function formatBytes(b) {
+    if (b === 0) return '0 B';
+    const k = 1024;
+    const s = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(b) / Math.log(k));
+    return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + s[i];
+  }
+
 return { init, renderModels, renderDiscover, renderProfile, syncThemeCards, openSub, closeSubs, openVoiceStudio, openModelInfo, renderProxySection, renderNavSettings };
 })();
