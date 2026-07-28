@@ -57,6 +57,17 @@ const Store = (() => {
     comicSources: [],      // 漫画图源列表
     comicShelf: [],        // 漫画书架
     comicHistory: []       // 漫画阅读历史
+  // v5.7 会员体系
+  membership: null,
+  devices: [],
+  deviceManagement: false,
+  lotteryCount: 0,
+  lotteryRecords: [],
+  bonusStorage: [],
+  inviteCode: '',
+  inviteCount: 0,
+  familyGroup: null,
+
   };
 
   let state = JSON.parse(JSON.stringify(DEFAULTS));
