@@ -1363,9 +1363,9 @@ const Pages = (() => {
         const hasCover = book.cover && book.cover.length > 0;
         html += '<div class="book-card" data-book-id="' + (book.id || '') + '" style="cursor:pointer;user-select:none;-webkit-user-select:none;">';
         if (hasCover) {
-          html += '<div style="width:100%;aspect-ratio:2/3;overflow:hidden;border-radius:6px;background:#f0f0f0;"><img src="' + book.cover + '" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy"></div>';
+          html += '<div style="width:100%;aspect-ratio:3/4;overflow:hidden;border-radius:6px;background:#f0f0f0;"><img src="' + book.cover + '" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy"></div>';
         } else {
-          html += '<div style="width:100%;aspect-ratio:2/3;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">📖</div>';
+          html += '<div style="width:100%;aspect-ratio:3/4;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">📖</div>';
         }
         html += '<div style="margin-top:5px;font-size:12px;font-weight:500;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.title || '未命名').replace(/</g,'&lt;') + '</div>';
         html += '<div style="font-size:10px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.author || '未知作者').replace(/</g,'&lt;') + '</div>';
@@ -1673,6 +1673,8 @@ const Pages = (() => {
 
     // Apply settings
     contentDiv.style.fontSize = (rs.fontSize || 18) + 'px';
+    var lineHeight = rs.lineSpacing === 'compact' ? 1.6 : (rs.lineSpacing === 'loose' ? 2.2 : 1.8);
+    contentDiv.style.lineHeight = lineHeight;
     contentDiv.style.background = rs.nightMode ? '#1a1a1a' : (rs.bgColor || '#f5e6c8');
     contentDiv.style.color = rs.nightMode ? '#bbb' : '#333';
     if (readerPage) readerPage.style.background = rs.nightMode ? '#1a1a1a' : (rs.bgColor || '#f5e6c8');
@@ -1763,6 +1765,22 @@ const Pages = (() => {
         renderReader();
       };
     });
+    // Line spacing buttons
+    document.querySelectorAll('#readerSettings [data-line]').forEach(function(btn) {
+      btn.onclick = function() {
+        Store.patch({ reader: Object.assign({}, rs, { lineSpacing: btn.dataset.line }) });
+        renderReader();
+      };
+    });
+    // Comment button
+    var commentBtn = document.getElementById('rsComment');
+    if (commentBtn) commentBtn.onclick = function() { Toast.info('评论功能开发中'); };
+    // Eye protection button
+    var eyeBtn = document.getElementById('rsEye');
+    if (eyeBtn) eyeBtn.onclick = function() {
+      Store.patch({ reader: Object.assign({}, rs, { bgColor: '#c7edcc', nightMode: false }) });
+      renderReader();
+    };
   }
 
 
@@ -2018,41 +2036,36 @@ const Pages = (() => {
       fullUrl = url + sep + 'q=' + encodeURIComponent(query);
     }
 
-    // Strategy 1: Backend proxy (preferred)
+    // Use backend proxy
     try {
       var proxyRes = await fetch('https://ai-gateway.1829487897.workers.dev/api/v1/proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: fullUrl, headers: { 'Accept': 'application/json, text/html', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } })
+        body: JSON.stringify({ 
+          url: fullUrl, 
+          headers: { 
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          },
+          timeout: 15000
+        })
       });
       if (proxyRes.ok) {
         var proxyData = await proxyRes.json();
         if (proxyData.success && proxyData.data) {
-          // proxyData.data is a string, parse it
           var rawText = proxyData.data;
-          // Try to parse as JSON first
-          var parsed;
-          try { parsed = JSON.parse(rawText); } catch(e) { parsed = null; }
-          if (parsed) return normalizeSearchResults(parsed, source);
-          // If not JSON, try to extract from HTML (for sites that return HTML)
+          // Try JSON first
+          try { 
+            var parsed = JSON.parse(rawText); 
+            return normalizeSearchResults(parsed, source);
+          } catch(e) {}
+          // Then HTML
           return extractBooksFromHtml(rawText, source);
         }
       }
-    } catch (e) { console.warn('Backend proxy failed:', e.message); }
-
-    // Strategy 2: Public CORS proxy
-    try {
-      var corsUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(fullUrl);
-      var corsRes = await fetch(corsUrl, { method: 'GET' });
-      if (corsRes.ok) {
-        var text = await corsRes.text();
-        var parsed;
-        try { parsed = JSON.parse(text); } catch(e) { parsed = null; }
-        if (parsed) return normalizeSearchResults(parsed, source);
-        return extractBooksFromHtml(text, source);
-      }
-    } catch (e) { console.warn('CORS proxy failed:', e.message); }
-
+    } catch (e) { 
+      console.warn('Search failed for', source.name, e.message); 
+    }
     return [];
   }
 
