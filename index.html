@@ -7,7 +7,7 @@
 <meta name="disabled-adaptations" content="watch">
 <title>第三方科技 · AI 智能聚合平台</title>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="js/device.js?v=6.5"></script>
+<script src="js/device.js?v=6.6"></script>
 <meta name="description" content="第三方科技 AI 智能聚合平台：270+ 模型一站通达，支持单模型/多模型对比/辩论/协同四种模式，语音、文件解析、AI 绘画、联网搜索，可安装为应用。">
 <meta name="theme-color" content="#F5F6F8">
 <!-- PWA -->
@@ -23,13 +23,13 @@
 <link rel="stylesheet" href="https://registry.npmmirror.com/katex/latest/files/dist/katex.min.css">
 <!-- Mermaid（图表渲染，可选增强） -->
 <script src="https://registry.npmmirror.com/mermaid/latest/files/dist/mermaid.min.js" async></script>
-<link rel="stylesheet" href="css/base.css?v=6.5">
-<link rel="stylesheet" href="css/layout.css?v=6.5">
-<link rel="stylesheet" href="css/components.css?v=6.5">
-<link rel="stylesheet" href="css/chat.css?v=6.5">
-<link rel="stylesheet" href="css/login.css?v=6.5">
-<link rel="stylesheet" href="css/pages.css?v=6.5">
-<link rel="stylesheet" href="css/watch.css?v=6.5">
+<link rel="stylesheet" href="css/base.css?v=6.6">
+<link rel="stylesheet" href="css/layout.css?v=6.6">
+<link rel="stylesheet" href="css/components.css?v=6.6">
+<link rel="stylesheet" href="css/chat.css?v=6.6">
+<link rel="stylesheet" href="css/login.css?v=6.6">
+<link rel="stylesheet" href="css/pages.css?v=6.6">
+<link rel="stylesheet" href="css/watch.css?v=6.6">
 </head>
 <body>
 
@@ -1015,34 +1015,34 @@ id="subHelp">
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- 脚本（顺序有依赖） -->
-<script src="js/icons.js?v=6.5"></script>
-<script src="js/models.js?v=6.5"></script>
-<script src="js/providers.js?v=6.5"></script>
-<script src="js/changelog.js?v=6.5"></script>
-<script src="js/modelsync.js?v=6.5"></script>
+<script src="js/icons.js?v=6.6"></script>
+<script src="js/models.js?v=6.6"></script>
+<script src="js/providers.js?v=6.6"></script>
+<script src="js/changelog.js?v=6.6"></script>
+<script src="js/modelsync.js?v=6.6"></script>
 <!-- Supabase SDK（UMD 全局 window.supabase）：主链 jsdelivr，失败回退 unpkg；两者都挂则云功能优雅降级 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="var _s=document.createElement('script');_s.src='https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';document.head.appendChild(_s)"></script>
-<script src="js/supabase.js?v=6.5"></script>
-<script src="js/store.js?v=6.5"></script>
-<script src="js/plugins.js?v=6.5"></script>
-<script src="js/skills.js?v=6.5"></script>
-<script src="js/token.js?v=6.5"></script>
-<script src="js/pricing.js?v=6.5"></script>
-<script src="js/i18n.js?v=6.5"></script>
-<script src="js/util.js?v=6.5"></script>
-<script src="js/markdown.js?v=6.5"></script>
-<script src="js/api.js?v=6.5"></script>
-<script src="js/voice.js?v=6.5"></script>
-<script src="js/files.js?v=6.5"></script>
-<script src="js/presets.js?v=6.5"></script>
-<script src="js/auth.js?v=6.5"></script>
-<script src="js/chat.js?v=6.5"></script>
-<script src="js/ui.js?v=6.5"></script>
-<script src="js/pages.js?v=6.5"></script>
-<script src="js/api-v2.js?v=6.5"></script>
-    <script src="js/novel.js?v=6.5"></script>
-    <script src="js/comic.js?v=6.5"></script>
-<script src="js/app.js?v=6.5"></script>
+<script src="js/supabase.js?v=6.6"></script>
+<script src="js/store.js?v=6.6"></script>
+<script src="js/plugins.js?v=6.6"></script>
+<script src="js/skills.js?v=6.6"></script>
+<script src="js/token.js?v=6.6"></script>
+<script src="js/pricing.js?v=6.6"></script>
+<script src="js/i18n.js?v=6.6"></script>
+<script src="js/util.js?v=6.6"></script>
+<script src="js/markdown.js?v=6.6"></script>
+<script src="js/api.js?v=6.6"></script>
+<script src="js/voice.js?v=6.6"></script>
+<script src="js/files.js?v=6.6"></script>
+<script src="js/presets.js?v=6.6"></script>
+<script src="js/auth.js?v=6.6"></script>
+<script src="js/chat.js?v=6.6"></script>
+<script src="js/ui.js?v=6.6"></script>
+<script src="js/pages.js?v=6.6"></script>
+<script src="js/api-v2.js?v=6.6"></script>
+    <script src="js/novel.js?v=6.6"></script>
+    <script src="js/comic.js?v=6.6"></script>
+<script src="js/app.js?v=6.6"></script>
 <script>
 /* 静态占位图标注入（减少 HTML 重复） */
 document.addEventListener('DOMContentLoaded', () => {
@@ -1073,8 +1073,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loginVersion').textContent = APP_VERSION.split('.').slice(0, 2).join('.');
 });
 </script>
-<script src="js/error-handler.js?v=6.5"></script>
-<script src="js/lazy-load.js?v=6.5"></script>
+<script src="js/error-handler.js?v=6.6"></script>
+<script src="js/lazy-load.js?v=6.6"></script>
 
 <!-- ==================== 底部工具抽屉 ==================== -->
 <div id="inputToolsSheet" class="input-tools-sheet">
