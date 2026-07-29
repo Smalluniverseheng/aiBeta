@@ -2006,7 +2006,6 @@ const Pages = (() => {
   }
 
   async function searchSingleSource(source, query) {
-    // Try multiple strategies: backend proxy -> public CORS proxy -> direct
     var url = source.searchUrl || source.url;
     if (!url) return [];
 
@@ -2024,12 +2023,20 @@ const Pages = (() => {
       var proxyRes = await fetch('https://ai-gateway.1829487897.workers.dev/api/v1/proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: fullUrl, headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' } })
+        body: JSON.stringify({ url: fullUrl, headers: { 'Accept': 'application/json, text/html', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } })
       });
       if (proxyRes.ok) {
-        var text = await proxyRes.text();
-        var data = JSON.parse(text);
-        return normalizeSearchResults(data, source);
+        var proxyData = await proxyRes.json();
+        if (proxyData.success && proxyData.data) {
+          // proxyData.data is a string, parse it
+          var rawText = proxyData.data;
+          // Try to parse as JSON first
+          var parsed;
+          try { parsed = JSON.parse(rawText); } catch(e) { parsed = null; }
+          if (parsed) return normalizeSearchResults(parsed, source);
+          // If not JSON, try to extract from HTML (for sites that return HTML)
+          return extractBooksFromHtml(rawText, source);
+        }
       }
     } catch (e) { console.warn('Backend proxy failed:', e.message); }
 
@@ -2039,21 +2046,41 @@ const Pages = (() => {
       var corsRes = await fetch(corsUrl, { method: 'GET' });
       if (corsRes.ok) {
         var text = await corsRes.text();
-        var data = JSON.parse(text);
-        return normalizeSearchResults(data, source);
+        var parsed;
+        try { parsed = JSON.parse(text); } catch(e) { parsed = null; }
+        if (parsed) return normalizeSearchResults(parsed, source);
+        return extractBooksFromHtml(text, source);
       }
     } catch (e) { console.warn('CORS proxy failed:', e.message); }
 
-    // Strategy 3: Direct fetch (rarely works due to CORS)
-    try {
-      var directRes = await fetch(fullUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
-      if (directRes.ok) {
-        var data = await directRes.json();
-        return normalizeSearchResults(data, source);
-      }
-    } catch (e) { console.warn('Direct fetch failed:', e.message); }
-
     return [];
+  }
+
+  function extractBooksFromHtml(html, source) {
+    // Simple HTML extraction for common book sites
+    var books = [];
+    // Try to find book items by common patterns
+    var itemRegex = /<div[^>]*class="[^"]*(?:book|item|result|album)[^"]*"[^>]*>/gi;
+    var items = html.match(itemRegex);
+    if (!items) return [];
+
+    items.forEach(function(itemHtml) {
+      var titleMatch = itemHtml.match(/<[^>]*class="[^"]*(?:title|name)[^"]*"[^>]*>([^<]+)<\/[^>]*>/i);
+      var authorMatch = itemHtml.match(/<[^>]*class="[^"]*(?:author|writer)[^"]*"[^>]*>([^<]+)<\/[^>]*>/i);
+      var coverMatch = itemHtml.match(/<img[^>]*src="([^"]+)"[^>]*>/i);
+      var urlMatch = itemHtml.match(/<a[^>]*href="([^"]+)"[^>]*>/i);
+
+      if (titleMatch) {
+        books.push({
+          title: titleMatch[1].trim(),
+          author: authorMatch ? authorMatch[1].trim() : '未知',
+          cover: coverMatch ? coverMatch[1] : '',
+          url: urlMatch ? urlMatch[1] : '',
+          latestChapter: ''
+        });
+      }
+    });
+    return books;
   }
 
   function normalizeSearchResults(data, source) {
