@@ -1340,12 +1340,6 @@ const Pages = (() => {
     const filtered = active === '全部' ? items : items.filter(function(i) { return (i.type || '阅读') === active; });
 
     let html = '<div style="position:sticky;top:0;background:#fff;z-index:10;border-bottom:1px solid #eee;">';
-    // Search bar
-    html += '<div style="padding:8px 12px;">';
-    html += '<div id="bsSearchBox" style="display:flex;gap:8px;align-items:center;">';
-    html += '<input type="text" id="bsSearchInput" placeholder="搜索书名、作者..." style="flex:1;padding:10px 14px;border:1px solid #e0e0e0;border-radius:99px;font-size:14px;box-sizing:border-box;outline:none;-webkit-appearance:none;">';
-    html += '<button id="bsSearchBtn" style="padding:10px 18px;background:#4a90d9;color:#fff;border:none;border-radius:99px;font-size:13px;font-weight:500;-webkit-appearance:none;white-space:nowrap;">搜索</button>';
-    html += '</div></div>';
     // Categories
     html += '<div style="display:flex;gap:4px;padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;">';
     cats.forEach(function(c) {
@@ -1363,15 +1357,20 @@ const Pages = (() => {
       html += '<button id="bsSource" style="padding:8px 20px;background:#f0f0f0;color:#666;border:none;border-radius:8px;font-size:13px;-webkit-appearance:none;">📡 书源管理</button>';
       html += '</div>';
     } else {
-      html += '<div style="padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">';
+      html += '<div style="padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
       filtered.forEach(function(book) {
         const progress = book.progress || 0;
+        const hasCover = book.cover && book.cover.length > 0;
         html += '<div data-book-id="' + (book.id || '') + '" style="cursor:pointer;">';
-        html += '<div style="width:100%;aspect-ratio:3/4;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;">📖</div>';
-        html += '<div style="margin-top:6px;font-size:13px;font-weight:500;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.title || '未命名').replace(/</g,'&lt;') + '</div>';
-        html += '<div style="font-size:11px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.author || '未知作者').replace(/</g,'&lt;') + '</div>';
+        if (hasCover) {
+          html += '<div style="width:100%;aspect-ratio:2/3;overflow:hidden;border-radius:6px;background:#f0f0f0;"><img src="' + book.cover + '" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy"></div>';
+        } else {
+          html += '<div style="width:100%;aspect-ratio:2/3;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">📖</div>';
+        }
+        html += '<div style="margin-top:5px;font-size:12px;font-weight:500;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.title || '未命名').replace(/</g,'&lt;') + '</div>';
+        html += '<div style="font-size:10px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.author || '未知作者').replace(/</g,'&lt;') + '</div>';
         if (progress > 0) {
-          html += '<div style="margin-top:4px;background:#eee;border-radius:99px;height:3px;overflow:hidden;">';
+          html += '<div style="margin-top:3px;background:#eee;border-radius:99px;height:2px;overflow:hidden;">';
           html += '<div style="width:' + progress + '%;background:#4a90d9;height:100%;"></div></div>';
         }
         html += '</div>';
@@ -1394,18 +1393,12 @@ const Pages = (() => {
       });
     });
 
-    // Search
-    var searchInput = document.getElementById('bsSearchInput');
-    var searchBtn = document.getElementById('bsSearchBtn');
-    if (searchInput) {
-      searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') { doMultiSourceSearch(searchInput.value.trim()); }
-      });
-    }
-    if (searchBtn) {
-      searchBtn.addEventListener('click', function() {
-        var query = searchInput ? searchInput.value.trim() : '';
-        if (query) doMultiSourceSearch(query);
+    // Search icon
+    var searchIcon = document.getElementById('bsSearchIcon');
+    if (searchIcon) {
+      searchIcon.addEventListener('click', function() {
+        var query = prompt('请输入搜索关键词：');
+        if (query && query.trim()) doMultiSourceSearch(query.trim());
       });
     }
     // Import buttons
@@ -1440,6 +1433,7 @@ const Pages = (() => {
   }
 
   function doImportBook() {
+    // Step 1: Select book files
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = '.txt,.epub,.zip';
@@ -1448,79 +1442,95 @@ const Pages = (() => {
     input.onchange = function(e) {
       var files = e.target.files;
       if (!files || files.length === 0) return;
-      var imported = 0;
-      var total = files.length;
-      Array.from(files).forEach(function(file) {
-        if (file.name.endsWith('.epub')) {
-          // EPUB parsing via JSZip
-          var reader = new FileReader();
-          reader.onload = function(ev) {
-            parseEpub(ev.target.result, file.name).then(function(book) {
-              var bs = Store.state.bookshelf || { items: [] };
-              var items = bs.items ? bs.items.slice() : [];
-              items.push(book);
-              Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
-              imported++;
-              if (imported === total) {
-                Toast.success('导入 ' + imported + ' 本');
-                renderBookshelf();
-              }
-            }).catch(function(err) {
-              Toast.error('EPUB解析失败: ' + file.name);
-              imported++;
-            });
-          };
-          reader.readAsArrayBuffer(file);
-        } else if (file.name.endsWith('.zip')) {
-          // ZIP of images -> comic
-          var reader = new FileReader();
-          reader.onload = function(ev) {
-            parseComicZip(ev.target.result, file.name).then(function(comic) {
-              var bs = Store.state.bookshelf || { items: [] };
-              var items = bs.items ? bs.items.slice() : [];
-              items.push(comic);
-              Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
-              imported++;
-              if (imported === total) {
-                Toast.success('导入 ' + imported + ' 本');
-                renderBookshelf();
-              }
-            }).catch(function(err) {
-              Toast.error('漫画包解析失败: ' + file.name);
-              imported++;
-            });
-          };
-          reader.readAsArrayBuffer(file);
-        } else {
-          // TXT
-          var reader = new FileReader();
-          reader.onload = function(ev) {
-            var bs = Store.state.bookshelf || { items: [] };
-            var items = bs.items ? bs.items.slice() : [];
-            items.push({
-              id: 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-              title: file.name.replace(/\.[^/.]+$/, ''),
-              author: '本地导入',
-              type: '阅读',
-              progress: 0,
-              lastRead: Date.now(),
-              source: 'local',
-              content: ev.target.result
-            });
-            Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
-            imported++;
-            if (imported === total) {
-              Toast.success('导入 ' + imported + ' 本');
-              renderBookshelf();
-            }
-          };
-          reader.readAsText(file);
+      // Step 2: Ask for cover
+      var coverInput = document.createElement('input');
+      coverInput.type = 'file';
+      coverInput.accept = 'image/*';
+      coverInput.style.display = 'none';
+      coverInput.onchange = function(ce) {
+        var coverFile = ce.target.files[0];
+        var coverUrl = '';
+        if (coverFile) {
+          coverUrl = URL.createObjectURL(coverFile);
         }
-      });
+        processImport(files, coverUrl);
+      };
+      // Also allow skip cover
+      var skipCover = confirm('是否选择封面图片？\n点确定选择封面，点取消跳过');
+      if (skipCover) {
+        document.body.appendChild(coverInput);
+        coverInput.click();
+        setTimeout(function() { coverInput.remove(); }, 3000);
+      } else {
+        processImport(files, '');
+      }
     };
     document.body.appendChild(input);
     input.click();
     setTimeout(function() { input.remove(); }, 2000);
+  }
+
+  function processImport(files, coverUrl) {
+    var imported = 0;
+    var total = files.length;
+    Array.from(files).forEach(function(file) {
+      if (file.name.endsWith('.epub')) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          parseEpub(ev.target.result, file.name).then(function(book) {
+            if (coverUrl) book.cover = coverUrl;
+            var bs = Store.state.bookshelf || { items: [] };
+            var items = bs.items ? bs.items.slice() : [];
+            items.push(book);
+            Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+            imported++;
+            if (imported === total) { Toast.success('导入 ' + imported + ' 本'); renderBookshelf(); }
+          }).catch(function(err) {
+            Toast.error('EPUB解析失败: ' + file.name);
+            imported++;
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (file.name.endsWith('.zip')) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          parseComicZip(ev.target.result, file.name).then(function(comic) {
+            if (coverUrl) comic.cover = coverUrl;
+            var bs = Store.state.bookshelf || { items: [] };
+            var items = bs.items ? bs.items.slice() : [];
+            items.push(comic);
+            Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+            imported++;
+            if (imported === total) { Toast.success('导入 ' + imported + ' 本'); renderBookshelf(); }
+          }).catch(function(err) {
+            Toast.error('漫画包解析失败: ' + file.name);
+            imported++;
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var bs = Store.state.bookshelf || { items: [] };
+          var items = bs.items ? bs.items.slice() : [];
+          items.push({
+            id: 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            author: '本地导入',
+            type: '阅读',
+            cover: coverUrl,
+            progress: 0,
+            lastRead: Date.now(),
+            source: 'local',
+            content: ev.target.result
+          });
+          Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+          imported++;
+          if (imported === total) { Toast.success('导入 ' + imported + ' 本'); renderBookshelf(); }
+        };
+        reader.readAsText(file);
+      }
+    });
   }
 
   // Parse EPUB using JSZip
@@ -1801,18 +1811,47 @@ const Pages = (() => {
   // ========== 书源系统 ==========
   function showBookSourceMenu() {
     var sources = Store.state.bookSources || [];
+    var sv = Store.state.sourceValidation || { validating: false, results: [] };
     var html = '<div style="padding:16px;">';
     html += '<div style="font-size:16px;font-weight:600;margin-bottom:12px;text-align:center;">书源管理</div>';
+
+    // Batch paste area
     html += '<div style="margin-bottom:12px;">';
+    html += '<div style="font-size:13px;color:#666;margin-bottom:6px;">批量导入（粘贴包含URL的文本，自动检测）</div>';
+    html += '<textarea id="batchSourceText" placeholder="粘贴书源URL或包含URL的文本..." style="width:100%;height:80px;padding:10px;border:1px solid #e0e0e0;border-radius:8px;box-sizing:border-box;font-size:13px;resize:none;"></textarea>';
+    html += '<button id="validateBatchBtn" style="width:100%;padding:10px;margin-top:8px;background:#4a90d9;color:#fff;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">🔍 自动检测并添加</button>';
+    html += '</div>';
+
+    // Validation results
+    if (sv.results && sv.results.length > 0) {
+      html += '<div style="margin-bottom:12px;">';
+      html += '<div style="font-size:13px;color:#666;margin-bottom:6px;">检测结果</div>';
+      html += '<div style="max-height:120px;overflow-y:auto;">';
+      sv.results.forEach(function(r) {
+        var statusColor = r.status === 'ok' ? '#4caf50' : (r.status === 'timeout' ? '#ff9800' : '#f44336');
+        var statusText = r.status === 'ok' ? '✅ 可用' : (r.status === 'timeout' ? '⏱️ 超时' : '❌ 失败');
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8f8f8;border-radius:6px;margin-bottom:4px;font-size:12px;">';
+        html += '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + r.url + '</span>';
+        html += '<span style="color:' + statusColor + ';flex-shrink:0;margin-left:8px;">' + statusText + '</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Manual add
+    html += '<div style="margin-bottom:12px;border-top:1px solid #eee;padding-top:12px;">';
+    html += '<div style="font-size:13px;color:#666;margin-bottom:6px;">手动添加</div>';
     html += '<input type="text" id="sourceName" placeholder="书源名称" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;box-sizing:border-box;font-size:14px;">';
     html += '<input type="text" id="sourceUrl" placeholder="书源URL (JSON)" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;box-sizing:border-box;font-size:14px;">';
     html += '<button id="addSourceBtn" style="width:100%;padding:10px;background:#4a90d9;color:#fff;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">添加书源</button>';
     html += '</div>';
+
+    // Source list
     html += '<div style="font-size:14px;font-weight:600;margin-bottom:8px;">已添加书源 (' + sources.length + ')</div>';
     if (sources.length === 0) {
-      html += '<div style="text-align:center;padding:20px;color:#999;font-size:13px;">暂无书源，请添加</div>';
+      html += '<div style="text-align:center;padding:20px;color:#999;font-size:13px;">暂无书源</div>';
     } else {
-      html += '<div style="max-height:200px;overflow-y:auto;">';
+      html += '<div style="max-height:150px;overflow-y:auto;">';
       sources.forEach(function(s, i) {
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f8f8f8;border-radius:8px;margin-bottom:6px;">';
         html += '<span style="font-size:13px;">' + (s.name || '未命名') + '</span>';
@@ -1832,6 +1871,14 @@ const Pages = (() => {
     modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
     document.getElementById('closeSourceMenu').onclick = function() { modal.remove(); };
 
+    // Batch validate
+    document.getElementById('validateBatchBtn').onclick = function() {
+      var text = document.getElementById('batchSourceText').value;
+      if (!text.trim()) { Toast.error('请先粘贴文本'); return; }
+      batchValidateSources(text).then(function() { modal.remove(); });
+    };
+
+    // Manual add
     document.getElementById('addSourceBtn').onclick = function() {
       var name = document.getElementById('sourceName').value.trim();
       var url = document.getElementById('sourceUrl').value.trim();
@@ -2019,6 +2066,67 @@ const Pages = (() => {
         Toast.success('已加入书架');
       });
     });
+  }
+
+
+  // ========== 书源验证 ==========
+  async function validateBookSource(url) {
+    try {
+      var controller = new AbortController();
+      var timeout = setTimeout(function() { controller.abort(); }, 5000);
+      var res = await fetch(url, { 
+        method: 'GET', 
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' }
+      });
+      clearTimeout(timeout);
+      if (!res.ok) return { status: 'fail', responseTime: 0 };
+      var data = await res.json();
+      var isValid = Array.isArray(data) || (data.books || data.data || data.list);
+      return { status: isValid ? 'ok' : 'fail', responseTime: 0 };
+    } catch (e) {
+      return { status: 'timeout', responseTime: 0 };
+    }
+  }
+
+  function extractUrlsFromText(text) {
+    var urlRegex = /(https?:\/\/[^\s\"\'<>]+)/g;
+    var matches = text.match(urlRegex);
+    return matches ? matches.map(function(u) { return u.replace(/[.,;:!?)$]+$/, ''); }) : [];
+  }
+
+  async function batchValidateSources(text) {
+    var urls = extractUrlsFromText(text);
+    if (urls.length === 0) { Toast.error('未检测到有效的URL'); return; }
+
+    Store.patch({ sourceValidation: { validating: true, results: [], batchText: text } });
+    Toast.info('正在检测 ' + urls.length + ' 个书源...');
+
+    var results = [];
+    for (var i = 0; i < urls.length; i++) {
+      var url = urls[i];
+      var result = await validateBookSource(url);
+      results.push({ url: url, name: '书源' + (i + 1), status: result.status, responseTime: result.responseTime });
+      Store.patch({ sourceValidation: { validating: true, results: results.slice(), batchText: text } });
+    }
+
+    Store.patch({ sourceValidation: { validating: false, results: results, batchText: text } });
+
+    var okCount = results.filter(function(r) { return r.status === 'ok'; }).length;
+    Toast.success('检测完成: ' + okCount + '/' + urls.length + ' 个可用');
+
+    // Auto-add valid sources
+    var valid = results.filter(function(r) { return r.status === 'ok'; });
+    if (valid.length > 0) {
+      var sources = (Store.state.bookSources || []).slice();
+      valid.forEach(function(r) {
+        sources.push({ name: r.name, url: r.url, enabled: true, addedAt: Date.now() });
+      });
+      Store.patch({ bookSources: sources });
+      Toast.success('已自动添加 ' + valid.length + ' 个可用书源');
+    }
+
+    return results;
   }
 
 function renderRowDescs() {
