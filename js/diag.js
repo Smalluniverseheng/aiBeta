@@ -253,7 +253,7 @@
   // ========== 白屏检测 ==========
   setTimeout(function(){
     var bodyEmpty = !document.body || document.body.children.length === 0 || document.body.innerText.trim().length < 20;
-    var appMissing = !document.getElementById('app');
+    var appMissing = !document.getElementById('appShell');
     if (bodyEmpty || appMissing) {
       errors.push({
         type: 'White Screen',
