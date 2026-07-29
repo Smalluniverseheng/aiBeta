@@ -1357,11 +1357,11 @@ const Pages = (() => {
       html += '<button id="bsSource" style="padding:8px 20px;background:#f0f0f0;color:#666;border:none;border-radius:8px;font-size:13px;-webkit-appearance:none;">📡 书源管理</button>';
       html += '</div>';
     } else {
-      html += '<div style="padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
+      html += '<div style="padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">';
       filtered.forEach(function(book) {
         const progress = book.progress || 0;
         const hasCover = book.cover && book.cover.length > 0;
-        html += '<div data-book-id="' + (book.id || '') + '" style="cursor:pointer;">';
+        html += '<div class="book-card" data-book-id="' + (book.id || '') + '" style="cursor:pointer;user-select:none;-webkit-user-select:none;">';
         if (hasCover) {
           html += '<div style="width:100%;aspect-ratio:2/3;overflow:hidden;border-radius:6px;background:#f0f0f0;"><img src="' + book.cover + '" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy"></div>';
         } else {
@@ -1411,7 +1411,34 @@ const Pages = (() => {
     if (sourceBtn) sourceBtn.addEventListener('click', showBookSourceMenu);
     if (sourceBtn2) sourceBtn2.addEventListener('click', showBookSourceMenu);
 
-    // Book card click - event delegation
+    // Book card click + long press delete
+    var pressTimer = null;
+    var pressCard = null;
+    container.addEventListener('touchstart', function(e) {
+      var card = e.target.closest('.book-card');
+      if (card) {
+        pressCard = card;
+        pressTimer = setTimeout(function() {
+          pressTimer = null;
+          var bookId = pressCard.dataset.bookId;
+          if (bookId && confirm('确定要删除这本书吗？')) {
+            var bs = Store.state.bookshelf || { items: [] };
+            var items = (bs.items || []).filter(function(b) { return b.id !== bookId; });
+            Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+            Toast.success('已删除');
+            renderBookshelf();
+          }
+        }, 800);
+      }
+    }, { passive: true });
+    container.addEventListener('touchend', function(e) {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      pressCard = null;
+    });
+    container.addEventListener('touchmove', function(e) {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      pressCard = null;
+    });
     container.addEventListener('click', function(e) {
       var card = e.target.closest('[data-book-id]');
       if (card) {
@@ -1875,7 +1902,7 @@ const Pages = (() => {
     document.getElementById('validateBatchBtn').onclick = function() {
       var text = document.getElementById('batchSourceText').value;
       if (!text.trim()) { Toast.error('请先粘贴文本'); return; }
-      batchValidateSources(text).then(function() { modal.remove(); });
+      batchValidateSources_v2(text).then(function() { modal.remove(); });
     };
 
     // Manual add
@@ -2010,7 +2037,7 @@ const Pages = (() => {
         if (isExpanded) {
           html += '<div style="border-top:1px solid #f0f0f0;">';
           items.forEach(function(item, idx) {
-            html += '<div data-add-book="' + title.replace(/"/g,'&quot;') + '" data-idx="' + idx + '" style="padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;' + (idx < items.length-1 ? 'border-bottom:1px solid #f8f8f8;' : '') + '">';
+            html += '<div data-add-book="' + title.replace(/"/g,'&quot;') + '" data-idx="' + idx + '" style="padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;' + (idx < items.length-1 ? 'border-bottom:1px solid #f8f8f8;' : '') + '">';
             html += '<div style="width:40px;height:54px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">' + (item.sourceType === 'comic' ? '🎨' : '📖') + '</div>';
             html += '<div style="flex:1;min-width:0;">';
             html += '<div style="font-size:13px;color:#333;font-weight:500;">' + item.sourceName.replace(/</g,'&lt;') + '</div>';
@@ -2095,7 +2122,7 @@ const Pages = (() => {
     return matches ? matches.map(function(u) { return u.replace(/[.,;:!?)$]+$/, ''); }) : [];
   }
 
-  async function batchValidateSources(text) {
+  async function batchValidateSources_v2(text) {
     var urls = extractUrlsFromText(text);
     if (urls.length === 0) { Toast.error('未检测到有效的URL'); return; }
 
@@ -2127,6 +2154,66 @@ const Pages = (() => {
     }
 
     return results;
+  }
+
+
+  // ========== 阅读APP书源解析 ==========
+  function parseLegadoSource(text) {
+    try {
+      var data = JSON.parse(text);
+      if (!Array.isArray(data)) data = [data];
+      var sources = [];
+      data.forEach(function(item) {
+        if (!item.bookSourceUrl) return;
+        var source = {
+          name: item.bookSourceName || item.bookSourceUrl,
+          url: item.bookSourceUrl,
+          type: item.bookSourceType === 2 || item.bookSourceType === '2' ? 'comic' : 'novel',
+          enabled: item.enabled !== false,
+          builtIn: false,
+          searchUrl: item.searchUrl || '',
+          ruleSearch: item.ruleSearch || {},
+          ruleBookInfo: item.ruleBookInfo || {},
+          ruleToc: item.ruleToc || {},
+          ruleContent: item.ruleContent || {},
+          exploreUrl: item.exploreUrl || '',
+          header: item.header || ''
+        };
+        // Convert searchUrl template
+        if (source.searchUrl) {
+          source.searchUrl = source.searchUrl.replace('{{key}}', '{q}').replace('{{page}}', '1');
+        }
+        sources.push(source);
+      });
+      return sources;
+    } catch (e) {
+      console.warn('阅读APP书源解析失败:', e);
+      return [];
+    }
+  }
+
+  // Override batchValidateSources to support Legado format
+  async function batchValidateSources_v2(text) {
+    // First try to parse as Legado format
+    var legadoSources = parseLegadoSource(text);
+    if (legadoSources.length > 0) {
+      Toast.info('检测到 ' + legadoSources.length + ' 个阅读APP书源');
+      var sources = (Store.state.bookSources || []).slice();
+      var added = 0;
+      legadoSources.forEach(function(s) {
+        // Check if already exists
+        var exists = sources.some(function(es) { return es.url === s.url; });
+        if (!exists) {
+          sources.push(s);
+          added++;
+        }
+      });
+      Store.patch({ bookSources: sources });
+      Toast.success('已导入 ' + added + ' 个书源');
+      return legadoSources;
+    }
+    // Fallback to URL extraction
+    return batchValidateSources_v2(text);
   }
 
 function renderRowDescs() {
