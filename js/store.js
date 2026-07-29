@@ -49,6 +49,7 @@ const Store = (() => {
     trash: { chats: [], apiKeys: [], items: [], clearedAt: 0 },  // 回收站：已删除的对话/Key/数据
     membership: null,        // { tier, expires_at, storage_used, storage_limit }
     membershipPlans: [],     // 从后端拉取的 plans 列表
+    storageMode: 'cloud',    // 'cloud' | 'local' — 数据存储模式
     cloudUser: null,        // 云端账号 {id, email, name, isAdmin}（js/supabase.js；游客/本地账号为 null）
     cloudMap: {},           // 会话映射 {本地会话id: 云端uuid}（管理员全量同步用）
     cloudMeta: { lastSync: 0, lastSettingsSync: 0, lastUsagePush: 0, usageTotal: 0 },  // 同步游标
