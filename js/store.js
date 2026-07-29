@@ -57,6 +57,13 @@ const Store = (() => {
       nightMode: false,
       scrollMode: 'vertical'   // 'vertical' | 'page'
     },
+    search: {                 // 搜索状态
+      query: '',
+      results: [],            // [{ sourceName, sourceType, books: [{ title, author, cover, latestChapter, url }] }]
+      grouped: {},            // { title: [{ sourceName, author, latestChapter, url }] }
+      expanded: null,         // 当前展开的书名
+      loading: false
+    },
     bookshelf: {              // 书架数据
       items: [],              // { id, title, author, cover, type, progress, lastRead, source }
       categories: ['全部','阅读','听书','短剧','漫剧','出版'],
