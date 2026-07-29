@@ -3131,7 +3131,7 @@ function bindKeyEvents() {
       html += '<div class="family-locked-icon">🔒</div>';
       html += '<div class="family-locked-title">家庭共享</div>';
       html += '<div class="family-locked-desc">恒星及以上会员可开启家庭共享，最多4人共用存储空间</div>';
-      html += '<button class="btn btn-primary" onclick="openSub('membership')">去升级</button>';
+      html += '<button class="btn btn-primary" onclick="openSub(\'membership\')">去升级</button>';
       html += '</div>';
     } else if (!family) {
       html += '<div class="family-create">';
