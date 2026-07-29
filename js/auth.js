@@ -27,6 +27,14 @@ const Auth = (() => {
     if (u.cloud) return { ok: false, error: '该账号是云端账号，请用邮箱 + 云端密码登录' };
     if (u.password !== await hash(password)) return { ok: false, error: '密码错误，请重试' };
     Store.patch({ loggedIn: true, user: account, userInfo: u });
+    // 本地账号也尝试拉取会员（游客模式）
+    try {
+      const memRes = await fetch('https://ai-gateway.1829487897.workers.dev/api/v1/membership');
+      if (memRes.ok) {
+        const memData = await memRes.json();
+        Store.patch({ membership: memData.membership || { tier: 'guest' } });
+      }
+    } catch (e) {}
     return { ok: true };
   }
 
@@ -50,6 +58,16 @@ const Auth = (() => {
     Store.patch({ loggedIn: true, user: email, userInfo: user, cloudUser: { id: r.user.id, email, name, isAdmin } });
     // 首次同步（后台：管理员全量双向 / 普通用户轻量）
     SB.Sync.firstSync();
+    // 拉取会员信息
+    try {
+      const memRes = await fetch('https://ai-gateway.1829487897.workers.dev/api/v1/membership', {
+        headers: { 'Authorization': 'Bearer ' + (r.session?.access_token || '') }
+      });
+      if (memRes.ok) {
+        const memData = await memRes.json();
+        Store.patch({ membership: memData.membership || { tier: 'guest' } });
+      }
+    } catch (e) {}
     return { ok: true, name, isAdmin };
   }
 
@@ -84,7 +102,7 @@ const Auth = (() => {
   /* 游客登录：不创建账号，仅本地浏览使用 */
   function guest() {
     const user = { account: 'guest', name: '游客', remark: '本地浏览模式', guest: true, createdAt: Date.now() };
-    Store.patch({ loggedIn: true, user: 'guest', userInfo: user });
+    Store.patch({ loggedIn: true, user: 'guest', userInfo: user, membership: { tier: 'guest' } });
   }
 
   /* 仅退出云端账号：本地会话与数据保留 */
