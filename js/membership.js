@@ -20,7 +20,7 @@
     if (!/^TP-[A-Z0-9]{8}-[A-Z0-9]{8}-[A-Z0-9]{8}-[A-Z0-9]{8}-[A-Z0-9]{8}-[A-Z0-9]{8}$/.test(key)) {
       return { ok: false, msg: '卡密格式错误，应为 TP-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX' };
     }
-    const user = Store.get('user');
+    const user = Store.state.user;
     if (!user || !user.id) {
       return { ok: false, msg: '请先登录' };
     }
@@ -50,7 +50,7 @@
 
   // ========== 获取当前等级信息 ==========
   function getCurrentTier() {
-    const m = Store.get('membership');
+    const m = Store.state.membership;
     if (!m || !m.tier) return TIERS.guest;
     // 检查是否过期
     if (m.expiresAt && new Date(m.expiresAt) < new Date()) {
@@ -63,9 +63,9 @@
   function getStorageUsed() {
     // 从 Store 中计算各类数据大小
     let used = 0;
-    const settings = Store.get('settings') || {};
+    const settings = Store.state || {};
     // 历史对话估算
-    const conversations = Store.get('conversations') || [];
+    const conversations = Store.state.chats || [];
     conversations.forEach(c => {
       used += JSON.stringify(c).length * 2; // UTF-16 估算
     });
@@ -90,7 +90,7 @@
   function getStorageLimit() {
     const tier = getCurrentTier();
     // 加上抽奖获得的临时存储
-    const bonus = Store.get('bonusStorage') || [];
+    const bonus = Store.state.bonusStorage || [];
     let bonusTotal = 0;
     const now = new Date();
     bonus.forEach(b => {
@@ -110,7 +110,7 @@
 
   // ========== 设备管理 ==========
   function getDevices() {
-    return Store.get('devices') || [];
+    return Store.state.devices || [];
   }
 
   function addDevice(deviceInfo) {
@@ -160,10 +160,10 @@
   async function exportData(options) {
     const { types, format } = options;
     const exportObj = {};
-    const settings = Store.get('settings') || {};
+    const settings = Store.state || {};
 
     if (types.includes('conversations')) {
-      exportObj.conversations = Store.get('conversations') || [];
+      exportObj.conversations = Store.state.chats || [];
     }
     if (types.includes('novelSources')) {
       exportObj.novelSources = settings.novelSources || [];
