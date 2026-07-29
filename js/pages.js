@@ -1070,6 +1070,7 @@ const Pages = (() => {
     else if (id === 'subNovel') { if (typeof renderNovel === 'function') renderNovel(); else console.warn('renderNovel 未定义'); if (typeof bindNovelEvents === 'function') bindNovelEvents(); }
     else if (id === 'subComic') { if (typeof renderComic === 'function') renderComic(); else console.warn('renderComic 未定义'); if (typeof bindComicEvents === 'function') bindComicEvents(); }
     else if (id === 'subMembership') renderMembership();
+    else if (id === 'subStorage') renderStorage();
   }
 
   function bindSubpageEvents() {
@@ -1262,6 +1263,66 @@ const Pages = (() => {
         } catch (e) { Toast.error('网络错误，请检查连接'); }
       };
     }
+  }
+
+
+  function renderStorage() {
+    const container = $('#subStorageBody');
+    if (!container) return;
+    const mode = Store.state.storageMode || 'cloud';
+    const isCloud = mode === 'cloud';
+    const m = Store.state.membership || {};
+    const used = m.storage_used || 0;
+    const limit = m.storage_limit || 50;
+    const usedMB = used ? (used / 1024 / 1024).toFixed(1) : '0.0';
+    const pct = limit > 0 ? Math.min(100, Math.round(used / limit * 100)) : 0;
+    let html = '<div style="padding:16px;">';
+    html += '<div style="background:#f8f8f8;border-radius:12px;padding:16px;margin-bottom:16px;">';
+    html += '<div style="font-size:14px;font-weight:600;color:#333;margin-bottom:12px;">存储模式</div>';
+    html += '<div style="display:flex;gap:8px;">';
+    html += '<button id="modeCloud" style="flex:1;padding:10px;border:2px solid ' + (isCloud ? '#4a90d9' : '#e0e0e0') + ';border-radius:8px;background:' + (isCloud ? '#4a90d908' : '#fff') + ';color:' + (isCloud ? '#4a90d9' : '#666') + ';font-size:14px;font-weight:500;-webkit-appearance:none;">☁️ 云端优先</button>';
+    html += '<button id="modeLocal" style="flex:1;padding:10px;border:2px solid ' + (!isCloud ? '#4a90d9' : '#e0e0e0') + ';border-radius:8px;background:' + (!isCloud ? '#4a90d908' : '#fff') + ';color:' + (!isCloud ? '#4a90d9' : '#666') + ';font-size:14px;font-weight:500;-webkit-appearance:none;">💾 本地存储</button>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:#999;margin-top:8px;">' + (isCloud ? '数据默认同步到云端，多设备可用' : '数据仅保存在本地，不上传云端') + '</div>';
+    html += '</div>';
+    html += '<div style="background:#f8f8f8;border-radius:12px;padding:16px;margin-bottom:16px;">';
+    html += '<div style="font-size:14px;font-weight:600;color:#333;margin-bottom:8px;">存储用量</div>';
+    html += '<div style="background:#eee;border-radius:99px;height:6px;overflow:hidden;">';
+    html += '<div style="width:' + pct + '%;background:#4a90d9;height:100%;border-radius:99px;transition:width .3s;"></div>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:#666;margin-top:6px;display:flex;justify-content:space-between;">';
+    html += '<span>' + usedMB + ' MB 已用</span><span>' + (limit > 0 ? limit + ' MB 总量' : '无限') + '</span></div>';
+    html += '</div>';
+    html += '<div style="font-size:14px;font-weight:600;color:#333;margin-bottom:8px;">数据工具</div>';
+    html += '<div class="settings-card">';
+    html += '<div class="settings-row clickable" id="storageTrashBtn">';
+    html += '<span class="row-icon" data-icon="trash"></span>';
+    html += '<span class="row-label"><span class="row-title">回收站</span><span class="row-desc">已删除的对话与数据</span></span>';
+    html += '<span class="chev" data-icon="chevronRight"></span>';
+    html += '</div>';
+    html += '<div class="settings-row clickable" id="storageSyncBtn">';
+    html += '<span class="row-icon" data-icon="refreshCw"></span>';
+    html += '<span class="row-label"><span class="row-title">云端同步</span><span class="row-desc">手动同步数据到云端</span></span>';
+    html += '<span class="chev" data-icon="chevronRight"></span>';
+    html += '</div>';
+    html += '<div class="settings-row clickable" id="storageClearBtn">';
+    html += '<span class="row-icon" data-icon="trash2"></span>';
+    html += '<span class="row-label"><span class="row-title">清除本地数据</span><span class="row-desc">仅清除本设备数据（不影响云端）</span></span>';
+    html += '<span class="chev" data-icon="chevronRight"></span>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    container.innerHTML = html;
+    const modeCloud = $('#modeCloud');
+    const modeLocal = $('#modeLocal');
+    if (modeCloud) modeCloud.onclick = function() { Store.patch({ storageMode: 'cloud' }); renderStorage(); Toast.success('已切换为云端存储'); };
+    if (modeLocal) modeLocal.onclick = function() { Store.patch({ storageMode: 'local' }); renderStorage(); Toast.success('已切换为本地存储'); };
+    const trashBtn = $('#storageTrashBtn');
+    if (trashBtn) trashBtn.onclick = function() { openSub('subTrash'); };
+    const syncBtn = $('#storageSyncBtn');
+    if (syncBtn) syncBtn.onclick = function() { if (typeof SB !== 'undefined' && SB.Sync) { SB.Sync.push(); Toast.success('同步已触发'); } else { Toast.error('云服务未就绪'); } };
+    const clearBtn = $('#storageClearBtn');
+    if (clearBtn) clearBtn.onclick = function() { if (!confirm('确定要清除所有本地数据吗？\n此操作不可恢复，云端数据不受影响。')) return; localStorage.removeItem('ai_chat_state_v5'); localStorage.removeItem('ai_users_v5'); Toast.success('本地数据已清除'); location.reload(); };
   }
 
 function renderRowDescs() {
