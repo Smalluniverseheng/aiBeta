@@ -37,7 +37,7 @@
 
   // ========== 记录抽奖 ==========
   function recordLottery(prize) {
-    const records = Store.get('lotteryRecords') || [];
+    const records = Store.state.lotteryRecords || [];
     records.unshift({
       prizeName: prize.name,
       prizeType: prize.type,
@@ -51,7 +51,7 @@
 
     // 如果是存储包，添加到 bonusStorage
     if (prize.type === 'storage' && prize.detail) {
-      const bonus = Store.get('bonusStorage') || [];
+      const bonus = Store.state.bonusStorage || [];
       const now = new Date();
       bonus.push({
         size: prize.detail.size,
@@ -64,7 +64,7 @@
 
     // 如果是会员，更新 membership
     if (prize.type === 'membership' && prize.detail) {
-      const m = Store.get('membership') || {};
+      const m = Store.state.membership || {};
       const now = new Date();
       const expires = new Date(now.getTime() + prize.detail.days * 86400000);
       Store.set('membership', {
@@ -80,7 +80,7 @@
 
   // ========== 获取剩余抽奖次数 ==========
   function getLotteryCount() {
-    return Store.get('lotteryCount') || 0;
+    return Store.state.lotteryCount || 0;
   }
 
   function addLotteryCount(n) {
