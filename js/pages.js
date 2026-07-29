@@ -2057,29 +2057,78 @@ const Pages = (() => {
   }
 
   function extractBooksFromHtml(html, source) {
-    // Simple HTML extraction for common book sites
     var books = [];
-    // Try to find book items by common patterns
-    var itemRegex = /<div[^>]*class="[^"]*(?:book|item|result|album)[^"]*"[^>]*>/gi;
-    var items = html.match(itemRegex);
-    if (!items) return [];
+    if (!html || html.length < 50) return books;
 
-    items.forEach(function(itemHtml) {
-      var titleMatch = itemHtml.match(/<[^>]*class="[^"]*(?:title|name)[^"]*"[^>]*>([^<]+)<\/[^>]*>/i);
-      var authorMatch = itemHtml.match(/<[^>]*class="[^"]*(?:author|writer)[^"]*"[^>]*>([^<]+)<\/[^>]*>/i);
-      var coverMatch = itemHtml.match(/<img[^>]*src="([^"]+)"[^>]*>/i);
-      var urlMatch = itemHtml.match(/<a[^>]*href="([^"]+)"[^>]*>/i);
+    // Strategy 1: Try to parse as JSON first (some sites return JSON in script tag)
+    var jsonMatch = html.match(/<script[^>]*>\s*var\s+searchData\s*=\s*(\[.*?\]);\s*<\/script>/s) ||
+                      html.match(/<script[^>]*>\s*window\._INITIAL_STATE__\s*=\s*(\{.*?\});\s*<\/script>/s);
+    if (jsonMatch) {
+      try {
+        var parsed = JSON.parse(jsonMatch[1]);
+        if (Array.isArray(parsed)) return normalizeSearchResults(parsed, source);
+        if (parsed.books || parsed.data || parsed.list) return normalizeSearchResults(parsed, source);
+      } catch(e) {}
+    }
 
-      if (titleMatch) {
-        books.push({
-          title: titleMatch[1].trim(),
-          author: authorMatch ? authorMatch[1].trim() : '未知',
-          cover: coverMatch ? coverMatch[1] : '',
-          url: urlMatch ? urlMatch[1] : '',
-          latestChapter: ''
-        });
+    // Strategy 2: Extract from common book site patterns
+    var patterns = [
+      // Pattern A: div.result-item (笔趣阁风格)
+      { item: /<div[^>]*class="[^"]*(?:result-item|book-item|list-item)[^"]*"[\s\S]*?<\/div>/gi, title: /<[^>]*class="[^"]*(?:title|book-title|name)[^"]*"[^>]*>(?:<[^>]*>)?([^<]+)<\/[^>]*>/i, author: /<[^>]*class="[^"]*(?:author|writer)[^"]*"[^>]*>(?:<[^>]*>)?([^<]+)<\/[^>]*>/i, cover: /<img[^>]*src="([^"]+)"[^>]*class="[^"]*(?:cover|pic)[^"]*"[^>]*>/i, url: /<a[^>]*href="([^"]+)"[^>]*class="[^"]*(?:title|name)[^"]*"[^>]*>/i },
+      // Pattern B: li / tr rows (列表风格)
+      { item: /<(?:li|tr)[^>]*>[\s\S]*?<\/(?:li|tr)>/gi, title: /<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/i, author: /<span[^>]*class="[^"]*(?:author|writer)[^"]*"[^>]*>([^<]+)<\/span>/i, cover: null, url: 1 },
+      // Pattern C: article / section cards (现代风格)
+      { item: /<(?:article|section)[^>]*>[\s\S]*?<\/(?:article|section)>/gi, title: /<h[1-6][^>]*>(?:<[^>]*>)?([^<]+)<\/h[1-6]>/i, author: /<[^>]*class="[^"]*(?:author|writer|by)[^"]*"[^>]*>([^<]+)<\/[^>]*>/i, cover: /<img[^>]*src="([^"]+)"[^>]*>/i, url: /<a[^>]*href="([^"]+)"[^>]*class="[^"]*(?:cover|thumb)[^"]*"[^>]*>/i }
+    ];
+
+    for (var p = 0; p < patterns.length; p++) {
+      var pat = patterns[p];
+      var items = html.match(pat.item);
+      if (!items || items.length === 0) continue;
+
+      items.forEach(function(itemHtml) {
+        var titleMatch = itemHtml.match(pat.title);
+        var authorMatch = pat.author ? itemHtml.match(pat.author) : null;
+        var coverMatch = pat.cover ? itemHtml.match(pat.cover) : null;
+        var urlMatch = pat.url ? itemHtml.match(pat.url) : null;
+
+        var title = '';
+        var url = '';
+        if (titleMatch) {
+          if (pat.url === 1) { url = titleMatch[1]; title = titleMatch[2]; }
+          else { title = titleMatch[1]; }
+        }
+        if (!url && urlMatch) url = urlMatch[1];
+
+        if (title && title.trim()) {
+          books.push({
+            title: title.trim().replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'),
+            author: authorMatch ? authorMatch[1].trim().replace(/&nbsp;/g, ' ') : '未知',
+            cover: coverMatch ? coverMatch[1] : '',
+            url: url,
+            latestChapter: ''
+          });
+        }
+      });
+
+      if (books.length > 0) break; // Found matches with this pattern
+    }
+
+    // Strategy 3: Generic link extraction as last resort
+    if (books.length === 0) {
+      var linkPattern = /<a[^>]*href="([^"]+)"[^>]*>(?:<[^>]*>)*([^<]{2,50})(?:<\/[^>]*>)*<\/a>/gi;
+      var seen = {};
+      var m;
+      while ((m = linkPattern.exec(html)) !== null) {
+        var linkTitle = m[2].trim();
+        var linkUrl = m[1].trim();
+        if (linkTitle.length > 3 && !seen[linkTitle] && !linkUrl.match(/\.(css|js|png|jpg|gif)$/i)) {
+          seen[linkTitle] = true;
+          books.push({ title: linkTitle, author: '未知', cover: '', url: linkUrl, latestChapter: '' });
+        }
       }
-    });
+    }
+
     return books;
   }
 
