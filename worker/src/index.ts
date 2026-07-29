@@ -8,6 +8,11 @@ import { storageRoute } from './routes/storage';
 import { healthRoute } from './routes/health';
 import { keysRoute } from './routes/keys';
 import { saveChatRoute, getChatsRoute, deleteChatRoute } from './routes/chats';
+import { verifyCardRoute, redeemCardRoute } from './routes/card';
+import { getMembershipRoute, updateMembershipRoute } from './routes/membership';
+import { getDevicesRoute, addDeviceRoute, deleteDeviceRoute } from './routes/device';
+import { getFamilyRoute, createFamilyRoute, addFamilyMemberRoute, removeFamilyMemberRoute } from './routes/family';
+import { proxyRoute, proxyBatchRoute } from './routes/proxy';
 
 export interface Env {
   SUPABASE_URL: string;
@@ -41,6 +46,8 @@ export interface Env {
 }
 
 const router = new Router();
+
+// 原有路由
 router.post('/api/v1/chat', chatRoute);
 router.post('/api/v1/chat/multi', multiRoute);
 router.post('/api/v1/search', searchRoute);
@@ -53,6 +60,21 @@ router.get('/api/v1/keys', keysRoute);
 router.post('/api/v1/chats/save', saveChatRoute);
 router.get('/api/v1/chats', getChatsRoute);
 router.post('/api/v1/chats/delete', deleteChatRoute);
+
+// 会员体系路由 (v5.7)
+router.post('/api/v1/card/verify', verifyCardRoute);
+router.post('/api/v1/card/redeem', redeemCardRoute);
+router.get('/api/v1/membership', getMembershipRoute);
+router.post('/api/v1/membership', updateMembershipRoute);
+router.get('/api/v1/devices', getDevicesRoute);
+router.post('/api/v1/devices', addDeviceRoute);
+router.delete('/api/v1/devices', deleteDeviceRoute);
+router.get('/api/v1/family', getFamilyRoute);
+router.post('/api/v1/family', createFamilyRoute);
+router.post('/api/v1/family/members', addFamilyMemberRoute);
+router.delete('/api/v1/family/members', removeFamilyMemberRoute);
+router.post('/api/v1/proxy', proxyRoute);
+router.post('/api/v1/proxy/batch', proxyBatchRoute);
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -71,6 +93,4 @@ export default {
   },
 };
 
-// 触发重新部署: 1784823702
-
-// 触发重新部署: fix messages id null 1784824168
+// 触发重新部署: v5.7-membership
