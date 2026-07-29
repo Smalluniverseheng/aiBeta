@@ -89,7 +89,7 @@ const UI = (() => {
 
   /* 侧边栏用户卡 */
   function getTierBadge() {
-    const m = Store.get('membership');
+    const m = Store.state.membership;
     if (!m || !m.tier) return '';
     const tierMap = {
       satellite: { name: '卫星', icon: '🛰️', color: '#9e9e9e' },
