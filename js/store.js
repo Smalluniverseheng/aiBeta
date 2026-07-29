@@ -52,15 +52,6 @@ const Store = (() => {
     storageMode: 'cloud',    // 'cloud' | 'local' — 数据存储模式
     bookSources: [
       {
-        name: '🎨禁漫天堂',
-        url: 'https://18comic-hok.vip',
-        type: 'comic',
-        enabled: true,
-        builtIn: true,
-        searchUrl: 'https://18comic-hok.vip/search/photos?search_query={{key}}&search-type=photos&main_tag=0&page=1',
-        ruleSearch: { bookList: '.p-b-15', name: '.video-title@text', author: '.title-truncate.1@text', coverUrl: 'img@data-original||img@src', bookUrl: 'a.0@href' }
-      },
-      {
         name: '📚笔趣阁',
         url: 'https://www.biquge.co',
         type: 'novel',
