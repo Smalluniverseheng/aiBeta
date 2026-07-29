@@ -1074,6 +1074,7 @@ const Pages = (() => {
     else if (id === 'subBookshelf') renderBookshelf();
     else if (id === 'subReader') renderReader();
     else if (id === 'subComicReader') renderComicReader();
+    else if (id === 'subSearch') renderSearchResults();
   }
 
   function bindSubpageEvents() {
@@ -1339,6 +1340,13 @@ const Pages = (() => {
     const filtered = active === '全部' ? items : items.filter(function(i) { return (i.type || '阅读') === active; });
 
     let html = '<div style="position:sticky;top:0;background:#fff;z-index:10;border-bottom:1px solid #eee;">';
+    // Search bar
+    html += '<div style="padding:8px 12px;">';
+    html += '<div id="bsSearchBox" style="display:flex;gap:8px;align-items:center;">';
+    html += '<input type="text" id="bsSearchInput" placeholder="搜索书名、作者..." style="flex:1;padding:10px 14px;border:1px solid #e0e0e0;border-radius:99px;font-size:14px;box-sizing:border-box;outline:none;-webkit-appearance:none;">';
+    html += '<button id="bsSearchBtn" style="padding:10px 18px;background:#4a90d9;color:#fff;border:none;border-radius:99px;font-size:13px;font-weight:500;-webkit-appearance:none;white-space:nowrap;">搜索</button>';
+    html += '</div></div>';
+    // Categories
     html += '<div style="display:flex;gap:4px;padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;">';
     cats.forEach(function(c) {
       const isActive = c === active;
@@ -1386,6 +1394,20 @@ const Pages = (() => {
       });
     });
 
+    // Search
+    var searchInput = document.getElementById('bsSearchInput');
+    var searchBtn = document.getElementById('bsSearchBtn');
+    if (searchInput) {
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') { doMultiSourceSearch(searchInput.value.trim()); }
+      });
+    }
+    if (searchBtn) {
+      searchBtn.addEventListener('click', function() {
+        var query = searchInput ? searchInput.value.trim() : '';
+        if (query) doMultiSourceSearch(query);
+      });
+    }
     // Import buttons
     var importBtn = document.getElementById('bsImport');
     var importBtn2 = document.getElementById('bsImport2');
@@ -1830,6 +1852,172 @@ const Pages = (() => {
         Toast.success('已删除');
         modal.remove();
       };
+    });
+  }
+
+
+  // ========== 多源搜索 ==========
+  async function doMultiSourceSearch(query) {
+    if (!query) return;
+    var sources = Store.state.bookSources || [];
+    var enabled = sources.filter(function(s) { return s.enabled !== false; });
+    if (enabled.length === 0) { Toast.error('请先添加书源'); showBookSourceMenu(); return; }
+
+    Store.patch({ search: { query: query, results: [], grouped: {}, expanded: null, loading: true } });
+    openSub('subSearch');
+    Toast.info('正在搜索: ' + query);
+
+    var allResults = [];
+    var promises = enabled.map(function(source) {
+      return searchSingleSource(source, query).then(function(books) {
+        if (books && books.length > 0) {
+          allResults.push({ sourceName: source.name, sourceType: source.type || 'novel', books: books });
+        }
+      }).catch(function(e) {
+        console.warn('书源搜索失败:', source.name, e);
+      });
+    });
+
+    await Promise.all(promises);
+
+    // Group by title (for collapsing)
+    var grouped = {};
+    allResults.forEach(function(r) {
+      r.books.forEach(function(b) {
+        var key = (b.title || '未知').trim();
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push({
+          sourceName: r.sourceName,
+          sourceType: r.sourceType,
+          author: b.author || '未知',
+          cover: b.cover || '',
+          latestChapter: b.latestChapter || '',
+          url: b.url || '',
+          desc: b.desc || ''
+        });
+      });
+    });
+
+    Store.patch({ search: { query: query, results: allResults, grouped: grouped, expanded: null, loading: false } });
+    renderSearchResults();
+  }
+
+  async function searchSingleSource(source, query) {
+    // Try to fetch from source URL
+    // Expected JSON format: [{ title, author, cover, latestChapter, url, desc }]
+    try {
+      var url = source.searchUrl || source.url;
+      if (!url) return [];
+      // Append query parameter
+      var sep = url.indexOf('?') >= 0 ? '&' : '?';
+      var fullUrl = url + sep + 'q=' + encodeURIComponent(query);
+      var res = await fetch(fullUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return [];
+      var data = await res.json();
+      return Array.isArray(data) ? data : (data.books || data.data || []);
+    } catch (e) {
+      // Fallback: try CORS proxy or return empty
+      console.warn('Source fetch failed:', source.name, e);
+      return [];
+    }
+  }
+
+  function renderSearchResults() {
+    var container = document.getElementById('subSearchBody');
+    if (!container) {
+      // Create subSearch if not exists in DOM
+      container = document.createElement('div');
+      container.id = 'subSearchBody';
+      container.className = 'subpage-body';
+      var subSearch = document.getElementById('subSearch');
+      if (subSearch) subSearch.appendChild(container);
+      else { Toast.error('搜索页面未就绪'); return; }
+    }
+
+    var search = Store.state.search || { query: '', results: [], grouped: {}, expanded: null, loading: false };
+    var grouped = search.grouped || {};
+    var expanded = search.expanded;
+    var titles = Object.keys(grouped);
+
+    var html = '<div style="padding:12px;">';
+    html += '<div style="font-size:14px;color:#666;margin-bottom:12px;">搜索 "' + (search.query || '').replace(/</g,'&lt;') + '" — 找到 ' + titles.length + ' 个结果</div>';
+
+    if (search.loading) {
+      html += '<div style="text-align:center;padding:60px;color:#999;"><div style="font-size:32px;margin-bottom:12px;">🔍</div><div>搜索中...</div></div>';
+    } else if (titles.length === 0) {
+      html += '<div style="text-align:center;padding:60px;color:#999;"><div style="font-size:32px;margin-bottom:12px;">😕</div><div>未找到结果</div><div style="font-size:13px;margin-top:8px;">尝试更换关键词或添加更多书源</div></div>';
+    } else {
+      titles.forEach(function(title) {
+        var items = grouped[title] || [];
+        var isExpanded = expanded === title;
+        html += '<div style="background:#fff;border-radius:10px;margin-bottom:8px;overflow:hidden;border:1px solid #f0f0f0;">';
+        // Title header (click to expand)
+        html += '<div data-expand-title="' + title.replace(/"/g,'&quot;') + '" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:' + (isExpanded ? '#f8f8f8' : '#fff') + ';">';
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<div style="font-size:15px;font-weight:600;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + title.replace(/</g,'&lt;') + '</div>';
+        html += '<div style="font-size:12px;color:#999;margin-top:2px;">' + items[0].author.replace(/</g,'&lt;') + ' · ' + items.length + ' 个来源</div>';
+        html += '</div>';
+        html += '<span style="font-size:18px;color:#999;transition:transform .2s;transform:' + (isExpanded ? 'rotate(180deg)' : 'rotate(0deg)') + ';">▼</span>';
+        html += '</div>';
+        // Expanded items
+        if (isExpanded) {
+          html += '<div style="border-top:1px solid #f0f0f0;">';
+          items.forEach(function(item, idx) {
+            html += '<div data-add-book="' + title.replace(/"/g,'&quot;') + '" data-idx="' + idx + '" style="padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;' + (idx < items.length-1 ? 'border-bottom:1px solid #f8f8f8;' : '') + '">';
+            html += '<div style="width:40px;height:54px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">' + (item.sourceType === 'comic' ? '🎨' : '📖') + '</div>';
+            html += '<div style="flex:1;min-width:0;">';
+            html += '<div style="font-size:13px;color:#333;font-weight:500;">' + item.sourceName.replace(/</g,'&lt;') + '</div>';
+            html += '<div style="font-size:12px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (item.latestChapter || '暂无章节').replace(/</g,'&lt;') + '</div>';
+            html += '</div>';
+            html += '<button style="padding:6px 12px;background:#4a90d9;color:#fff;border:none;border-radius:99px;font-size:12px;-webkit-appearance:none;flex-shrink:0;">加入书架</button>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Bind expand clicks
+    container.querySelectorAll('[data-expand-title]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        var title = el.dataset.expandTitle;
+        var search = Store.state.search || {};
+        Store.patch({ search: Object.assign({}, search, { expanded: search.expanded === title ? null : title }) });
+        renderSearchResults();
+      });
+    });
+
+    // Bind add-to-bookshelf clicks
+    container.querySelectorAll('[data-add-book]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        var title = el.dataset.addBook;
+        var idx = parseInt(el.dataset.idx);
+        var search = Store.state.search || {};
+        var grouped = search.grouped || {};
+        var items = grouped[title] || [];
+        var item = items[idx];
+        if (!item) return;
+
+        var bs = Store.state.bookshelf || { items: [] };
+        var items2 = bs.items ? bs.items.slice() : [];
+        items2.push({
+          id: 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+          title: title,
+          author: item.author,
+          type: item.sourceType === 'comic' ? '漫剧' : '阅读',
+          cover: item.cover || '',
+          progress: 0,
+          lastRead: Date.now(),
+          source: item.sourceName,
+          sourceUrl: item.url,
+          latestChapter: item.latestChapter
+        });
+        Store.patch({ bookshelf: Object.assign({}, bs, { items: items2 }) });
+        Toast.success('已加入书架');
+      });
     });
   }
 
