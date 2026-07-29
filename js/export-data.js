@@ -16,11 +16,11 @@
 
   // ========== 计算各类型大小 ==========
   function estimateSize(typeKey) {
-    const settings = Store.get('settings') || {};
+    const settings = Store.state || {};
     let bytes = 0;
     switch (typeKey) {
       case 'conversations':
-        bytes = JSON.stringify(Store.get('conversations') || []).length * 2;
+        bytes = JSON.stringify(Store.state.chats || []).length * 2;
         break;
       case 'novelSources':
         bytes = JSON.stringify(settings.novelSources || []).length * 2;
@@ -53,12 +53,12 @@
   // ========== 执行导出 ==========
   async function doExport(selectedTypes, format, deleteAfter = false) {
     const exportObj = {};
-    const settings = Store.get('settings') || {};
+    const settings = Store.state || {};
 
     selectedTypes.forEach(type => {
       switch (type) {
         case 'conversations':
-          exportObj.conversations = Store.get('conversations') || [];
+          exportObj.conversations = Store.state.chats || [];
           break;
         case 'novelSources':
           exportObj.novelSources = settings.novelSources || [];
@@ -146,7 +146,7 @@
 
     // 删除数据
     if (deleteAfter) {
-      const s = Store.get('settings') || {};
+      const s = Store.state || {};
       selectedTypes.forEach(type => {
         switch (type) {
           case 'conversations': Store.set('conversations', []); break;
