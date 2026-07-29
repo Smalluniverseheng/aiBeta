@@ -1905,6 +1905,35 @@ const Pages = (() => {
       batchValidateSources_v2(text).then(function() { modal.remove(); });
     };
 
+    // Offline search: paste search results JSON
+    var offlineBtn = document.createElement('button');
+    offlineBtn.textContent = '📋 粘贴搜索结果';
+    offlineBtn.style.cssText = 'width:100%;padding:10px;margin-top:8px;background:#f0f0f0;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;';
+    offlineBtn.onclick = function() {
+      var text = document.getElementById('batchSourceText').value;
+      if (!text.trim()) { Toast.error('请先粘贴搜索结果JSON'); return; }
+      try {
+        var data = JSON.parse(text);
+        var books = normalizeSearchResults(data, { name: '粘贴导入' });
+        if (books.length === 0) { Toast.error('未识别到书籍数据'); return; }
+        // Add to search results directly
+        var grouped = {};
+        books.forEach(function(b) {
+          var key = b.title.trim();
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push({ sourceName: '粘贴导入', sourceType: 'novel', author: b.author, cover: b.cover, latestChapter: b.latestChapter, url: b.url, desc: b.desc });
+        });
+        Store.patch({ search: { query: '粘贴导入', results: [{ sourceName: '粘贴', books: books }], grouped: grouped, expanded: null, loading: false } });
+        modal.remove();
+        openSub('subSearch');
+        renderSearchResults();
+        Toast.success('已导入 ' + books.length + ' 条结果');
+      } catch (e) {
+        Toast.error('JSON解析失败: ' + e.message);
+      }
+    };
+    document.getElementById('batchSourceText').parentNode.appendChild(offlineBtn);
+
     // Manual add
     document.getElementById('addSourceBtn').onclick = function() {
       var name = document.getElementById('sourceName').value.trim();
@@ -1977,23 +2006,82 @@ const Pages = (() => {
   }
 
   async function searchSingleSource(source, query) {
-    // Try to fetch from source URL
-    // Expected JSON format: [{ title, author, cover, latestChapter, url, desc }]
-    try {
-      var url = source.searchUrl || source.url;
-      if (!url) return [];
-      // Append query parameter
+    // Try multiple strategies: backend proxy -> public CORS proxy -> direct
+    var url = source.searchUrl || source.url;
+    if (!url) return [];
+
+    // Build search URL
+    var fullUrl = url;
+    if (source.searchUrl) {
+      fullUrl = source.searchUrl.replace('{{key}}', encodeURIComponent(query)).replace('{{page}}', '1').replace('{q}', encodeURIComponent(query));
+    } else {
       var sep = url.indexOf('?') >= 0 ? '&' : '?';
-      var fullUrl = url + sep + 'q=' + encodeURIComponent(query);
-      var res = await fetch(fullUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
-      if (!res.ok) return [];
-      var data = await res.json();
-      return Array.isArray(data) ? data : (data.books || data.data || []);
-    } catch (e) {
-      // Fallback: try CORS proxy or return empty
-      console.warn('Source fetch failed:', source.name, e);
-      return [];
+      fullUrl = url + sep + 'q=' + encodeURIComponent(query);
     }
+
+    // Strategy 1: Backend proxy (preferred)
+    try {
+      var proxyRes = await fetch('https://ai-gateway.1829487897.workers.dev/api/v1/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: fullUrl, headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' } })
+      });
+      if (proxyRes.ok) {
+        var text = await proxyRes.text();
+        var data = JSON.parse(text);
+        return normalizeSearchResults(data, source);
+      }
+    } catch (e) { console.warn('Backend proxy failed:', e.message); }
+
+    // Strategy 2: Public CORS proxy
+    try {
+      var corsUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(fullUrl);
+      var corsRes = await fetch(corsUrl, { method: 'GET' });
+      if (corsRes.ok) {
+        var text = await corsRes.text();
+        var data = JSON.parse(text);
+        return normalizeSearchResults(data, source);
+      }
+    } catch (e) { console.warn('CORS proxy failed:', e.message); }
+
+    // Strategy 3: Direct fetch (rarely works due to CORS)
+    try {
+      var directRes = await fetch(fullUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+      if (directRes.ok) {
+        var data = await directRes.json();
+        return normalizeSearchResults(data, source);
+      }
+    } catch (e) { console.warn('Direct fetch failed:', e.message); }
+
+    return [];
+  }
+
+  function normalizeSearchResults(data, source) {
+    // Handle various response formats
+    var books = [];
+    if (Array.isArray(data)) {
+      books = data;
+    } else if (data.books) {
+      books = data.books;
+    } else if (data.data) {
+      books = data.data;
+    } else if (data.list) {
+      books = data.list;
+    } else if (data.result) {
+      books = data.result;
+    }
+
+    // Map to standard format
+    return books.map(function(b) {
+      return {
+        title: b.title || b.name || b.bookName || '未知',
+        author: b.author || b.writer || b.authorName || '未知',
+        cover: b.cover || b.coverUrl || b.img || '',
+        latestChapter: b.latestChapter || b.lastChapter || b.chapterName || '',
+        url: b.url || b.bookUrl || b.link || '',
+        desc: b.desc || b.intro || b.description || ''
+      };
+    });
   }
 
   function renderSearchResults() {
