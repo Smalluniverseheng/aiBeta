@@ -175,6 +175,30 @@ const api = {
       });
       return res.json();
     }
+  },
+
+  /* ---------- 会员体系 ---------- */
+  membership: {
+    get: async function(userToken) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (userToken) headers['Authorization'] = 'Bearer ' + userToken;
+      const res = await fetch(API_BASE + '/api/v1/membership', { headers });
+      return res.json();
+    },
+    verifyCard: async function(cardKey) {
+      const res = await fetch(API_BASE + '/api/v1/card/verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ card_key: cardKey })
+      });
+      return res.json();
+    },
+    redeemCard: async function(cardKey) {
+      const res = await fetch(API_BASE + '/api/v1/card/redeem', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ card_key: cardKey })
+      });
+      return res.json();
+    }
   }
 };
 
