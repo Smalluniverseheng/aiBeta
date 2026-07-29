@@ -1069,6 +1069,7 @@ const Pages = (() => {
     else if (id === 'subTrash') renderTrash();
     else if (id === 'subNovel') { if (typeof renderNovel === 'function') renderNovel(); else console.warn('renderNovel 未定义'); if (typeof bindNovelEvents === 'function') bindNovelEvents(); }
     else if (id === 'subComic') { if (typeof renderComic === 'function') renderComic(); else console.warn('renderComic 未定义'); if (typeof bindComicEvents === 'function') bindComicEvents(); }
+    else if (id === 'subMembership') renderMembership();
   }
 
   function bindSubpageEvents() {
@@ -1172,7 +1173,98 @@ const Pages = (() => {
   }
 
   /* 我的页条目右侧状态描述 */
-  function renderRowDescs() {
+  
+  function renderMembership() {
+    const container = $('#subMembershipBody');
+    if (!container) return;
+    const m = Store.state.membership || {};
+    const tier = m.tier || 'guest';
+    const tierMap = {
+      guest:    { icon: '🌑', name: '游客',    color: '#888',    storage: 50,      price: '免费',    devices: 1 },
+      satellite:{ icon: '🛰️', name: '卫星',    color: '#4a90d9', storage: 500,     price: '¥9/月',   devices: 2 },
+      planet:   { icon: '🪐', name: '行星',    color: '#7b68ee', storage: 2048,    price: '¥29/月',  devices: 3 },
+      star:     { icon: '☀️', name: '恒星',    color: '#ff9500', storage: 10240,   price: '¥69/月',  devices: 5 },
+      galaxy:   { icon: '🌌', name: '星系',    color: '#ff2d55', storage: 51200,   price: '¥199/月', devices: 10 },
+      universe: { icon: '🌠', name: '宇宙',    color: '#af52de', storage: -1,      price: '¥499/月', devices: '无限' }
+    };
+    const t = tierMap[tier] || tierMap.guest;
+    const expires = m.expires_at ? new Date(m.expires_at).toLocaleDateString('zh-CN') : '永久有效';
+    const usedMB = m.storage_used ? Math.round(m.storage_used / 1024 / 1024 * 10) / 10 : 0;
+    const pct = t.storage > 0 ? Math.min(100, Math.round(usedMB / t.storage * 100)) : 0;
+    const barColor = t.color;
+
+    let html = '<div style="padding:24px 16px;text-align:center;background:linear-gradient(180deg,rgba(0,0,0,0.02),transparent);">';
+    html += '<div style="font-size:56px;line-height:1;margin-bottom:12px;">' + t.icon + '</div>';
+    html += '<div style="font-size:22px;font-weight:700;color:' + barColor + ';margin-bottom:4px;">' + t.name + '</div>';
+    html += '<div style="font-size:12px;color:#999;">到期时间：' + expires + '</div>';
+    html += '</div>';
+
+    html += '<div style="padding:0 16px 16px;">';
+    html += '<div style="font-size:14px;font-weight:600;margin-bottom:8px;color:#333;">存储用量</div>';
+    html += '<div style="background:#eee;border-radius:99px;height:6px;overflow:hidden;">';
+    html += '<div style="width:' + pct + '%;background:' + barColor + ';height:100%;border-radius:99px;transition:width .4s ease;"></div>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:#666;margin-top:6px;display:flex;justify-content:space-between;">';
+    html += '<span>' + usedMB + ' MB 已用</span><span>' + (t.storage > 0 ? t.storage + ' MB 总量' : '无限') + '</span></div>';
+    html += '</div>';
+
+    html += '<div style="padding:16px;border-top:8px solid #f5f5f5;">';
+    html += '<div style="font-size:14px;font-weight:600;margin-bottom:12px;color:#333;">卡密激活</div>';
+    html += '<input type="text" id="cardKeyInput" placeholder="请输入50位卡密" maxlength="50" style="width:100%;padding:12px;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;box-sizing:border-box;outline:none;-webkit-appearance:none;">';
+    html += '<button id="cardVerifyBtn" style="width:100%;margin-top:10px;padding:12px;background:' + barColor + ';color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:500;-webkit-appearance:none;">验证并激活</button>';
+    html += '</div>';
+
+    html += '<div style="padding:16px;border-top:8px solid #f5f5f5;">';
+    html += '<div style="font-size:14px;font-weight:600;margin-bottom:12px;color:#333;">会员计划对比</div>';
+    html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+    html += '<table style="width:100%;font-size:12px;border-collapse:collapse;min-width:320px;">';
+    html += '<thead><tr style="background:#f8f8f8;"><th style="padding:10px 8px;text-align:left;font-weight:600;color:#666;border-bottom:1px solid #eee;">等级</th>';
+    html += '<th style="padding:10px 8px;text-align:center;font-weight:600;color:#666;border-bottom:1px solid #eee;">价格</th>';
+    html += '<th style="padding:10px 8px;text-align:center;font-weight:600;color:#666;border-bottom:1px solid #eee;">存储</th>';
+    html += '<th style="padding:10px 8px;text-align:center;font-weight:600;color:#666;border-bottom:1px solid #eee;">设备</th></tr></thead><tbody>';
+    Object.keys(tierMap).forEach(function(k) {
+      const p = tierMap[k];
+      const isActive = k === tier;
+      const bg = isActive ? 'background:' + p.color + '08;' : '';
+      const fw = isActive ? 'font-weight:600;' : '';
+      const col = isActive ? 'color:' + p.color + ';' : 'color:#333;';
+      html += '<tr style="' + bg + 'border-bottom:1px solid #f5f5f5;">';
+      html += '<td style="padding:10px 8px;' + fw + col + '">' + p.icon + ' ' + p.name + (isActive ? ' <span style="font-size:10px;background:' + p.color + ';color:#fff;padding:1px 5px;border-radius:99px;">当前</span>' : '') + '</td>';
+      html += '<td style="padding:10px 8px;text-align:center;color:#666;' + fw + '">' + p.price + '</td>';
+      html += '<td style="padding:10px 8px;text-align:center;color:#666;' + fw + '">' + (p.storage > 0 ? (p.storage >= 1024 ? (p.storage/1024).toFixed(0) + 'GB' : p.storage + 'MB') : '无限') + '</td>';
+      html += '<td style="padding:10px 8px;text-align:center;color:#666;' + fw + '">' + p.devices + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+
+    container.innerHTML = html;
+
+    const verifyBtn = $('#cardVerifyBtn');
+    const cardInput = $('#cardKeyInput');
+    if (verifyBtn && cardInput) {
+      verifyBtn.onclick = async function() {
+        const key = cardInput.value.trim().replace(/\s/g, '');
+        if (!key || key.length !== 50) { Toast.error('请输入50位卡密'); return; }
+        Toast.info('正在验证卡密...');
+        try {
+          const data = await api.membership.verifyCard(key);
+          if (!data.valid) { Toast.error(data.error || '卡密无效或已被使用'); return; }
+          if (!confirm('卡密有效：' + (data.plan_name || '会员计划') + '\n确认立即激活吗？')) return;
+          const rData = await api.membership.redeemCard(key);
+          if (rData.success) {
+            Toast.success('激活成功！');
+            Store.patch({ membership: rData.membership || { tier: data.plan_tier || 'satellite', expires_at: rData.expires_at } });
+            renderMembership();
+            if (typeof renderSidebarUser === 'function') renderSidebarUser();
+          } else {
+            Toast.error(rData.error || '激活失败，请重试');
+          }
+        } catch (e) { Toast.error('网络错误，请检查连接'); }
+      };
+    }
+  }
+
+function renderRowDescs() {
     const vs = Store.state.voiceSettings;
     const ttsE = Voice.TTS_ENGINES.find(e => e.id === (vs.ttsEngine || 'browser'));
     const voiceDesc = $('#voiceRowDesc'); if (voiceDesc) voiceDesc.textContent = (ttsE ? (ttsE.provider || '浏览器内置') : '浏览器内置') + ' · ' + (vs.rate || 1) + 'x';
