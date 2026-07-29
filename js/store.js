@@ -50,7 +50,23 @@ const Store = (() => {
     membership: null,        // { tier, expires_at, storage_used, storage_limit }
     membershipPlans: [],     // 从后端拉取的 plans 列表
     storageMode: 'cloud',    // 'cloud' | 'local' — 数据存储模式
-    bookSources: [],         // 书源列表 [{ name, url, searchUrl, enabled }]
+    bookSources: [
+      {
+        name: '🎨禁漫天堂',
+        url: 'https://18comic-hok.vip',
+        type: 'comic',
+        enabled: true,
+        builtIn: true,
+        searchUrl: '/search/photos?search_query={{key}}&search-type=photos&main_tag=0&page={{page}}',
+        ruleSearch: {
+          bookList: '.p-b-15',
+          name: '.video-title@text',
+          author: '.title-truncate.1@text',
+          coverUrl: 'img@data-original||img@src',
+          bookUrl: 'a.0@href'
+        }
+      }
+    ], // 书源列表 [{ name, url, searchUrl, enabled }]
     reader: {                 // 阅读器设置
       fontSize: 18,
       bgColor: '#f5e6c8',
