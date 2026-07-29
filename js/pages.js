@@ -1073,6 +1073,7 @@ const Pages = (() => {
     else if (id === 'subStorage') renderStorage();
     else if (id === 'subBookshelf') renderBookshelf();
     else if (id === 'subReader') renderReader();
+    else if (id === 'subComicReader') renderComicReader();
   }
 
   function bindSubpageEvents() {
@@ -1350,7 +1351,8 @@ const Pages = (() => {
       html += '<div style="font-size:48px;margin-bottom:12px;">📚</div>';
       html += '<div style="font-size:15px;margin-bottom:8px;">书架空空如也</div>';
       html += '<div style="font-size:13px;margin-bottom:20px;">导入本地小说开始阅读</div>';
-      html += '<button id="bsImport" style="padding:10px 24px;background:#4a90d9;color:#fff;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">导入书籍</button>';
+      html += '<button id="bsImport" style="padding:10px 24px;background:#4a90d9;color:#fff;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;margin-bottom:8px;">导入书籍</button><br>';
+      html += '<button id="bsSource" style="padding:8px 20px;background:#f0f0f0;color:#666;border:none;border-radius:8px;font-size:13px;-webkit-appearance:none;">📡 书源管理</button>';
       html += '</div>';
     } else {
       html += '<div style="padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">';
@@ -1370,7 +1372,8 @@ const Pages = (() => {
     }
 
     html += '<div style="padding:16px;text-align:center;">';
-    html += '<button id="bsImport2" style="padding:10px 24px;background:#f0f0f0;color:#666;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">+ 导入书籍</button>';
+    html += '<button id="bsImport2" style="padding:10px 24px;background:#f0f0f0;color:#666;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;margin-right:8px;">+ 导入书籍</button>';
+    html += '<button id="bsSource2" style="padding:10px 24px;background:#f0f0f0;color:#666;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">📡 书源</button>';
     html += '</div>';
 
     container.innerHTML = html;
@@ -1386,8 +1389,12 @@ const Pages = (() => {
     // Import buttons
     var importBtn = document.getElementById('bsImport');
     var importBtn2 = document.getElementById('bsImport2');
+    var sourceBtn = document.getElementById('bsSource');
+    var sourceBtn2 = document.getElementById('bsSource2');
     if (importBtn) importBtn.addEventListener('click', doImportBook);
     if (importBtn2) importBtn2.addEventListener('click', doImportBook);
+    if (sourceBtn) sourceBtn.addEventListener('click', showBookSourceMenu);
+    if (sourceBtn2) sourceBtn2.addEventListener('click', showBookSourceMenu);
 
     // Book card click - event delegation
     container.addEventListener('click', function(e) {
@@ -1399,7 +1406,11 @@ const Pages = (() => {
           var book = (bs.items || []).find(function(b) { return b.id === bookId; });
           if (book) {
             Store.patch({ currentBook: book });
-            openSub('subReader');
+            if (book.type === '漫剧' || book.images) {
+              openSub('subComicReader');
+            } else {
+              openSub('subReader');
+            }
           }
         }
       }
@@ -1409,40 +1420,180 @@ const Pages = (() => {
   function doImportBook() {
     var input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.txt,.epub';
+    input.accept = '.txt,.epub,.zip';
     input.multiple = true;
     input.style.display = 'none';
     input.onchange = function(e) {
       var files = e.target.files;
       if (!files || files.length === 0) return;
       var imported = 0;
+      var total = files.length;
       Array.from(files).forEach(function(file) {
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-          var bs = Store.state.bookshelf || { items: [] };
-          var items = bs.items ? bs.items.slice() : [];
-          items.push({
-            id: 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            title: file.name.replace(/\.[^/.]+$/, ''),
-            author: '本地导入',
-            type: '阅读',
-            progress: 0,
-            lastRead: Date.now(),
-            source: 'local'
-          });
-          Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
-          imported++;
-          if (imported === files.length) {
-            Toast.success('导入 ' + imported + ' 本');
-            renderBookshelf();
-          }
-        };
-        reader.readAsText(file);
+        if (file.name.endsWith('.epub')) {
+          // EPUB parsing via JSZip
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            parseEpub(ev.target.result, file.name).then(function(book) {
+              var bs = Store.state.bookshelf || { items: [] };
+              var items = bs.items ? bs.items.slice() : [];
+              items.push(book);
+              Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+              imported++;
+              if (imported === total) {
+                Toast.success('导入 ' + imported + ' 本');
+                renderBookshelf();
+              }
+            }).catch(function(err) {
+              Toast.error('EPUB解析失败: ' + file.name);
+              imported++;
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        } else if (file.name.endsWith('.zip')) {
+          // ZIP of images -> comic
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            parseComicZip(ev.target.result, file.name).then(function(comic) {
+              var bs = Store.state.bookshelf || { items: [] };
+              var items = bs.items ? bs.items.slice() : [];
+              items.push(comic);
+              Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+              imported++;
+              if (imported === total) {
+                Toast.success('导入 ' + imported + ' 本');
+                renderBookshelf();
+              }
+            }).catch(function(err) {
+              Toast.error('漫画包解析失败: ' + file.name);
+              imported++;
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          // TXT
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            var bs = Store.state.bookshelf || { items: [] };
+            var items = bs.items ? bs.items.slice() : [];
+            items.push({
+              id: 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+              title: file.name.replace(/\.[^/.]+$/, ''),
+              author: '本地导入',
+              type: '阅读',
+              progress: 0,
+              lastRead: Date.now(),
+              source: 'local',
+              content: ev.target.result
+            });
+            Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+            imported++;
+            if (imported === total) {
+              Toast.success('导入 ' + imported + ' 本');
+              renderBookshelf();
+            }
+          };
+          reader.readAsText(file);
+        }
       });
     };
     document.body.appendChild(input);
     input.click();
     setTimeout(function() { input.remove(); }, 2000);
+  }
+
+  // Parse EPUB using JSZip
+  async function parseEpub(arrayBuffer, filename) {
+    if (typeof JSZip === 'undefined') throw new Error('JSZip not loaded');
+    var zip = await JSZip.loadAsync(arrayBuffer);
+    // Find container.xml
+    var container = await zip.file('META-INF/container.xml')?.async('text');
+    if (!container) throw new Error('Invalid EPUB');
+    var opfPath = container.match(/full-path="([^"]+)"/)[1];
+    var opf = await zip.file(opfPath)?.async('text');
+    if (!opf) throw new Error('OPF not found');
+    // Parse title
+    var titleMatch = opf.match(/<dc:title[^>]*>([^<]+)<\/dc:title>/);
+    var title = titleMatch ? titleMatch[1] : filename.replace(/\.epub$/, '');
+    // Parse manifest
+    var manifest = {};
+    var manifestMatch = opf.match(/<manifest[^>]*>([\s\S]*?)<\/manifest>/);
+    if (manifestMatch) {
+      var itemRe = /<item[^>]+href="([^"]+)"[^>]+id="([^"]+)"[^>]*\/>/g;
+      var m;
+      while ((m = itemRe.exec(manifestMatch[1])) !== null) {
+        manifest[m[2]] = m[1];
+      }
+    }
+    // Parse spine (reading order)
+    var spine = [];
+    var spineMatch = opf.match(/<spine[^>]*>([\s\S]*?)<\/spine>/);
+    if (spineMatch) {
+      var idrefRe = /<itemref[^>]+idref="([^"]+)"\/>/g;
+      var m2;
+      while ((m2 = idrefRe.exec(spineMatch[1])) !== null) {
+        if (manifest[m2[1]]) spine.push(manifest[m2[1]]);
+      }
+    }
+    // Extract content from chapters
+    var content = '';
+    var opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
+    for (var i = 0; i < spine.length; i++) {
+      var chapPath = opfDir + spine[i];
+      var chapFile = zip.file(chapPath);
+      if (!chapFile) {
+        // Try without opfDir
+        chapFile = zip.file(spine[i]);
+      }
+      if (chapFile) {
+        var chapHtml = await chapFile.async('text');
+        // Strip HTML tags
+        var text = chapHtml.replace(/<script[\s\S]*?<\/script>/gi, '')
+                           .replace(/<style[\s\S]*?<\/style>/gi, '')
+                           .replace(/<[^>]+>/g, '\n')
+                           .replace(/&nbsp;/g, ' ')
+                           .replace(/&lt;/g, '<')
+                           .replace(/&gt;/g, '>')
+                           .replace(/&amp;/g, '&')
+                           .replace(/\n\s*\n/g, '\n\n')
+                           .trim();
+        content += '\n\n' + text;
+      }
+    }
+    return {
+      id: 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      title: title,
+      author: 'EPUB导入',
+      type: '阅读',
+      progress: 0,
+      lastRead: Date.now(),
+      source: 'epub',
+      content: content
+    };
+  }
+
+  // Parse comic ZIP
+  async function parseComicZip(arrayBuffer, filename) {
+    if (typeof JSZip === 'undefined') throw new Error('JSZip not loaded');
+    var zip = await JSZip.loadAsync(arrayBuffer);
+    var images = [];
+    var sorted = Object.keys(zip.files).filter(function(n) {
+      return /\.(jpg|jpeg|png|gif|webp)$/i.test(n);
+    }).sort();
+    for (var i = 0; i < sorted.length; i++) {
+      var blob = await zip.file(sorted[i]).async('blob');
+      images.push(URL.createObjectURL(blob));
+    }
+    return {
+      id: 'comic_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      title: filename.replace(/\.zip$/, ''),
+      author: '本地导入',
+      type: '漫剧',
+      progress: 0,
+      lastRead: Date.now(),
+      source: 'local',
+      images: images,
+      currentPage: 0
+    };
   }
 
 
@@ -1551,6 +1702,133 @@ const Pages = (() => {
       btn.onclick = function() {
         Store.patch({ reader: Object.assign({}, rs, { scrollMode: btn.dataset.scroll }) });
         renderReader();
+      };
+    });
+  }
+
+
+  function renderComicReader() {
+    var book = Store.state.currentBook;
+    if (!book || !book.images) { Toast.error('无效的漫画'); closeSubs(); return; }
+
+    var img = document.getElementById('comicImage');
+    var topbar = document.getElementById('comicTopbar');
+    var bottombar = document.getElementById('comicBottombar');
+    var title = document.getElementById('comicTitle');
+    var pageNum = document.getElementById('comicPageNum');
+    var viewer = document.getElementById('comicViewer');
+
+    if (!img) return;
+
+    var current = book.currentPage || 0;
+    var images = book.images || [];
+
+    function showPage() {
+      if (current < 0) current = 0;
+      if (current >= images.length) current = images.length - 1;
+      img.src = images[current];
+      if (pageNum) pageNum.textContent = (current + 1) + '/' + images.length;
+      if (title) title.textContent = book.title || '漫画';
+      // Save progress
+      var bs = Store.state.bookshelf || { items: [] };
+      var items = bs.items.map(function(b) {
+        if (b.id === book.id) { b.currentPage = current; b.progress = Math.round((current + 1) / images.length * 100); b.lastRead = Date.now(); }
+        return b;
+      });
+      Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+    }
+
+    showPage();
+
+    // Toggle UI
+    var uiVisible = false;
+    function toggleUI() {
+      uiVisible = !uiVisible;
+      if (topbar) topbar.style.display = uiVisible ? 'flex' : 'none';
+      if (bottombar) bottombar.style.display = uiVisible ? 'block' : 'none';
+    }
+
+    if (viewer) {
+      viewer.onclick = function(e) {
+        var rect = viewer.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var w = rect.width;
+        if (x < w * 0.3) {
+          current--;
+          showPage();
+        } else if (x > w * 0.7) {
+          current++;
+          showPage();
+        } else {
+          toggleUI();
+        }
+      };
+    }
+
+    if (document.getElementById('comicBack')) {
+      document.getElementById('comicBack').onclick = function() { closeSubs(); };
+    }
+    if (document.getElementById('comicPrev')) {
+      document.getElementById('comicPrev').onclick = function() { current--; showPage(); };
+    }
+    if (document.getElementById('comicNext')) {
+      document.getElementById('comicNext').onclick = function() { current++; showPage(); };
+    }
+  }
+
+  // ========== 书源系统 ==========
+  function showBookSourceMenu() {
+    var sources = Store.state.bookSources || [];
+    var html = '<div style="padding:16px;">';
+    html += '<div style="font-size:16px;font-weight:600;margin-bottom:12px;text-align:center;">书源管理</div>';
+    html += '<div style="margin-bottom:12px;">';
+    html += '<input type="text" id="sourceName" placeholder="书源名称" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;box-sizing:border-box;font-size:14px;">';
+    html += '<input type="text" id="sourceUrl" placeholder="书源URL (JSON)" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:8px;box-sizing:border-box;font-size:14px;">';
+    html += '<button id="addSourceBtn" style="width:100%;padding:10px;background:#4a90d9;color:#fff;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">添加书源</button>';
+    html += '</div>';
+    html += '<div style="font-size:14px;font-weight:600;margin-bottom:8px;">已添加书源 (' + sources.length + ')</div>';
+    if (sources.length === 0) {
+      html += '<div style="text-align:center;padding:20px;color:#999;font-size:13px;">暂无书源，请添加</div>';
+    } else {
+      html += '<div style="max-height:200px;overflow-y:auto;">';
+      sources.forEach(function(s, i) {
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f8f8f8;border-radius:8px;margin-bottom:6px;">';
+        html += '<span style="font-size:13px;">' + (s.name || '未命名') + '</span>';
+        html += '<button data-idx="' + i + '" class="del-source" style="background:none;border:none;color:#ff2d55;font-size:12px;">删除</button>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '<button id="closeSourceMenu" style="width:100%;padding:10px;margin-top:12px;background:#f0f0f0;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">关闭</button>';
+    html += '</div>';
+
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center;';
+    modal.innerHTML = '<div style="background:#fff;width:100%;max-width:400px;border-radius:16px 16px 0 0;padding:16px;">' + html + '</div>';
+    document.body.appendChild(modal);
+
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+    document.getElementById('closeSourceMenu').onclick = function() { modal.remove(); };
+
+    document.getElementById('addSourceBtn').onclick = function() {
+      var name = document.getElementById('sourceName').value.trim();
+      var url = document.getElementById('sourceUrl').value.trim();
+      if (!name || !url) { Toast.error('请填写完整'); return; }
+      var sources = (Store.state.bookSources || []).slice();
+      sources.push({ name: name, url: url, enabled: true, addedAt: Date.now() });
+      Store.patch({ bookSources: sources });
+      Toast.success('书源已添加');
+      modal.remove();
+    };
+
+    modal.querySelectorAll('.del-source').forEach(function(btn) {
+      btn.onclick = function() {
+        var idx = parseInt(btn.dataset.idx);
+        var sources = (Store.state.bookSources || []).slice();
+        sources.splice(idx, 1);
+        Store.patch({ bookSources: sources });
+        Toast.success('已删除');
+        modal.remove();
       };
     });
   }
