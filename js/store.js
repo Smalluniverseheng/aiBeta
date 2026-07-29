@@ -50,6 +50,12 @@ const Store = (() => {
     membership: null,        // { tier, expires_at, storage_used, storage_limit }
     membershipPlans: [],     // 从后端拉取的 plans 列表
     storageMode: 'cloud',    // 'cloud' | 'local' — 数据存储模式
+    bookshelf: {              // 书架数据
+      items: [],              // { id, title, author, cover, type, progress, lastRead, source }
+      categories: ['全部','阅读','听书','短剧','漫剧','出版'],
+      activeCategory: '全部',
+      viewMode: 'grid'
+    },
     cloudUser: null,        // 云端账号 {id, email, name, isAdmin}（js/supabase.js；游客/本地账号为 null）
     cloudMap: {},           // 会话映射 {本地会话id: 云端uuid}（管理员全量同步用）
     cloudMeta: { lastSync: 0, lastSettingsSync: 0, lastUsagePush: 0, usageTotal: 0 },  // 同步游标
