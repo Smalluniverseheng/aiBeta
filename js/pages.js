@@ -1072,6 +1072,7 @@ const Pages = (() => {
     else if (id === 'subMembership') renderMembership();
     else if (id === 'subStorage') renderStorage();
     else if (id === 'subBookshelf') renderBookshelf();
+    else if (id === 'subReader') renderReader();
   }
 
   function bindSubpageEvents() {
@@ -1393,7 +1394,14 @@ const Pages = (() => {
       var card = e.target.closest('[data-book-id]');
       if (card) {
         var bookId = card.dataset.bookId;
-        if (bookId) Toast.info('打开: ' + bookId);
+        if (bookId) {
+          var bs = Store.state.bookshelf || { items: [] };
+          var book = (bs.items || []).find(function(b) { return b.id === bookId; });
+          if (book) {
+            Store.patch({ currentBook: book });
+            openSub('subReader');
+          }
+        }
       }
     });
   }
@@ -1435,6 +1443,116 @@ const Pages = (() => {
     document.body.appendChild(input);
     input.click();
     setTimeout(function() { input.remove(); }, 2000);
+  }
+
+
+  function renderReader() {
+    var book = Store.state.currentBook;
+    if (!book) { Toast.error('未选择书籍'); closeSubs(); return; }
+
+    var contentDiv = document.getElementById('readerContent');
+    var topbar = document.getElementById('readerTopbar');
+    var bottombar = document.getElementById('readerBottombar');
+    var title = document.getElementById('readerTitle');
+    var settings = document.getElementById('readerSettings');
+    var readerPage = document.getElementById('subReader');
+
+    if (!contentDiv) return;
+
+    var rs = Store.state.reader || { fontSize: 18, bgColor: '#f5e6c8', nightMode: false, scrollMode: 'vertical' };
+
+    // Apply settings
+    contentDiv.style.fontSize = (rs.fontSize || 18) + 'px';
+    contentDiv.style.background = rs.nightMode ? '#1a1a1a' : (rs.bgColor || '#f5e6c8');
+    contentDiv.style.color = rs.nightMode ? '#bbb' : '#333';
+    if (readerPage) readerPage.style.background = rs.nightMode ? '#1a1a1a' : (rs.bgColor || '#f5e6c8');
+
+    if (title) title.textContent = book.title || '阅读';
+
+    // Parse content
+    var text = book.content || '';
+    if (!text) {
+      contentDiv.innerHTML = '<div style="text-align:center;padding:100px 20px;color:#999;"><div style="font-size:48px;margin-bottom:16px;">📖</div><div>暂无内容</div><div style="font-size:13px;margin-top:8px;">该书籍暂无文本内容</div></div>';
+    } else {
+      // Simple paragraph splitting
+      var paragraphs = text.split(/\n{2,}|\r\n{2,}/).filter(function(p) { return p.trim(); });
+      var html = '<div style="max-width:680px;margin:0 auto;">';
+      html += '<h1 style="font-size:1.4em;font-weight:600;margin-bottom:20px;text-align:center;">' + (book.title || '').replace(/</g,'&lt;') + '</h1>';
+      paragraphs.forEach(function(p) {
+        html += '<p style="text-indent:2em;margin-bottom:0.8em;">' + p.trim().replace(/</g,'&lt;').replace(/\n/g,'<br>') + '</p>';
+      });
+      html += '</div>';
+      contentDiv.innerHTML = html;
+    }
+
+    // Toggle UI
+    var uiVisible = false;
+    function toggleUI() {
+      uiVisible = !uiVisible;
+      if (topbar) topbar.style.display = uiVisible ? 'flex' : 'none';
+      if (bottombar) bottombar.style.display = uiVisible ? 'block' : 'none';
+      if (settings) settings.style.display = 'none';
+    }
+
+    contentDiv.onclick = function(e) {
+      // Only toggle if clicking on content area, not scrolling
+      if (e.target === contentDiv || e.target.tagName === 'P' || e.target.tagName === 'H1') {
+        toggleUI();
+      }
+    };
+
+    if (document.getElementById('readerBack')) {
+      document.getElementById('readerBack').onclick = function() { closeSubs(); };
+    }
+
+    // Bottom tools
+    document.querySelectorAll('.reader-tool').forEach(function(btn) {
+      btn.onclick = function() {
+        var tool = btn.dataset.tool;
+        if (tool === 'toc') { Toast.info('目录功能开发中'); }
+        else if (tool === 'night') {
+          Store.patch({ reader: Object.assign({}, rs, { nightMode: !rs.nightMode }) });
+          renderReader();
+        }
+        else if (tool === 'settings') {
+          if (settings) settings.style.display = settings.style.display === 'none' ? 'block' : 'none';
+        }
+      };
+    });
+
+    // Settings panel
+    var fontSizeEl = document.getElementById('rsFontSize');
+    if (fontSizeEl) fontSizeEl.textContent = rs.fontSize || 18;
+
+    var fm = document.getElementById('rsFontMinus');
+    if (fm) fm.onclick = function() {
+      var newSize = Math.max(12, (rs.fontSize || 18) - 2);
+      Store.patch({ reader: Object.assign({}, rs, { fontSize: newSize }) });
+      renderReader();
+    };
+
+    var fp = document.getElementById('rsFontPlus');
+    if (fp) fp.onclick = function() {
+      var newSize = Math.min(32, (rs.fontSize || 18) + 2);
+      Store.patch({ reader: Object.assign({}, rs, { fontSize: newSize }) });
+      renderReader();
+    };
+
+    // Background buttons
+    document.querySelectorAll('#readerSettings [data-bg]').forEach(function(btn) {
+      btn.onclick = function() {
+        Store.patch({ reader: Object.assign({}, rs, { bgColor: btn.dataset.bg, nightMode: false }) });
+        renderReader();
+      };
+    });
+
+    // Scroll mode buttons
+    document.querySelectorAll('#readerSettings [data-scroll]').forEach(function(btn) {
+      btn.onclick = function() {
+        Store.patch({ reader: Object.assign({}, rs, { scrollMode: btn.dataset.scroll }) });
+        renderReader();
+      };
+    });
   }
 
 function renderRowDescs() {
