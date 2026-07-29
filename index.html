@@ -656,6 +656,47 @@
       <div class="subpage-body" id="subBookshelfBody" style="padding:0;"></div>
     </div>
 
+    <!-- 阅读器 -->
+    <div class="subpage" id="subReader" style="background:#f5e6c8;">
+      <div class="reader-topbar" id="readerTopbar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,0,0,0.85);padding:8px 12px;align-items:center;justify-content:space-between;color:#fff;">
+        <button id="readerBack" style="background:none;border:none;color:#fff;font-size:20px;padding:4px;">←</button>
+        <span id="readerTitle" style="font-size:14px;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+        <button id="readerMenu" style="background:none;border:none;color:#fff;font-size:18px;padding:4px;">☰</button>
+      </div>
+      <div class="reader-content" id="readerContent" style="padding:60px 16px 80px;height:100vh;overflow-y:auto;box-sizing:border-box;line-height:1.8;font-size:18px;color:#333;"></div>
+      <div class="reader-bottombar" id="readerBottombar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(0,0,0,0.85);padding:8px 0;color:#fff;">
+        <div style="display:flex;justify-content:space-around;align-items:center;">
+          <button class="reader-tool" data-tool="toc" style="background:none;border:none;color:#fff;font-size:12px;padding:8px 16px;">📑<br>目录</button>
+          <button class="reader-tool" data-tool="night" style="background:none;border:none;color:#fff;font-size:12px;padding:8px 16px;">🌙<br>夜间</button>
+          <button class="reader-tool" data-tool="settings" style="background:none;border:none;color:#fff;font-size:12px;padding:8px 16px;">⚙️<br>设置</button>
+        </div>
+      </div>
+      <div class="reader-settings" id="readerSettings" style="display:none;position:fixed;bottom:60px;left:0;right:0;z-index:101;background:#fff;border-radius:16px 16px 0 0;padding:16px;box-shadow:0 -4px 20px rgba(0,0,0,0.1);">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">阅读设置</div>
+        <div style="margin-bottom:12px;"><span style="font-size:13px;color:#666;">字号</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+            <button id="rsFontMinus" style="width:36px;height:36px;border:1px solid #ddd;border-radius:50%;background:#fff;font-size:18px;">A-</button>
+            <span id="rsFontSize" style="min-width:30px;text-align:center;font-size:14px;">18</span>
+            <button id="rsFontPlus" style="width:36px;height:36px;border:1px solid #ddd;border-radius:50%;background:#fff;font-size:18px;">A+</button>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;"><span style="font-size:13px;color:#666;">背景</span>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button data-bg="#f5e6c8" style="width:32px;height:32px;border-radius:50%;border:2px solid #ddd;background:#f5e6c8;"></button>
+            <button data-bg="#ffffff" style="width:32px;height:32px;border-radius:50%;border:2px solid #ddd;background:#ffffff;"></button>
+            <button data-bg="#e8f5e9" style="width:32px;height:32px;border-radius:50%;border:2px solid #ddd;background:#e8f5e9;"></button>
+            <button data-bg="#263238" style="width:32px;height:32px;border-radius:50%;border:2px solid #ddd;background:#263238;"></button>
+          </div>
+        </div>
+        <div><span style="font-size:13px;color:#666;">翻页</span>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button data-scroll="vertical" style="padding:6px 14px;border:1px solid #4a90d9;border-radius:99px;background:#4a90d9;color:#fff;font-size:12px;">上下滑动</button>
+            <button data-scroll="page" style="padding:6px 14px;border:1px solid #ddd;border-radius:99px;background:#fff;color:#666;font-size:12px;">点击翻页</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 编辑资料（Kimi 式：头像 / 名字 / 简介 + 账号安全；字段失焦自动保存） -->
     <div class="subpage" id="subProfileEdit">
       <div class="subpage-head"><button class="subpage-back" data-back><span data-icon="chevronRight"></span></button><h2 data-i18n-text="pe.title">编辑资料</h2></div>
