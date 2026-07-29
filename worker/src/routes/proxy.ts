@@ -1,94 +1,165 @@
-import { json } from '../router';
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 
-// 书源/图源代理（绕过 CORS）
-export async function proxyRoute(request: Request, env: any): Promise<Response> {
+const proxy = new Hono()
+
+// Enable CORS for all proxy routes
+proxy.use('*', cors({
+  origin: '*',
+  allowMethods: ['POST', 'GET', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400,
+}))
+
+// Single URL proxy
+proxy.post('/', async (c) => {
   try {
-    const { url, method = 'GET', headers: customHeaders, body } = await request.json();
+    const { url, headers: customHeaders = {}, method = 'GET', body, timeout = 30000 } = await c.req.json()
 
-    if (!url || typeof url !== 'string') {
-      return json({ error: 'URL 不能为空' }, 400);
+    if (!url) {
+      return c.json({ success: false, error: 'Missing url parameter' }, 400)
     }
 
-    // 安全校验：只允许 http/https
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return json({ error: '不支持的协议' }, 400);
+    // Validate URL
+    let targetUrl: URL
+    try {
+      targetUrl = new URL(url)
+    } catch {
+      return c.json({ success: false, error: 'Invalid URL' }, 400)
     }
 
-    // 构建请求
-    const fetchOptions: RequestInit = {
+    // Prepare headers
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.0.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Cache-Control': 'no-cache',
+      ...customHeaders,
+    }
+
+    // Remove forbidden headers
+    delete headers['host']
+    delete headers['connection']
+    delete headers['content-length']
+
+    // Create abort controller for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+    const startTime = Date.now()
+
+    const response = await fetch(targetUrl.toString(), {
       method: method.toUpperCase(),
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        ...customHeaders,
-      },
-    };
+      headers,
+      body: body || undefined,
+      signal: controller.signal,
+      redirect: 'follow',
+    })
 
-    if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-      fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
-    }
+    clearTimeout(timeoutId)
 
-    const response = await fetch(url, fetchOptions);
+    const responseTime = Date.now() - startTime
+    const responseHeaders: Record<string, string> = {}
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value
+    })
 
-    // 读取响应内容
-    const contentType = response.headers.get('content-type') || '';
-    let responseBody: any;
+    // Handle different content types
+    const contentType = response.headers.get('content-type') || ''
+    let data: string
 
     if (contentType.includes('application/json')) {
-      responseBody = await response.json();
+      data = await response.text()
+    } else if (contentType.includes('text/') || contentType.includes('application/xml') || contentType.includes('application/xhtml')) {
+      data = await response.text()
     } else {
-      responseBody = await response.text();
+      // For binary data, encode as base64
+      const arrayBuffer = await response.arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      let binary = ''
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i])
+      }
+      data = btoa(binary)
     }
 
-    return json({
-      success: response.ok,
+    return c.json({
+      success: true,
       status: response.status,
       statusText: response.statusText,
-      headers: Object.fromEntries(response.headers),
-      data: responseBody,
-    });
-  } catch (e: any) {
-    return json({ error: e.message || '代理请求失败' }, 500);
-  }
-}
+      headers: responseHeaders,
+      data,
+      responseTime,
+      contentType,
+    })
 
-// 批量代理（用于书源/图源导入时批量验证）
-export async function proxyBatchRoute(request: Request, env: any): Promise<Response> {
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      return c.json({ success: false, error: 'Request timeout', status: 408 }, 408)
+    }
+    return c.json({ success: false, error: error.message, status: 500 }, 500)
+  }
+})
+
+// Batch proxy
+proxy.post('/batch', async (c) => {
   try {
-    const { urls } = await request.json();
+    const { urls, timeout = 30000 } = await c.req.json()
+
     if (!Array.isArray(urls) || urls.length === 0) {
-      return json({ error: 'URL 列表不能为空' }, 400);
+      return c.json({ success: false, error: 'urls must be a non-empty array' }, 400)
     }
 
-    // 限制批量数量
     if (urls.length > 20) {
-      return json({ error: '单次最多 20 个 URL' }, 400);
+      return c.json({ success: false, error: 'Maximum 20 URLs allowed per batch' }, 400)
     }
 
     const results = await Promise.all(
-      urls.map(async (url: string) => {
+      urls.map(async ({ url, headers: customHeaders = {}, method = 'GET' }) => {
         try {
-          const res = await fetch(url, {
-            method: 'GET',
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+          const response = await fetch(url, {
+            method: method.toUpperCase(),
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'text/html,application/json,*/*',
+              ...customHeaders,
             },
-          });
-          const text = await res.text();
+            signal: controller.signal,
+          })
+
+          clearTimeout(timeoutId)
+          const data = await response.text()
+
           return {
             url,
-            success: res.ok,
-            status: res.status,
-            size: text.length,
-            preview: text.slice(0, 200),
-          };
-        } catch (e: any) {
-          return { url, success: false, error: e.message };
+            success: true,
+            status: response.status,
+            data,
+            responseTime: 0,
+          }
+        } catch (error: any) {
+          return {
+            url,
+            success: false,
+            error: error.message,
+            status: 0,
+          }
         }
       })
-    );
+    )
 
-    return json({ results });
-  } catch (e: any) {
-    return json({ error: e.message || '批量代理失败' }, 500);
+    return c.json({ success: true, results })
+
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
   }
-}
+})
+
+// Health check
+proxy.get('/health', (c) => c.json({ status: 'ok', timestamp: Date.now() }))
+
+export default proxy
