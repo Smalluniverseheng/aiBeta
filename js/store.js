@@ -56,8 +56,8 @@ const Store = (() => {
     novelHistory: [],      // 小说阅读历史
     comicSources: [],      // 漫画图源列表
     comicShelf: [],        // 漫画书架
-    comicHistory: []       // 漫画阅读历史
-  // v5.7 会员体系
+    comicHistory: [],       // 漫画阅读历史
+    // v5.7 会员体系
   membership: null,
   devices: [],
   deviceManagement: false,
