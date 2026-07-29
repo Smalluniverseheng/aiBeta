@@ -21,17 +21,7 @@
 <!-- KaTeX（数学公式渲染，可选增强） -->
 <link rel="stylesheet" href="https://registry.npmmirror.com/katex/latest/files/dist/katex.min.css">
 <!-- Mermaid（图表渲染，可选增强） -->
-<script src="https://registry.npmmirror.com/mermaid/latest/files/dist/mermaid.min.js" async></script>
-<link rel="stylesheet" href="css/base.css?v=5.7">
-<link rel="stylesheet" href="css/layout.css?v=5.7">
-<link rel="stylesheet" href="css/components.css?v=5.7">
-<link rel="stylesheet" href="css/chat.css?v=5.7">
-<link rel="stylesheet" href="css/login.css?v=5.7">
-<link rel="stylesheet" href="css/pages.css?v=5.7">
-<link rel="stylesheet" href="css/watch.css?v=5.7">
 
-  <!-- v5.7 白屏诊断工具 -->
-  <script src="https://unpkg.com/vconsole@3.15.1/dist/vconsole.min.js"></script>
   <script>
     window.vConsole = new window.VConsole({
       defaultPlugins: ['system', 'network', 'element', 'storage'],
@@ -1179,6 +1169,11 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div class="subpage-body" id="devicesPanel"></div>
   </div>
+
+
+  <!-- [TEST-ONLY] 诊断工具：正式服部署前删除下面这行 -->
+  <script src="js/diag.js?v=5.7"></script>
+  <!-- [/TEST-ONLY] -->
 
 </body>
         </html>
