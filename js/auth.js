@@ -56,6 +56,10 @@ const Auth = (() => {
     users[email] = user;
     Store.saveUsers(users);
     Store.patch({ loggedIn: true, user: email, userInfo: user, cloudUser: { id: r.user.id, email, name, isAdmin } });
+    // 管理员默认宇宙等级
+    if (isAdmin) {
+      Store.patch({ membership: { tier: 'universe', expires_at: null, storage_used: 0, storage_limit: -1 } });
+    }
     // 首次同步（后台：管理员全量双向 / 普通用户轻量）
     SB.Sync.firstSync();
     // 拉取会员信息
