@@ -14,6 +14,7 @@ const Comic = (() => {
   function addSource(src) {
     const list = getSources();
     if (!list.find(s => s.name === src.name)) { list.push(src); setSources(list); }
+  }
   
 
   function isUrl(str) {
