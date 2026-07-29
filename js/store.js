@@ -57,14 +57,35 @@ const Store = (() => {
         type: 'comic',
         enabled: true,
         builtIn: true,
-        searchUrl: '/search/photos?search_query={{key}}&search-type=photos&main_tag=0&page={{page}}',
-        ruleSearch: {
-          bookList: '.p-b-15',
-          name: '.video-title@text',
-          author: '.title-truncate.1@text',
-          coverUrl: 'img@data-original||img@src',
-          bookUrl: 'a.0@href'
-        }
+        searchUrl: 'https://18comic-hok.vip/search/photos?search_query={{key}}&search-type=photos&main_tag=0&page=1',
+        ruleSearch: { bookList: '.p-b-15', name: '.video-title@text', author: '.title-truncate.1@text', coverUrl: 'img@data-original||img@src', bookUrl: 'a.0@href' }
+      },
+      {
+        name: '📚笔趣阁',
+        url: 'https://www.biquge.co',
+        type: 'novel',
+        enabled: true,
+        builtIn: true,
+        searchUrl: 'https://www.biquge.co/search.php?keyword={{key}}',
+        ruleSearch: { bookList: '.result-item', name: '.result-game-item-title a', author: '.result-game-item-info-tag span', coverUrl: '.result-game-item-pic img@src', bookUrl: '.result-game-item-title a@href' }
+      },
+      {
+        name: '📖顶点小说',
+        url: 'https://www.x23us.com',
+        type: 'novel',
+        enabled: true,
+        builtIn: true,
+        searchUrl: 'https://www.x23us.com/modules/article/search.php?searchkey={{key}}',
+        ruleSearch: { bookList: 'tr', name: 'td.1 a', author: 'td.2', coverUrl: '', bookUrl: 'td.1 a@href' }
+      },
+      {
+        name: '🌸漫画柜',
+        url: 'https://www.manhuagui.com',
+        type: 'comic',
+        enabled: true,
+        builtIn: true,
+        searchUrl: 'https://www.manhuagui.com/s/{{key}}.html',
+        ruleSearch: { bookList: '.book-result', name: '.book-title', author: '', coverUrl: '.book-cover img@src', bookUrl: '.book-title a@href' }
       }
     ], // 书源列表 [{ name, url, searchUrl, enabled }]
     reader: {                 // 阅读器设置
