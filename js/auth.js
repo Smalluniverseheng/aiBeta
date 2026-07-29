@@ -27,16 +27,18 @@ const Auth = (() => {
     if (u.cloud) return { ok: false, error: '该账号是云端账号，请用邮箱 + 云端密码登录' };
     if (u.password !== await hash(password)) return { ok: false, error: '密码错误，请重试' };
     Store.patch({ loggedIn: true, user: account, userInfo: u });
-  // v5.7 记录设备信息
-  if (Membership) {
-    Membership.addDevice({
-      deviceId: localStorage.getItem('device_id') || Membership.generateDeviceId(),
-      name: navigator.userAgent.match(/\(([^)]+)\)/)?.[1] || '未知设备',
-      type: /Mobile|Android|iPhone/.test(navigator.userAgent) ? 'mobile' : 'desktop',
-      os: navigator.platform,
-      browser: navigator.userAgent.match(/(Chrome|Safari|Firefox|Edge)\/[^\s]+/)?.[0] || '',
-    });
-  }
+  // v5.7 记录设备信息（延迟执行，等待 Membership 加载）
+  setTimeout(function(){
+    if (typeof Membership !== 'undefined' && Membership) {
+      Membership.addDevice({
+        deviceId: localStorage.getItem('device_id') || (Membership.generateDeviceId ? Membership.generateDeviceId() : 'dev_' + Date.now()),
+        name: navigator.userAgent.match(/\(([^)]+)\)/)?.[1] || '未知设备',
+        type: /Mobile|Android|iPhone/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        os: navigator.platform,
+        browser: navigator.userAgent.match(/(Chrome|Safari|Firefox|Edge)\/[^\s]+/)?.[0] || '',
+      });
+    }
+  }, 1000);
     return { ok: true };
   }
 
