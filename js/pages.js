@@ -925,8 +925,8 @@ const Pages = (() => {
 
   function bindDiscoverEvents() {
     $('#toolPaint').addEventListener('click', openPaintModal);
-    $('#toolNovel').addEventListener('click', () => openSub('subNovel'));
-    $('#toolComic').addEventListener('click', () => openSub('subComic'));
+    $('#toolNovel') && $('#toolNovel').addEventListener('click', () => openSub('subBookshelf'));
+    $('#toolComic') && $('#toolComic').addEventListener('click', () => openSub('subBookshelf'));
     $('#toolVoiceStudio').addEventListener('click', () => openVoiceStudio());
     $('#toolPresets').addEventListener('click', () => {
       renderPresetGrid();
@@ -1071,6 +1071,7 @@ const Pages = (() => {
     else if (id === 'subComic') { if (typeof renderComic === 'function') renderComic(); else console.warn('renderComic 未定义'); if (typeof bindComicEvents === 'function') bindComicEvents(); }
     else if (id === 'subMembership') renderMembership();
     else if (id === 'subStorage') renderStorage();
+    else if (id === 'subBookshelf') renderBookshelf();
   }
 
   function bindSubpageEvents() {
@@ -1323,6 +1324,117 @@ const Pages = (() => {
     if (syncBtn) syncBtn.onclick = function() { if (typeof SB !== 'undefined' && SB.Sync) { SB.Sync.push(); Toast.success('同步已触发'); } else { Toast.error('云服务未就绪'); } };
     const clearBtn = $('#storageClearBtn');
     if (clearBtn) clearBtn.onclick = function() { if (!confirm('确定要清除所有本地数据吗？\n此操作不可恢复，云端数据不受影响。')) return; localStorage.removeItem('ai_chat_state_v5'); localStorage.removeItem('ai_users_v5'); Toast.success('本地数据已清除'); location.reload(); };
+  }
+
+
+  function renderBookshelf() {
+    const container = document.getElementById('subBookshelfBody');
+    if (!container) return;
+    const bs = Store.state.bookshelf || { items: [], categories: ['全部','阅读','听书','短剧','漫剧','出版'], activeCategory: '全部' };
+    const items = bs.items || [];
+    const cats = bs.categories || ['全部','阅读','听书','短剧','漫剧','出版'];
+    const active = bs.activeCategory || '全部';
+    const filtered = active === '全部' ? items : items.filter(function(i) { return (i.type || '阅读') === active; });
+
+    let html = '<div style="position:sticky;top:0;background:#fff;z-index:10;border-bottom:1px solid #eee;">';
+    html += '<div style="display:flex;gap:4px;padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;">';
+    cats.forEach(function(c) {
+      const isActive = c === active;
+      html += '<button data-cat="' + c + '" style="padding:6px 14px;border-radius:99px;border:none;font-size:13px;' + (isActive ? 'background:#4a90d9;color:#fff;font-weight:500;' : 'background:#f0f0f0;color:#666;') + '-webkit-appearance:none;flex-shrink:0;">' + c + '</button>';
+    });
+    html += '</div></div>';
+
+    if (filtered.length === 0) {
+      html += '<div style="text-align:center;padding:60px 20px;color:#999;">';
+      html += '<div style="font-size:48px;margin-bottom:12px;">📚</div>';
+      html += '<div style="font-size:15px;margin-bottom:8px;">书架空空如也</div>';
+      html += '<div style="font-size:13px;margin-bottom:20px;">导入本地小说开始阅读</div>';
+      html += '<button id="bsImport" style="padding:10px 24px;background:#4a90d9;color:#fff;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">导入书籍</button>';
+      html += '</div>';
+    } else {
+      html += '<div style="padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">';
+      filtered.forEach(function(book) {
+        const progress = book.progress || 0;
+        html += '<div data-book-id="' + (book.id || '') + '" style="cursor:pointer;">';
+        html += '<div style="width:100%;aspect-ratio:3/4;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;">📖</div>';
+        html += '<div style="margin-top:6px;font-size:13px;font-weight:500;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.title || '未命名').replace(/</g,'&lt;') + '</div>';
+        html += '<div style="font-size:11px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (book.author || '未知作者').replace(/</g,'&lt;') + '</div>';
+        if (progress > 0) {
+          html += '<div style="margin-top:4px;background:#eee;border-radius:99px;height:3px;overflow:hidden;">';
+          html += '<div style="width:' + progress + '%;background:#4a90d9;height:100%;"></div></div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '<div style="padding:16px;text-align:center;">';
+    html += '<button id="bsImport2" style="padding:10px 24px;background:#f0f0f0;color:#666;border:none;border-radius:8px;font-size:14px;-webkit-appearance:none;">+ 导入书籍</button>';
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Category click
+    container.querySelectorAll('[data-cat]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        Store.patch({ bookshelf: Object.assign({}, Store.state.bookshelf || {}, { activeCategory: btn.dataset.cat }) });
+        renderBookshelf();
+      });
+    });
+
+    // Import buttons
+    var importBtn = document.getElementById('bsImport');
+    var importBtn2 = document.getElementById('bsImport2');
+    if (importBtn) importBtn.addEventListener('click', doImportBook);
+    if (importBtn2) importBtn2.addEventListener('click', doImportBook);
+
+    // Book card click - event delegation
+    container.addEventListener('click', function(e) {
+      var card = e.target.closest('[data-book-id]');
+      if (card) {
+        var bookId = card.dataset.bookId;
+        if (bookId) Toast.info('打开: ' + bookId);
+      }
+    });
+  }
+
+  function doImportBook() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.epub';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.onchange = function(e) {
+      var files = e.target.files;
+      if (!files || files.length === 0) return;
+      var imported = 0;
+      Array.from(files).forEach(function(file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var bs = Store.state.bookshelf || { items: [] };
+          var items = bs.items ? bs.items.slice() : [];
+          items.push({
+            id: 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            author: '本地导入',
+            type: '阅读',
+            progress: 0,
+            lastRead: Date.now(),
+            source: 'local'
+          });
+          Store.patch({ bookshelf: Object.assign({}, bs, { items: items }) });
+          imported++;
+          if (imported === files.length) {
+            Toast.success('导入 ' + imported + ' 本');
+            renderBookshelf();
+          }
+        };
+        reader.readAsText(file);
+      });
+    };
+    document.body.appendChild(input);
+    input.click();
+    setTimeout(function() { input.remove(); }, 2000);
   }
 
 function renderRowDescs() {
