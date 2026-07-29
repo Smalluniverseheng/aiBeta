@@ -2967,7 +2967,7 @@ function bindKeyEvents() {
     const box = $('#lotteryPanel');
     if (!box) return;
     const count = Lottery ? Lottery.getLotteryCount() : 0;
-    const records = Store.get('lotteryRecords') || [];
+    const records = Store.state.lotteryRecords || [];
 
     let html = '<div class="lottery-container">';
     html += '<div class="lottery-title">🎰 幸运老虎机</div>';
@@ -3121,7 +3121,7 @@ function bindKeyEvents() {
   function renderFamily() {
     const box = $('#familyPanel');
     if (!box) return;
-    const family = Store.get('familyGroup');
+    const family = Store.state.familyGroup;
     const tier = Membership ? Membership.getCurrentTier() : { family: false };
 
     let html = '<div class="family-container">';
