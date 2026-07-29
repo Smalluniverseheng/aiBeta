@@ -57,6 +57,11 @@ const Store = (() => {
       nightMode: false,
       scrollMode: 'vertical'   // 'vertical' | 'page'
     },
+    sourceValidation: {       // 书源验证状态
+      validating: false,
+      results: [],            // [{ url, name, status: 'ok'|'fail'|'timeout', responseTime }]
+      batchText: ''
+    },
     search: {                 // 搜索状态
       query: '',
       results: [],            // [{ sourceName, sourceType, books: [{ title, author, cover, latestChapter, url }] }]
