@@ -29,6 +29,68 @@
 <link rel="stylesheet" href="css/login.css?v=5.7">
 <link rel="stylesheet" href="css/pages.css?v=5.7">
 <link rel="stylesheet" href="css/watch.css?v=5.7">
+
+  <!-- v5.7 白屏诊断工具 -->
+  <script src="https://unpkg.com/vconsole@3.15.1/dist/vconsole.min.js"></script>
+  <script>
+    window.vConsole = new window.VConsole({
+      defaultPlugins: ['system', 'network', 'element', 'storage'],
+      onReady: function() {
+        console.log('[vConsole] 白屏诊断工具已加载');
+      }
+    });
+  </script>
+  <script>
+    /* 白屏诊断：捕获所有错误并显示在页面上 */
+    (function(){
+      var errors = [];
+      var oldError = window.onerror;
+      window.onerror = function(msg, url, line, col, err) {
+        errors.push({msg: msg, url: url, line: line, col: col});
+        var div = document.getElementById('__white_screen_diag');
+        if (div) {
+          div.innerHTML += '<div style="color:#f87171;padding:4px 0;border-bottom:1px solid #333;font-size:12px;">' + 
+            '<b>Error:</b> ' + msg + '<br><span style="color:#888">@' + (url||'').split('/').pop() + ':' + line + ':' + col + '</span></div>';
+        }
+        if (oldError) oldError.apply(this, arguments);
+        return false;
+      };
+      window.addEventListener('error', function(e) {
+        errors.push({msg: e.message, url: e.filename, line: e.lineno});
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        errors.push({msg: 'Unhandled Promise: ' + e.reason, url: '', line: 0});
+        var div = document.getElementById('__white_screen_diag');
+        if (div) {
+          div.innerHTML += '<div style="color:#fbbf24;padding:4px 0;border-bottom:1px solid #333;font-size:12px;">' + 
+            '<b>Promise Error:</b> ' + e.reason + '</div>';
+        }
+      });
+      // 5秒后如果 body 为空，显示诊断面板
+      setTimeout(function(){
+        if (!document.body || document.body.children.length === 0 || document.body.innerText.trim().length < 10) {
+          var diag = document.createElement('div');
+          diag.id = '__white_screen_diag';
+          diag.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#0f0f1a;z-index:99999;color:#e0e0e0;padding:16px;overflow:auto;font-family:monospace;font-size:13px;';
+          diag.innerHTML = '<h2 style="color:#ef4444;margin:0 0 12px;">⚠️ 白屏诊断</h2>' +
+            '<div style="color:#888;margin-bottom:12px;">页面加载异常，以下是捕获到的错误：</div>' +
+            '<div id="__diag_errors"></div>' +
+            '<div style="margin-top:20px;color:#4ade80;">请截图此页面并发送给开发者</div>';
+          document.body.appendChild(diag);
+          // 填充已捕获的错误
+          var errDiv = document.getElementById('__diag_errors');
+          errors.forEach(function(e){
+            errDiv.innerHTML += '<div style="color:#f87171;padding:4px 0;border-bottom:1px solid #333;">' + 
+              e.msg + '<br><span style="color:#888;font-size:11px;">@' + (e.url||'').split('/').pop() + ':' + e.line + '</span></div>';
+          });
+          if (errors.length === 0) {
+            errDiv.innerHTML = '<div style="color:#888;">暂无捕获到的错误，可能是 JS 文件加载失败或无限循环</div>';
+          }
+        }
+      }, 3000);
+    })();
+  </script>
+
 </head>
 <body>
 
