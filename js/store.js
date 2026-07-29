@@ -50,6 +50,12 @@ const Store = (() => {
     membership: null,        // { tier, expires_at, storage_used, storage_limit }
     membershipPlans: [],     // 从后端拉取的 plans 列表
     storageMode: 'cloud',    // 'cloud' | 'local' — 数据存储模式
+    reader: {                 // 阅读器设置
+      fontSize: 18,
+      bgColor: '#f5e6c8',
+      nightMode: false,
+      scrollMode: 'vertical'   // 'vertical' | 'page'
+    },
     bookshelf: {              // 书架数据
       items: [],              // { id, title, author, cover, type, progress, lastRead, source }
       categories: ['全部','阅读','听书','短剧','漫剧','出版'],
