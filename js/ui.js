@@ -99,6 +99,21 @@ const UI = (() => {
     }
     const nm = $('#sidebarUserName');
     if (nm) nm.textContent = u.name || '用户';
+    const tierBadge = $('#sidebarUserTier');
+    if (tierBadge) {
+      const m = Store.state.membership;
+      const tier = (m && m.tier) ? m.tier : 'guest';
+      const tierMap = {
+        guest:    { icon: '🌑', name: '游客',    color: '#888' },
+        satellite:{ icon: '🛰️', name: '卫星',    color: '#4a90d9' },
+        planet:   { icon: '🪐', name: '行星',    color: '#7b68ee' },
+        star:     { icon: '☀️', name: '恒星',    color: '#ff9500' },
+        galaxy:   { icon: '🌌', name: '星系',    color: '#ff2d55' },
+        universe: { icon: '🌠', name: '宇宙',    color: '#af52de' }
+      };
+      const t = tierMap[tier] || tierMap.guest;
+      tierBadge.innerHTML = '<span class="tier-badge" style="color:' + t.color + '">' + t.icon + ' ' + t.name + '</span>';
+    }
   }
 
   function renderSidebar(filter) {
