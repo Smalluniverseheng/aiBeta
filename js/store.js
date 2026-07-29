@@ -66,7 +66,7 @@ const Store = (() => {
   bonusStorage: [],
   inviteCode: '',
   inviteCount: 0,
-  familyGroup: null,
+  familyGroup: null
 
   };
 
