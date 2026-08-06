@@ -753,9 +753,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid var(--border-strong);
   color: var(--text);
   box-shadow: var(--shadow);
@@ -922,7 +922,6 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(2px);
 }
 .sheet-content {
   position: absolute;
@@ -1050,7 +1049,6 @@ html[data-device="watch"] #newChatTopBtn { display: none !important; }
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(2px);
 }
 .feature-sheet .sheet-content {
   position: absolute;
