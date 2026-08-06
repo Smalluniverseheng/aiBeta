@@ -209,9 +209,9 @@
   justify-content: space-between;
   gap: 10px;
   padding: 0 16px;
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
   z-index: 50;
 }
@@ -261,9 +261,9 @@
   display: none;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   z-index: 70;
@@ -291,8 +291,7 @@
 .sidebar-overlay {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(10, 10, 16, .45);
-  backdrop-filter: blur(2px);
+  background: rgba(10, 10, 16, .55);
   z-index: 59;
   animation: fadeIn .2s var(--ease);
 }
